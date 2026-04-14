@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "CivicSaathi",
+    "slug": "civic-saathi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F4F6FA"
+    },
+    "android": {
+      "package": "com.civic.saathi"
+    },
+    "ios": {
+      "bundleIdentifier": "com.civic.saathi"
+    }
+  }
+}
