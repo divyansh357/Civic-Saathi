@@ -1,4 +1,8 @@
 services:
+  # ── PostgreSQL with PostGIS ──────────────────────────────────────────────────
+  # This container provides the PostGIS extension.
+  # The database itself is managed via pgAdmin on the host.
+  # POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD must match your pgAdmin setup.
   postgres:
     build:
       context: ..
@@ -17,6 +21,10 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ── Spring Boot Backend ──────────────────────────────────────────────────────
+  # DB_URL in .env should point to the pgAdmin-managed database.
+  # When running locally (not in Docker), the backend reads .env directly and
+  # connects to localhost:5432 — the same postgres instance pgAdmin manages.
   backend:
     build:
       context: ..
@@ -24,6 +32,9 @@ services:
     container_name: civic_backend
     env_file:
       - ../.env
+    environment:
+      # Override DB_URL inside Docker to use the postgres service name
+      DB_URL: jdbc:postgresql://postgres:5432/Civic
     depends_on:
       postgres:
         condition: service_healthy

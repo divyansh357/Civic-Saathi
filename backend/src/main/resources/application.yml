@@ -5,9 +5,14 @@ spring:
     import: optional:file:.env[.properties],optional:file:../.env[.properties]
 
   datasource:
+    # Connects to the pgAdmin-managed PostgreSQL database.
+    # PostGIS extension must be enabled in that DB (run: CREATE EXTENSION IF NOT EXISTS postgis;)
     url: ${DB_URL:jdbc:postgresql://localhost:5432/Civic}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:root}
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
 
   jpa:
     open-in-view: false
@@ -18,7 +23,9 @@ spring:
         format_sql: true
         jdbc:
           time_zone: UTC
-        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
+        # Hibernate 6 auto-detects PostGIS dialect — no explicit dialect needed.
+        # If you see dialect warnings, you can set:
+        # dialect: org.hibernate.dialect.PostgreSQLDialect
 
   jackson:
     time-zone: UTC

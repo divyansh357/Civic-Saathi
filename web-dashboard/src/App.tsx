@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuthStore } from './store';
+import { useAuthStore, useThemeStore } from './store';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -26,6 +26,7 @@ export default function App() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const { isDark, toggle: toggleTheme } = useThemeStore();
   const [page, setPage] = useState('dashboard');
   const [bootstrapped, setBootstrapped] = useState(false);
 
@@ -78,8 +79,15 @@ export default function App() {
           <div className="topbar-actions">
             <button
               className="btn btn-ghost btn-sm"
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              style={{ fontSize: '1rem', padding: '6px 10px' }}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
               onClick={() => setPage('notifications')}
-              style={{ position: 'relative' }}
             >
               🔔
             </button>

@@ -154,6 +154,37 @@ export const useAssignmentStore = create<AssignmentState>((set) => ({
   setLoading: (isLoading) => set({ isLoading })
 }));
 
+// ─── Theme Store ─────────────────────────────────────────────────────────────
+
+export interface ThemeState {
+  isDark: boolean;
+  toggle: () => void;
+}
+
+const THEME_KEY = 'civic.theme';
+
+const applyTheme = (dark: boolean) => {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+};
+
+export const useThemeStore = create<ThemeState>((set) => {
+  const saved = localStorage.getItem(THEME_KEY);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initial = saved ? saved === 'dark' : prefersDark;
+  // Apply on init
+  applyTheme(initial);
+  return {
+    isDark: initial,
+    toggle: () =>
+      set((s) => {
+        const next = !s.isDark;
+        applyTheme(next);
+        return { isDark: next };
+      }),
+  };
+});
+
 // ─── Notification Store ───────────────────────────────────────────────────────
 
 export interface NotificationState {
