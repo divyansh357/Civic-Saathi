@@ -26,10 +26,21 @@ export type ComplaintStatus =
 export interface Complaint {
 	id: string;
 	title: string;
-	description: string;
+	description?: string;
 	status: ComplaintStatus;
 	category?: string;
-	priority?: number;
+	priority?: string;
+	userId?: string;
+	userName?: string;
+	departmentId?: string;
+	departmentName?: string;
+	assignedWorkerId?: string;
+	assignedWorkerName?: string;
+	latitude?: number;
+	longitude?: number;
+	address?: string;
+	city?: string;
+	imageUrls?: string[];
 	createdAt?: string;
 	updatedAt?: string;
 }

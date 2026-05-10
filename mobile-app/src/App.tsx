@@ -1,191 +1,223 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
-  View
+  View,
 } from 'react-native';
 import { useAuthStore } from '@store/index';
-import { isValidEmail } from '@utils/index';
 import { Complaint } from '@/types';
+
+// Auth screens
+import LoginScreen from '@screens/auth/LoginScreen';
+import SignupScreen from '@screens/auth/SignupScreen';
+
+// Citizen screens
 import HomeScreen from '@screens/citizen/HomeScreen';
 import NewComplaintScreen from '@screens/citizen/NewComplaintScreen';
 import ComplaintDetailScreen from '@screens/citizen/ComplaintDetailScreen';
+
+// Worker screens
 import WorkerHomeScreen from '@screens/worker/WorkerHomeScreen';
 
-type Screen = 'home' | 'new-complaint' | 'complaint-detail';
+// ─── Screen types ─────────────────────────────────────────────────────────────
+
+type AuthScreen = 'login' | 'signup';
+type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail';
+
+// ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const hydrateUser = useAuthStore((state) => state.hydrateUser);
-  const isLoading = useAuthStore((state) => state.isLoading);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const user = useAuthStore((state) => state.user);
-  const login = useAuthStore((state) => state.login);
-  const authError = useAuthStore((state) => state.error);
+  const hydrateUser = useAuthStore((s) => s.hydrateUser);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [screen, setScreen] = useState<Screen>('home');
-  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
+  const [loginSuccessMsg, setLoginSuccessMsg] = useState('');
 
-  const canLogin = isValidEmail(email.trim()) && password.trim().length > 0;
+  // Citizen navigation
+  const [citizenScreen, setCitizenScreen] = useState<CitizenScreen>('home');
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
 
+  // Bootstrap: restore session from storage
   useEffect(() => {
     hydrateUser()
-      .catch(() => { /* ignore */ })
+      .catch(() => { /* ignore — store handles error state */ })
       .finally(() => setBootstrapped(true));
   }, [hydrateUser]);
 
-  const handleLogin = async () => {
-    if (!canLogin) return;
-    await login(email.trim(), password);
-    setPassword('');
-  };
+  // ── Loading splash ──────────────────────────────────────────────────────────
 
-  // Loading / bootstrap
   if (!bootstrapped || isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" />
-        <Text style={styles.loadingLogo}>🏙️</Text>
-        <ActivityIndicator size="large" color="#0F766E" style={{ marginTop: 16 }} />
-        <Text style={styles.loadingText}>Civic Saathi</Text>
-      </SafeAreaView>
-    );
-  }
-
-  // Login screen
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.loginContent}>
-          <View style={styles.loginHeader}>
-            <Text style={styles.loginLogo}>🏙️</Text>
-            <Text style={styles.loginTitle}>Civic Saathi</Text>
-            <Text style={styles.loginSubtitle}>Citizen issue reporting platform</Text>
+      <SafeAreaView style={styles.splash}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
+        <View style={styles.splashContent}>
+          <View style={styles.splashLogo}>
+            <Text style={styles.splashEmoji}>🏙️</Text>
           </View>
-
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Sign In</Text>
-
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="citizen@civic.com"
-              placeholderTextColor="#94A3B8"
-            />
-
-            <Text style={styles.inputLabel}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              secureTextEntry
-              onChangeText={setPassword}
-              placeholder="Enter password"
-              placeholderTextColor="#94A3B8"
-            />
-
-            <Pressable
-              style={[styles.loginBtn, !canLogin && styles.loginBtnDisabled]}
-              onPress={() => { void handleLogin(); }}
-              disabled={!canLogin}
-            >
-              <Text style={styles.loginBtnText}>Sign In</Text>
-            </Pressable>
-
-            {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
-          </View>
-
-          <Text style={styles.demoHint}>
-            Demo: citizen@civic.com / password
-          </Text>
+          <Text style={styles.splashTitle}>Civic Saathi</Text>
+          <ActivityIndicator
+            size="large"
+            color="#0F766E"
+            style={{ marginTop: 24 }}
+          />
+          <Text style={styles.splashSubtitle}>Loading your account...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Worker view
+  // ── Auth screens ────────────────────────────────────────────────────────────
+
+  if (!isAuthenticated) {
+    if (authScreen === 'signup') {
+      return (
+        <SafeAreaView style={styles.container}>
+          <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
+          <SignupScreen
+            onGoToLogin={(successMsg) => {
+              if (successMsg) setLoginSuccessMsg(successMsg);
+              setAuthScreen('login');
+            }}
+          />
+        </SafeAreaView>
+      );
+    }
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
+        <LoginScreen
+          successMessage={loginSuccessMsg}
+          onClearSuccessMessage={() => setLoginSuccessMsg('')}
+          onGoToSignup={() => {
+            setLoginSuccessMsg('');
+            setAuthScreen('signup');
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Worker view ─────────────────────────────────────────────────────────────
+
   if (user?.role === 'WORKER') {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
         <WorkerHomeScreen />
       </SafeAreaView>
     );
   }
 
-  // Citizen / other views
+  // ── Admin / Officer view ────────────────────────────────────────────────────
+  // Admins use the web dashboard; on mobile show a redirect notice
+
+  if (user?.role === 'ADMIN' || user?.role === 'OFFICER') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
+        <AdminNoticeScreen userName={user.name} onLogout={() => useAuthStore.getState().logout()} />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Citizen view ────────────────────────────────────────────────────────────
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
 
-      {screen === 'home' && (
+      {citizenScreen === 'home' && (
         <HomeScreen
-          onNewComplaint={() => setScreen('new-complaint')}
-          onComplaintDetail={(c) => { setSelectedComplaint(c); setScreen('complaint-detail'); }}
+          onNewComplaint={() => setCitizenScreen('new-complaint')}
+          onComplaintDetail={(c) => {
+            setSelectedComplaint(c);
+            setCitizenScreen('complaint-detail');
+          }}
         />
       )}
 
-      {screen === 'new-complaint' && (
+      {citizenScreen === 'new-complaint' && (
         <NewComplaintScreen
-          onBack={() => setScreen('home')}
-          onSuccess={() => setScreen('home')}
+          onBack={() => setCitizenScreen('home')}
+          onSuccess={() => setCitizenScreen('home')}
         />
       )}
 
-      {screen === 'complaint-detail' && selectedComplaint && (
+      {citizenScreen === 'complaint-detail' && selectedComplaint && (
         <ComplaintDetailScreen
           complaint={selectedComplaint}
-          onBack={() => setScreen('home')}
+          onBack={() => setCitizenScreen('home')}
         />
       )}
     </SafeAreaView>
   );
 }
 
+// ─── Admin notice screen ──────────────────────────────────────────────────────
+
+function AdminNoticeScreen({ userName, onLogout }: { userName: string; onLogout: () => void }) {
+  const { Pressable } = require('react-native') as typeof import('react-native');
+  return (
+    <View style={adminStyles.container}>
+      <View style={adminStyles.card}>
+        <Text style={adminStyles.icon}>🖥️</Text>
+        <Text style={adminStyles.title}>Use the Web Dashboard</Text>
+        <Text style={adminStyles.subtitle}>
+          Hi {userName.split(' ')[0]}, your Admin / Officer account is best managed
+          from the Civic Saathi web dashboard.
+        </Text>
+        <Text style={adminStyles.url}>localhost:5173</Text>
+        <Pressable style={adminStyles.logoutBtn} onPress={onLogout}>
+          <Text style={adminStyles.logoutText}>Sign Out</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const adminStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F4F6FA', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  card: {
+    backgroundColor: '#FFFFFF', borderRadius: 20, padding: 28,
+    alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4,
+    width: '100%', maxWidth: 360,
+  },
+  icon: { fontSize: 48, marginBottom: 16 },
+  title: { fontSize: 20, fontWeight: '700', color: '#0F172A', textAlign: 'center', marginBottom: 10 },
+  subtitle: { fontSize: 14, color: '#64748B', textAlign: 'center', lineHeight: 20, marginBottom: 16 },
+  url: { fontSize: 13, fontWeight: '600', color: '#0F766E', fontFamily: 'monospace', marginBottom: 20 },
+  logoutBtn: {
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10,
+  },
+  logoutText: { fontSize: 14, fontWeight: '600', color: '#DC2626' },
+});
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6FA' },
-  loadingContainer: {
-    flex: 1, backgroundColor: '#F4F6FA',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  loadingLogo: { fontSize: 48 },
-  loadingText: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginTop: 12 },
-  loginContent: {
+  splash: { flex: 1, backgroundColor: '#F4F6FA' },
+  splashContent: {
     flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24,
   },
-  loginHeader: { alignItems: 'center', marginBottom: 32 },
-  loginLogo: { fontSize: 52, marginBottom: 12 },
-  loginTitle: { fontSize: 28, fontWeight: '700', color: '#0F172A' },
-  loginSubtitle: { fontSize: 14, color: '#64748B', marginTop: 4 },
-  formCard: {
-    width: '100%', maxWidth: 360, backgroundColor: '#FFFFFF',
-    borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E2E8F0',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
+  splashLogo: {
+    width: 80, height: 80, borderRadius: 22,
+    backgroundColor: '#0F766E',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#0F766E', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35, shadowRadius: 14, elevation: 8,
   },
-  formTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginBottom: 16 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6, marginTop: 8 },
-  input: {
-    height: 46, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10,
-    paddingHorizontal: 14, backgroundColor: '#F8FAFC', color: '#0F172A', fontSize: 14,
-  },
-  loginBtn: {
-    marginTop: 16, height: 46, borderRadius: 10,
-    backgroundColor: '#0F766E', alignItems: 'center', justifyContent: 'center',
-  },
-  loginBtnDisabled: { opacity: 0.5 },
-  loginBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-  errorText: { marginTop: 10, color: '#DC2626', textAlign: 'center', fontSize: 13 },
-  demoHint: { marginTop: 20, fontSize: 12, color: '#94A3B8', textAlign: 'center' },
+  splashEmoji: { fontSize: 40 },
+  splashTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
+  splashSubtitle: { fontSize: 13, color: '#94A3B8', marginTop: 12 },
 });
