@@ -3,6 +3,11 @@ package com.civic.modules.complaint.mapper;
 import com.civic.modules.complaint.dto.CreateComplaintRequest;
 import com.civic.modules.complaint.dto.ComplaintResponse;
 import com.civic.modules.complaint.entity.Complaint;
+import com.civic.modules.user.entity.User;
+import com.civic.modules.user.repository.UserRepository;
+import com.civic.modules.department.entity.Department;
+import com.civic.modules.department.repository.DepartmentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,16 +16,28 @@ import org.springframework.stereotype.Component;
 @Component
 public class ComplaintMapper {
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
+
     /**
      * Convert CreateComplaintRequest to Complaint entity.
      */
     public Complaint toEntity(CreateComplaintRequest request, String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        
+        Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() -> new RuntimeException("Department not found with ID: " + request.getDepartmentId()));
+
         Complaint complaint = new Complaint();
         complaint.setTitle(request.getTitle());
         complaint.setDescription(request.getDescription());
         complaint.setCategory(request.getCategory());
-        complaint.setUserId(userId);
-        complaint.setDepartmentId(request.getDepartmentId());
+        complaint.setUser(user);
+        complaint.setDepartment(department);
         complaint.setLatitude(request.getLatitude());
         complaint.setLongitude(request.getLongitude());
         complaint.setLocation(request.getLocation());

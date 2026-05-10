@@ -4,6 +4,8 @@ import com.civic.modules.worker.dto.WorkerResponse;
 import com.civic.modules.worker.entity.Worker;
 import com.civic.modules.worker.mapper.WorkerMapper;
 import com.civic.modules.worker.repository.WorkerRepository;
+import com.civic.modules.user.repository.UserRepository;
+import com.civic.modules.department.repository.DepartmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,12 @@ public class WorkerService {
 
     @Autowired
     private WorkerMapper workerMapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
 
     /**
      * Get worker by ID.

@@ -1,5 +1,8 @@
 package com.civic.modules.complaint.entity;
 
+import com.civic.modules.user.entity.User;
+import com.civic.modules.department.entity.Department;
+import com.civic.modules.worker.entity.Worker;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -26,14 +29,17 @@ public class Complaint {
     @Column(nullable = false)
     private String status; // OPEN, IN_PROGRESS, RESOLVED, CLOSED
 
-    @Column(nullable = false)
-    private String userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(nullable = false)
-    private String departmentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
 
-    @Column
-    private String assignedWorkerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_worker_id")
+    private Worker assignedWorker;
 
     @Column
     private Double latitude;
@@ -69,12 +75,12 @@ public class Complaint {
     public Complaint() {
     }
 
-    public Complaint(String title, String description, String category, String userId, String departmentId) {
+    public Complaint(String title, String description, String category, User user, Department department) {
         this.title = title;
         this.description = description;
         this.category = category;
-        this.userId = userId;
-        this.departmentId = departmentId;
+        this.user = user;
+        this.department = department;
         this.status = "OPEN";
         this.priority = 3;
         this.createdAt = LocalDateTime.now();
@@ -122,28 +128,40 @@ public class Complaint {
         this.status = status;
     }
 
-    public String getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public String getUserId() {
+        return user != null ? user.getId() : null;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     public String getDepartmentId() {
-        return departmentId;
+        return department != null ? department.getId() : null;
     }
 
-    public void setDepartmentId(String departmentId) {
-        this.departmentId = departmentId;
+    public Worker getAssignedWorker() {
+        return assignedWorker;
+    }
+
+    public void setAssignedWorker(Worker assignedWorker) {
+        this.assignedWorker = assignedWorker;
     }
 
     public String getAssignedWorkerId() {
-        return assignedWorkerId;
-    }
-
-    public void setAssignedWorkerId(String assignedWorkerId) {
-        this.assignedWorkerId = assignedWorkerId;
+        return assignedWorker != null ? assignedWorker.getId() : null;
     }
 
     public Double getLatitude() {

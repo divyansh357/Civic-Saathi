@@ -7,6 +7,8 @@ import com.civic.modules.complaint.entity.Complaint;
 import com.civic.modules.complaint.mapper.ComplaintMapper;
 import com.civic.modules.complaint.repository.ComplaintRepository;
 import com.civic.modules.complaint.workflow.ComplaintWorkflow;
+import com.civic.modules.worker.entity.Worker;
+import com.civic.modules.worker.repository.WorkerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +28,9 @@ public class ComplaintService {
 
     @Autowired
     private ComplaintRepository complaintRepository;
+
+    @Autowired
+    private WorkerRepository workerRepository;
 
     @Autowired
     private ComplaintMapper complaintMapper;
@@ -97,7 +102,9 @@ public class ComplaintService {
         }
 
         if (request.getAssignedWorkerId() != null) {
-            complaint.setAssignedWorkerId(request.getAssignedWorkerId());
+            Worker worker = workerRepository.findById(request.getAssignedWorkerId())
+                    .orElseThrow(() -> new RuntimeException("Worker not found with ID: " + request.getAssignedWorkerId()));
+            complaint.setAssignedWorker(worker);
         }
 
         Complaint updatedComplaint = complaintRepository.save(complaint);

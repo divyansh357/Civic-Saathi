@@ -1,5 +1,7 @@
 package com.civic.modules.worker.entity;
 
+import com.civic.modules.user.entity.User;
+import com.civic.modules.department.entity.Department;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -14,11 +16,13 @@ public class Worker {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
-    private String userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(nullable = false)
-    private String departmentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
 
     @Column(nullable = false)
     private String designation;
@@ -59,20 +63,28 @@ public class Worker {
         this.id = id;
     }
 
-    public String getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public String getUserId() {
+        return user != null ? user.getId() : null;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     public String getDepartmentId() {
-        return departmentId;
-    }
-
-    public void setDepartmentId(String departmentId) {
-        this.departmentId = departmentId;
+        return department != null ? department.getId() : null;
     }
 
     public String getDesignation() {

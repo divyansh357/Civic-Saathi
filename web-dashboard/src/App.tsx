@@ -1,31 +1,92 @@
-const modules = [
-  'Dashboard',
-  'Complaints',
-  'Departments',
-  'Workers',
-  'Users',
-  'Analytics',
-  'Notifications'
-];
+import { useEffect, useState } from 'react';
+import { useAuthStore } from './store';
+import Sidebar from './components/Sidebar';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import ComplaintsPage from './pages/ComplaintsPage';
+import AssignmentsPage from './pages/AssignmentsPage';
+import DepartmentsPage from './pages/DepartmentsPage';
+import WorkersPage from './pages/WorkersPage';
+import UsersPage from './pages/UsersPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
-function App() {
+const PAGE_TITLES: Record<string, string> = {
+  dashboard: 'Dashboard',
+  complaints: 'Complaints',
+  assignments: 'Assignments',
+  departments: 'Departments',
+  workers: 'Workers',
+  users: 'Users',
+  analytics: 'Analytics',
+  notifications: 'Notifications',
+};
+
+export default function App() {
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const [page, setPage] = useState('dashboard');
+  const [bootstrapped, setBootstrapped] = useState(false);
+
+  useEffect(() => {
+    hydrate().finally(() => setBootstrapped(true));
+  }, [hydrate]);
+
+  if (!bootstrapped || isLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg)',
+        flexDirection: 'column',
+        gap: 16,
+      }}>
+        <div style={{ fontSize: 32 }}>🏙️</div>
+        <div className="spinner" style={{ width: 28, height: 28 }} />
+        <div style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Loading Civic Saathi...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  const renderPage = () => {
+    switch (page) {
+      case 'dashboard': return <DashboardPage />;
+      case 'complaints': return <ComplaintsPage />;
+      case 'assignments': return <AssignmentsPage />;
+      case 'departments': return <DepartmentsPage />;
+      case 'workers': return <WorkersPage />;
+      case 'users': return <UsersPage />;
+      case 'analytics': return <AnalyticsPage />;
+      case 'notifications': return <NotificationsPage />;
+      default: return <DashboardPage />;
+    }
+  };
+
   return (
-    <div className="app-shell">
-      <header className="hero">
-        <h1>Civic Saathi Admin Dashboard</h1>
-        <p>Base web shell initialized. Connect routes and module pages incrementally.</p>
-      </header>
-
-      <section className="module-grid">
-        {modules.map(moduleName => (
-          <article className="module-card" key={moduleName}>
-            <h2>{moduleName}</h2>
-            <p>{moduleName} module scaffold is ready for feature wiring.</p>
-          </article>
-        ))}
-      </section>
+    <div className="layout">
+      <Sidebar currentPage={page} onNavigate={setPage} />
+      <main className="main">
+        <div className="topbar">
+          <span className="topbar-title">{PAGE_TITLES[page] ?? 'Civic Saathi'}</span>
+          <div className="topbar-actions">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setPage('notifications')}
+              style={{ position: 'relative' }}
+            >
+              🔔
+            </button>
+          </div>
+        </div>
+        {renderPage()}
+      </main>
     </div>
   );
 }
-
-export default App;

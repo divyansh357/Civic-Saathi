@@ -20,12 +20,14 @@ public interface ComplaintRepository extends JpaRepository<Complaint, String> {
     /**
      * Find all complaints by user ID.
      */
-    Page<Complaint> findByUserId(String userId, Pageable pageable);
+    @Query("SELECT c FROM Complaint c WHERE c.user.id = :userId")
+    Page<Complaint> findByUserId(@Param("userId") String userId, Pageable pageable);
 
     /**
      * Find all complaints by department ID.
      */
-    Page<Complaint> findByDepartmentId(String departmentId, Pageable pageable);
+    @Query("SELECT c FROM Complaint c WHERE c.department.id = :departmentId")
+    Page<Complaint> findByDepartmentId(@Param("departmentId") String departmentId, Pageable pageable);
 
     /**
      * Find all complaints by status.
@@ -35,7 +37,8 @@ public interface ComplaintRepository extends JpaRepository<Complaint, String> {
     /**
      * Find all complaints assigned to a worker.
      */
-    Page<Complaint> findByAssignedWorkerId(String workerId, Pageable pageable);
+    @Query("SELECT c FROM Complaint c WHERE c.assignedWorker.id = :workerId")
+    Page<Complaint> findByAssignedWorkerId(@Param("workerId") String workerId, Pageable pageable);
 
     /**
      * Find complaints by category and status.
@@ -57,5 +60,6 @@ public interface ComplaintRepository extends JpaRepository<Complaint, String> {
     /**
      * Count complaints by department.
      */
-    long countByDepartmentId(String departmentId);
+    @Query("SELECT COUNT(c) FROM Complaint c WHERE c.department.id = :departmentId")
+    long countByDepartmentId(@Param("departmentId") String departmentId);
 }

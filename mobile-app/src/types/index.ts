@@ -34,6 +34,22 @@ export interface Complaint {
 	updatedAt?: string;
 }
 
+export interface Assignment {
+	id: string;
+	complaintId: string;
+	complaintTitle?: string;
+	departmentId: string;
+	departmentName?: string;
+	workerId?: string;
+	workerName?: string;
+	status: 'PENDING' | 'ACKNOWLEDGED' | 'IN_PROGRESS' | 'COMPLETED' | 'ESCALATED';
+	priority?: string;
+	slaDeadline?: string;
+	assignedAt?: string;
+	completedAt?: string;
+	escalationReason?: string;
+}
+
 export interface Notification {
 	id: string;
 	message: string;

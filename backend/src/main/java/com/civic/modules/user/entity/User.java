@@ -45,7 +45,7 @@ public class User {
     private boolean verified = false;
 
     @Column(nullable = false)
-    private boolean active = true;
+    private String status = "ACTIVE";
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -146,11 +146,22 @@ public class User {
     }
 
     public boolean isActive() {
-        return active;
+        if (status == null) {
+            return true;
+        }
+        return "ACTIVE".equalsIgnoreCase(status);
     }
 
     public void setActive(boolean active) {
-        this.active = active;
+        this.status = active ? "ACTIVE" : "INACTIVE";
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public LocalDateTime getCreatedAt() {

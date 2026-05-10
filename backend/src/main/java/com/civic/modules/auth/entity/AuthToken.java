@@ -1,5 +1,6 @@
 package com.civic.modules.auth.entity;
 
+import com.civic.modules.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -14,8 +15,9 @@ public class AuthToken {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
-    private String userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false, unique = true)
     private String token;
@@ -44,12 +46,16 @@ public class AuthToken {
         this.id = id;
     }
 
-    public String getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public String getUserId() {
+        return user != null ? user.getId() : null;
     }
 
     public String getToken() {

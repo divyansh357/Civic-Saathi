@@ -28,11 +28,17 @@ class StorageService {
     await AsyncStorage.setItem(STORAGE_KEYS.accessToken, tokens.accessToken);
     if (tokens.refreshToken) {
       await AsyncStorage.setItem(STORAGE_KEYS.refreshToken, tokens.refreshToken);
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.refreshToken);
     }
   }
 
   async getAccessToken(): Promise<string | null> {
     return AsyncStorage.getItem(STORAGE_KEYS.accessToken);
+  }
+
+  async getRefreshToken(): Promise<string | null> {
+    return AsyncStorage.getItem(STORAGE_KEYS.refreshToken);
   }
 
   async clearAuthTokens(): Promise<void> {

@@ -1,14 +1,19 @@
 package com.civic.modules.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Login request DTO.
  */
 public class LoginRequest {
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
     @JsonProperty("email")
     private String email;
 
+    @NotBlank(message = "Password is required")
     @JsonProperty("password")
     private String password;
 
