@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  RefreshControl, ActivityIndicator, Alert
+  RefreshControl, ActivityIndicator, Alert, Platform
 } from 'react-native';
+import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
 import { apiGet, apiPost } from '@services/api/client';
 import { Assignment } from '@/types';
@@ -11,6 +12,33 @@ import { Assignment } from '@/types';
 interface WorkerAssignment extends Assignment {
   complaintDescription?: string;
   complaintAddress?: string;
+  complaintLatitude?: number;
+  complaintLongitude?: number;
+  distance?: number; // Distance from worker's current location
+}
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function openMaps(latitude: number, longitude: number, address?: string) {
+  const label = address ? encodeURIComponent(address) : 'Task Location';
+  const url = Platform.select({
+    ios: `maps:0,0?q=${latitude},${longitude}(${label})`,
+    android: `geo:0,0?q=${latitude},${longitude}(${label})`,
+  });
+  
+  if (url) {
+    // In a real app, you'd use Linking.openURL(url)
+    Alert.alert('Navigation', `Would open maps to: ${address || `${latitude}, ${longitude}`}`);
+  }
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -41,9 +69,10 @@ interface AssignmentCardProps {
   assignment: WorkerAssignment;
   onAccept: (id: string) => void;
   onComplete: (id: string) => void;
+  onNavigate: (assignment: WorkerAssignment) => void;
 }
 
-function AssignmentCard({ assignment, onAccept, onComplete }: AssignmentCardProps) {
+function AssignmentCard({ assignment, onAccept, onComplete, onNavigate }: AssignmentCardProps) {
   const color = STATUS_COLORS[assignment.status] ?? '#64748b';
   const sla = getSlaLabel(assignment.slaDeadline);
 
@@ -65,7 +94,12 @@ function AssignmentCard({ assignment, onAccept, onComplete }: AssignmentCardProp
       </Text>
 
       {assignment.complaintAddress && (
-        <Text style={styles.cardAddress} numberOfLines={1}>📍 {assignment.complaintAddress}</Text>
+        <View style={styles.addressRow}>
+          <Text style={styles.cardAddress} numberOfLines={1}>📍 {assignment.complaintAddress}</Text>
+          {assignment.distance !== undefined && (
+            <Text style={styles.distanceText}>{assignment.distance.toFixed(1)} km</Text>
+          )}
+        </View>
       )}
 
       <View style={styles.cardMeta}>
@@ -79,6 +113,14 @@ function AssignmentCard({ assignment, onAccept, onComplete }: AssignmentCardProp
 
       {/* Actions */}
       <View style={styles.cardActions}>
+        {/* Navigation button for all active assignments */}
+        {assignment.complaintLatitude && assignment.complaintLongitude && 
+         !['COMPLETED'].includes(assignment.status) && (
+          <Pressable style={styles.navBtn} onPress={() => onNavigate(assignment)}>
+            <Text style={styles.navBtnText}>🗺️ Navigate</Text>
+          </Pressable>
+        )}
+        
         {assignment.status === 'PENDING' && (
           <Pressable style={styles.actionBtn} onPress={() => onAccept(assignment.id)}>
             <Text style={styles.actionBtnText}>✓ Accept</Text>
@@ -99,18 +141,86 @@ function AssignmentCard({ assignment, onAccept, onComplete }: AssignmentCardProp
   );
 }
 
-export default function WorkerHomeScreen() {
+export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavigateToNotifications?: () => void }) {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const [assignments, setAssignments] = useState<WorkerAssignment[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [workerLocation, setWorkerLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
 
+  // Enhanced mock data with location
   const MOCK: WorkerAssignment[] = [
-    { id: 'A-001', complaintId: 'C-1001', complaintTitle: 'Pothole on MG Road near bus stop', departmentId: 'd1', departmentName: 'Roads Department', status: 'PENDING', priority: 'HIGH', slaDeadline: new Date(Date.now() + 3600000 * 5).toISOString(), assignedAt: new Date().toISOString(), complaintAddress: 'MG Road, Bengaluru' },
-    { id: 'A-004', complaintId: 'C-1007', complaintTitle: 'Road cave-in near school', departmentId: 'd1', departmentName: 'Roads Department', status: 'IN_PROGRESS', priority: 'CRITICAL', slaDeadline: new Date(Date.now() + 3600000 * 1).toISOString(), assignedAt: new Date().toISOString(), complaintAddress: 'Near Govt School, Koramangala' },
+    { 
+      id: 'A-001', 
+      complaintId: 'C-1001', 
+      complaintTitle: 'Pothole on MG Road near bus stop', 
+      departmentId: 'd1', 
+      departmentName: 'Roads Department', 
+      status: 'PENDING', 
+      priority: 'HIGH', 
+      slaDeadline: new Date(Date.now() + 3600000 * 5).toISOString(), 
+      assignedAt: new Date().toISOString(), 
+      complaintAddress: 'MG Road, Bengaluru',
+      complaintLatitude: 12.9716,
+      complaintLongitude: 77.5946
+    },
+    { 
+      id: 'A-004', 
+      complaintId: 'C-1007', 
+      complaintTitle: 'Road cave-in near school', 
+      departmentId: 'd1', 
+      departmentName: 'Roads Department', 
+      status: 'IN_PROGRESS', 
+      priority: 'CRITICAL', 
+      slaDeadline: new Date(Date.now() + 3600000 * 1).toISOString(), 
+      assignedAt: new Date().toISOString(), 
+      complaintAddress: 'Near Govt School, Koramangala',
+      complaintLatitude: 12.9352,
+      complaintLongitude: 77.6245
+    },
   ];
+
+  // Get worker's current location
+  const getCurrentLocation = async () => {
+    setLocationLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        setWorkerLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  // Calculate distances for assignments
+  const calculateAssignmentDistances = (assignments: WorkerAssignment[]) => {
+    if (!workerLocation) return assignments;
+    
+    return assignments.map(assignment => {
+      if (assignment.complaintLatitude && assignment.complaintLongitude) {
+        const distance = calculateDistance(
+          workerLocation.latitude,
+          workerLocation.longitude,
+          assignment.complaintLatitude,
+          assignment.complaintLongitude
+        );
+        return { ...assignment, distance };
+      }
+      return assignment;
+    });
+  };
 
   const fetchAssignments = async (silent = false) => {
     if (!accessToken || !user) return;
@@ -120,18 +230,41 @@ export default function WorkerHomeScreen() {
         `/assignments/worker/${user.id}?page=0&size=20`,
         accessToken
       );
-      setAssignments(res.data ?? []);
+      const assignmentsWithDistance = calculateAssignmentDistances(res.data ?? []);
+      setAssignments(assignmentsWithDistance);
     } catch {
-      setAssignments(MOCK);
+      const mockWithDistance = calculateAssignmentDistances(MOCK);
+      setAssignments(mockWithDistance);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => { void fetchAssignments(); }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { 
+    void getCurrentLocation();
+    void fetchAssignments(); 
+  }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onRefresh = () => { setRefreshing(true); void fetchAssignments(true); };
+  // Recalculate distances when worker location changes
+  useEffect(() => {
+    if (workerLocation && assignments.length > 0) {
+      const assignmentsWithDistance = calculateAssignmentDistances(assignments);
+      setAssignments(assignmentsWithDistance);
+    }
+  }, [workerLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onRefresh = () => { 
+    setRefreshing(true); 
+    void getCurrentLocation();
+    void fetchAssignments(true); 
+  };
+
+  const handleNavigate = (assignment: WorkerAssignment) => {
+    if (assignment.complaintLatitude && assignment.complaintLongitude) {
+      openMaps(assignment.complaintLatitude, assignment.complaintLongitude, assignment.complaintAddress);
+    }
+  };
 
   const handleAccept = async (id: string) => {
     if (!accessToken) return;
@@ -163,6 +296,11 @@ export default function WorkerHomeScreen() {
   const active = assignments.filter((a) => !['COMPLETED'].includes(a.status));
   const completed = assignments.filter((a) => a.status === 'COMPLETED');
 
+  // Sort active assignments by distance (closest first) if location is available
+  const sortedActive = workerLocation 
+    ? active.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
+    : active;
+
   return (
     <ScrollView
       style={styles.container}
@@ -174,10 +312,23 @@ export default function WorkerHomeScreen() {
         <View>
           <Text style={styles.workerName}>{user?.name ?? 'Worker'}</Text>
           <Text style={styles.workerRole}>Field Worker</Text>
+          {workerLocation && (
+            <Text style={styles.locationStatus}>📍 Location enabled</Text>
+          )}
+          {locationLoading && (
+            <Text style={styles.locationStatus}>📍 Getting location...</Text>
+          )}
         </View>
-        <Pressable style={styles.logoutBtn} onPress={() => void logout()}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          {onNavigateToNotifications && (
+            <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
+              <Text style={styles.notificationIcon}>🔔</Text>
+            </Pressable>
+          )}
+          <Pressable style={styles.logoutBtn} onPress={() => void logout()}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Stats */}
@@ -195,7 +346,12 @@ export default function WorkerHomeScreen() {
       </View>
 
       {/* Active Assignments */}
-      <Text style={styles.sectionTitle}>Active Assignments ({active.length})</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Active Assignments ({active.length})</Text>
+        {workerLocation && active.length > 0 && (
+          <Text style={styles.sortNote}>Sorted by distance</Text>
+        )}
+      </View>
 
       {loading ? (
         <ActivityIndicator color="#0F766E" style={{ marginTop: 24 }} />
@@ -206,8 +362,14 @@ export default function WorkerHomeScreen() {
           <Text style={styles.emptySubtitle}>No active assignments right now</Text>
         </View>
       ) : (
-        active.map((a) => (
-          <AssignmentCard key={a.id} assignment={a} onAccept={handleAccept} onComplete={handleComplete} />
+        sortedActive.map((a) => (
+          <AssignmentCard 
+            key={a.id} 
+            assignment={a} 
+            onAccept={handleAccept} 
+            onComplete={handleComplete} 
+            onNavigate={handleNavigate}
+          />
         ))
       )}
 
@@ -216,7 +378,13 @@ export default function WorkerHomeScreen() {
         <>
           <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Completed ({completed.length})</Text>
           {completed.map((a) => (
-            <AssignmentCard key={a.id} assignment={a} onAccept={handleAccept} onComplete={handleComplete} />
+            <AssignmentCard 
+              key={a.id} 
+              assignment={a} 
+              onAccept={handleAccept} 
+              onComplete={handleComplete} 
+              onNavigate={handleNavigate}
+            />
           ))}
         </>
       )}
@@ -233,6 +401,13 @@ const styles = StyleSheet.create({
   },
   workerName: { fontSize: 20, fontWeight: '700', color: '#0F172A' },
   workerRole: { fontSize: 13, color: '#64748B', marginTop: 2 },
+  locationStatus: { fontSize: 11, color: '#0F766E', marginTop: 2, fontWeight: '500' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  notificationBtn: {
+    backgroundColor: '#F0FDF9', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8,
+    borderWidth: 1, borderColor: '#BBF7D0',
+  },
+  notificationIcon: { fontSize: 16 },
   logoutBtn: { backgroundColor: '#FEE2E2', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   logoutText: { fontSize: 13, fontWeight: '600', color: '#DC2626' },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
@@ -242,7 +417,9 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 22, fontWeight: '700' },
   statLabel: { fontSize: 11, color: '#64748B', marginTop: 2, fontWeight: '500' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#0F172A', marginBottom: 10 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
+  sortNote: { fontSize: 11, color: '#64748B', fontStyle: 'italic' },
   card: {
     backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
@@ -254,12 +431,19 @@ const styles = StyleSheet.create({
   statusPillText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   slaText: { fontSize: 11, fontWeight: '500' },
   cardTitle: { fontSize: 14, fontWeight: '600', color: '#1E293B', lineHeight: 20, marginBottom: 6 },
-  cardAddress: { fontSize: 12, color: '#64748B', marginBottom: 8 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  cardAddress: { fontSize: 12, color: '#64748B', flex: 1 },
+  distanceText: { fontSize: 11, color: '#0F766E', fontWeight: '600', marginLeft: 8 },
   cardMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   metaText: { fontSize: 12, color: '#94A3B8' },
   priorityTag: { backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   priorityTagText: { fontSize: 11, fontWeight: '600', color: '#92400E' },
   cardActions: { flexDirection: 'row', gap: 8 },
+  navBtn: {
+    backgroundColor: '#F0F9FF', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8,
+    borderWidth: 1, borderColor: '#BAE6FD',
+  },
+  navBtnText: { fontSize: 12, fontWeight: '600', color: '#0369A1' },
   actionBtn: {
     flex: 1, backgroundColor: '#EFF6FF', paddingVertical: 10, borderRadius: 8,
     alignItems: 'center', borderWidth: 1, borderColor: '#BFDBFE',

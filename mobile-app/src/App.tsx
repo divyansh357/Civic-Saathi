@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useAuthStore } from '@store/index';
 import { Complaint } from '@/types';
+import { notificationService } from '@services/notifications';
 
 // Auth screens
 import LoginScreen from '@screens/auth/LoginScreen';
@@ -22,10 +23,14 @@ import ComplaintDetailScreen from '@screens/citizen/ComplaintDetailScreen';
 // Worker screens
 import WorkerHomeScreen from '@screens/worker/WorkerHomeScreen';
 
+// Shared screens
+import NotificationsScreen from '@screens/NotificationsScreen';
+
 // ─── Screen types ─────────────────────────────────────────────────────────────
 
 type AuthScreen = 'login' | 'signup';
-type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail';
+type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail' | 'notifications';
+type WorkerScreen = 'home' | 'notifications';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
@@ -43,12 +48,42 @@ export default function App() {
   const [citizenScreen, setCitizenScreen] = useState<CitizenScreen>('home');
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
 
+  // Worker navigation
+  const [workerScreen, setWorkerScreen] = useState<WorkerScreen>('home');
+
   // Bootstrap: restore session from storage
   useEffect(() => {
     hydrateUser()
       .catch(() => { /* ignore — store handles error state */ })
       .finally(() => setBootstrapped(true));
   }, [hydrateUser]);
+
+  // Initialize notification service when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      notificationService.initialize().then((success) => {
+        if (success) {
+          notificationService.requestPermissions();
+          
+          // Simulate some initial notifications for Level A demo
+          setTimeout(() => {
+            if (user?.role === 'CITIZEN') {
+              notificationService.notifyComplaintStatusUpdate(
+                'C-1001', 
+                'ASSIGNED', 
+                'Pothole on MG Road'
+              );
+            } else if (user?.role === 'WORKER') {
+              notificationService.notifyNewAssignment(
+                'A-001',
+                'Water supply disruption in Koramangala'
+              );
+            }
+          }, 3000);
+        }
+      });
+    }
+  }, [isAuthenticated, user?.role]);
 
   // ── Loading splash ──────────────────────────────────────────────────────────
 
@@ -110,7 +145,14 @@ export default function App() {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
-        <WorkerHomeScreen />
+        
+        {workerScreen === 'home' && (
+          <WorkerHomeScreen onNavigateToNotifications={() => setWorkerScreen('notifications')} />
+        )}
+        
+        {workerScreen === 'notifications' && (
+          <NotificationsScreen onBack={() => setWorkerScreen('home')} />
+        )}
       </SafeAreaView>
     );
   }
@@ -140,6 +182,7 @@ export default function App() {
             setSelectedComplaint(c);
             setCitizenScreen('complaint-detail');
           }}
+          onNavigateToNotifications={() => setCitizenScreen('notifications')}
         />
       )}
 
@@ -155,6 +198,10 @@ export default function App() {
           complaint={selectedComplaint}
           onBack={() => setCitizenScreen('home')}
         />
+      )}
+
+      {citizenScreen === 'notifications' && (
+        <NotificationsScreen onBack={() => setCitizenScreen('home')} />
       )}
     </SafeAreaView>
   );

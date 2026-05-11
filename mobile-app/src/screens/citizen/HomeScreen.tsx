@@ -68,9 +68,10 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
 interface HomeScreenProps {
   onNewComplaint: () => void;
   onComplaintDetail: (complaint: Complaint) => void;
+  onNavigateToNotifications: () => void;
 }
 
-export default function HomeScreen({ onNewComplaint, onComplaintDetail }: HomeScreenProps) {
+export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNavigateToNotifications }: HomeScreenProps) {
   const user = useAuthStore((s) => s.user);
   const { complaints, setComplaints, isLoading, setLoading } = useComplaintStore();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -114,8 +115,13 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail }: HomeSc
     >
       {/* Greeting */}
       <View style={styles.greeting}>
-        <Text style={styles.greetingText}>Hello, {user?.name?.split(' ')[0] ?? 'Citizen'} 👋</Text>
-        <Text style={styles.greetingSubtext}>Report civic issues in your area</Text>
+        <View>
+          <Text style={styles.greetingText}>Hello, {user?.name?.split(' ')[0] ?? 'Citizen'} 👋</Text>
+          <Text style={styles.greetingSubtext}>Report civic issues in your area</Text>
+        </View>
+        <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
+          <Text style={styles.notificationIcon}>🔔</Text>
+        </Pressable>
       </View>
 
       {/* Stats Row */}
@@ -169,9 +175,15 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail }: HomeSc
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6FA' },
   content: { padding: 16, paddingBottom: 32 },
-  greeting: { marginBottom: 20 },
+  greeting: { marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   greetingText: { fontSize: 22, fontWeight: '700', color: '#0F172A' },
   greetingSubtext: { fontSize: 14, color: '#64748B', marginTop: 2 },
+  notificationBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+  },
+  notificationIcon: { fontSize: 18 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   statCard: {
     flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12,
