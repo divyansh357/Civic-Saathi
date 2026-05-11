@@ -1,6 +1,6 @@
 package com.civic.modules.analytics.service;
 
-import com.civic.infrastructure.ai.AiService;
+import com.civic.infrastructure.ai.CoreAiService;
 import com.civic.modules.analytics.dto.AnalyticsDashboardResponse;
 import com.civic.modules.complaint.entity.Complaint;
 import com.civic.modules.complaint.repository.ComplaintRepository;
@@ -30,7 +30,7 @@ public class AnalyticsService {
     private WorkerRepository workerRepository;
 
     @Autowired
-    private AiService aiService;
+    private CoreAiService aiService;
 
     /** Get dashboard analytics with real data. */
     public AnalyticsDashboardResponse getDashboardMetrics() {

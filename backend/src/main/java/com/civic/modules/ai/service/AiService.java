@@ -1,6 +1,6 @@
 package com.civic.modules.ai.service;
 
-import com.civic.infrastructure.ai.AiService.ClassificationResult;
+import com.civic.infrastructure.ai.CoreAiService.ClassificationResult;
 import com.civic.modules.ai.dto.ClassificationRequest;
 import com.civic.modules.ai.dto.ClassificationResponse;
 import com.civic.modules.complaint.entity.Complaint;
@@ -27,7 +27,7 @@ public class AiService {
     private static final Logger log = LoggerFactory.getLogger(AiService.class);
 
     @Autowired
-    private com.civic.infrastructure.ai.AiService coreAi;
+    private com.civic.infrastructure.ai.CoreAiService coreAi;
 
     @Autowired
     private ComplaintRepository complaintRepository;

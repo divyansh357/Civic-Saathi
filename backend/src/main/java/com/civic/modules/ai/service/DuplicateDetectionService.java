@@ -1,6 +1,6 @@
 package com.civic.modules.ai.service;
 
-import com.civic.infrastructure.ai.AiService;
+import com.civic.infrastructure.ai.CoreAiService;
 import com.civic.modules.complaint.entity.Complaint;
 import com.civic.modules.complaint.entity.ComplaintDuplicate;
 import com.civic.modules.complaint.repository.ComplaintDuplicateRepository;
@@ -35,7 +35,7 @@ public class DuplicateDetectionService {
     private ComplaintDuplicateRepository duplicateRepository;
 
     @Autowired
-    private AiService aiService;
+    private CoreAiService aiService;
 
     /**
      * Check a new complaint against recent complaints for duplicates.

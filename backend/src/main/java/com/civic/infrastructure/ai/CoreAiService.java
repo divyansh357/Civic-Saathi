@@ -12,10 +12,10 @@ import java.util.regex.Pattern;
  * Core AI service — rule-based classification with optional LLM enhancement via Cerebras.
  * All methods have reliable fallbacks so the system works without an API key.
  */
-@Service
-public class AiService {
+@Service("coreAiService")
+public class CoreAiService {
 
-    private static final Logger log = LoggerFactory.getLogger(AiService.class);
+    private static final Logger log = LoggerFactory.getLogger(CoreAiService.class);
 
     @Autowired
     private CerebrasClient cerebras;
