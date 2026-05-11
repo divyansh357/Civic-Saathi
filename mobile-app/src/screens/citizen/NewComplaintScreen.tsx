@@ -53,7 +53,69 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   const [isRecording, setIsRecording] = useState(false);
   const [voiceNote, setVoiceNote] = useState<string | null>(null);
 
+  // Level C: AI suggestions
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<{
+    category: string; priority: string; confidence: number; department: string;
+  } | null>(null);
+  const [duplicates, setDuplicates] = useState<Array<{
+    complaintId: string; title: string; status: string; similarity: number;
+  }>>([]);
+
   const canSubmit = title.trim().length >= 5 && category !== '' && description.trim().length >= 10;
+
+  // AI: suggest category when title + description are long enough
+  useEffect(() => {
+    if (title.trim().length < 10 || description.trim().length < 20) return;
+    const timer = setTimeout(() => void runAiSuggestion(), 800);
+    return () => clearTimeout(timer);
+  }, [title, description]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const runAiSuggestion = async () => {
+    if (!accessToken) return;
+    setAiSuggesting(true);
+    try {
+      const [classifyRes, dupRes] = await Promise.allSettled([
+        apiPost<{ category: string; urgencyLevel: string; confidence: number; suggestedDepartment: string }>(
+          '/ai/classify',
+          { complaintText: title + ' ' + description },
+          accessToken
+        ),
+        apiPost<{ hasDuplicates: boolean; candidates: Array<{ complaintId: string; title: string; status: string; similarity: number }> }>(
+          '/ai/duplicate-check',
+          { title, description },
+          accessToken
+        ),
+      ]);
+
+      if (classifyRes.status === 'fulfilled') {
+        const r = classifyRes.value;
+        setAiSuggestion({
+          category: r.category,
+          priority: r.urgencyLevel,
+          confidence: r.confidence,
+          department: r.suggestedDepartment,
+        });
+      }
+
+      if (dupRes.status === 'fulfilled' && dupRes.value.hasDuplicates) {
+        setDuplicates(dupRes.value.candidates.slice(0, 3));
+      } else {
+        setDuplicates([]);
+      }
+    } catch {
+      // AI is optional — silently ignore errors
+    } finally {
+      setAiSuggesting(false);
+    }
+  };
+
+  const applyAiSuggestion = () => {
+    if (!aiSuggestion) return;
+    if (!category) setCategory(aiSuggestion.category);
+    if (priority === 'MEDIUM') setPriority(aiSuggestion.priority);
+    setAiSuggestion(null);
+  };
 
   // Auto-fetch location on component mount
   useEffect(() => {
@@ -323,6 +385,55 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
           <Text style={styles.hint}>{description.length}/1000 characters</Text>
         </View>
 
+        {/* AI Suggestion Banner */}
+        {(aiSuggesting || aiSuggestion || duplicates.length > 0) && (
+          <View style={styles.aiBanner}>
+            {aiSuggesting && (
+              <View style={styles.aiRow}>
+                <ActivityIndicator size="small" color="#7C3AED" />
+                <Text style={styles.aiText}>Analysing complaint...</Text>
+              </View>
+            )}
+
+            {!aiSuggesting && aiSuggestion && (
+              <View>
+                <View style={styles.aiRow}>
+                  <Text style={styles.aiIcon}>🤖</Text>
+                  <Text style={styles.aiLabel}>AI Suggestion</Text>
+                  <Text style={styles.aiConfidence}>
+                    {Math.round(aiSuggestion.confidence * 100)}% confident
+                  </Text>
+                </View>
+                <Text style={styles.aiText}>
+                  Category: <Text style={styles.aiHighlight}>{aiSuggestion.category}</Text>
+                  {'  '}Priority: <Text style={styles.aiHighlight}>{aiSuggestion.priority}</Text>
+                </Text>
+                <Text style={styles.aiDept}>→ {aiSuggestion.department}</Text>
+                <Pressable style={styles.aiApplyBtn} onPress={applyAiSuggestion}>
+                  <Text style={styles.aiApplyText}>Apply Suggestion</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {duplicates.length > 0 && (
+              <View style={styles.dupSection}>
+                <Text style={styles.dupTitle}>⚠️ Similar complaints found</Text>
+                {duplicates.map((d) => (
+                  <View key={d.complaintId} style={styles.dupItem}>
+                    <Text style={styles.dupItemTitle} numberOfLines={1}>{d.title}</Text>
+                    <Text style={styles.dupItemMeta}>
+                      {d.status} · {Math.round(d.similarity * 100)}% similar
+                    </Text>
+                  </View>
+                ))}
+                <Text style={styles.dupNote}>
+                  Consider checking if your issue is already reported before submitting.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Location Section */}
         <View style={styles.field}>
           <Text style={styles.label}>Location / Address</Text>
@@ -543,4 +654,33 @@ const styles = StyleSheet.create({
     width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444',
   },
   recordingText: { fontSize: 12, color: '#EF4444', fontWeight: '500' },
+
+  // AI suggestion banner
+  aiBanner: {
+    backgroundColor: '#F5F3FF', borderRadius: 12, padding: 14, marginBottom: 20,
+    borderWidth: 1, borderColor: '#DDD6FE',
+  },
+  aiRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  aiIcon: { fontSize: 16 },
+  aiLabel: { fontSize: 13, fontWeight: '700', color: '#5B21B6', flex: 1 },
+  aiConfidence: { fontSize: 11, color: '#7C3AED', fontWeight: '600' },
+  aiText: { fontSize: 13, color: '#4C1D95', marginBottom: 2 },
+  aiHighlight: { fontWeight: '700', color: '#5B21B6' },
+  aiDept: { fontSize: 12, color: '#6D28D9', marginBottom: 10 },
+  aiApplyBtn: {
+    backgroundColor: '#7C3AED', borderRadius: 8, paddingVertical: 8,
+    alignItems: 'center',
+  },
+  aiApplyText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+
+  // Duplicate warning
+  dupSection: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#DDD6FE' },
+  dupTitle: { fontSize: 13, fontWeight: '700', color: '#92400E', marginBottom: 8 },
+  dupItem: {
+    backgroundColor: '#FFFBEB', borderRadius: 8, padding: 8, marginBottom: 6,
+    borderWidth: 1, borderColor: '#FDE68A',
+  },
+  dupItemTitle: { fontSize: 12, fontWeight: '600', color: '#1E293B' },
+  dupItemMeta: { fontSize: 11, color: '#92400E', marginTop: 2 },
+  dupNote: { fontSize: 11, color: '#78716C', marginTop: 4, fontStyle: 'italic' },
 });

@@ -41,6 +41,9 @@ public class AnalyticsDashboardResponse {
     @JsonProperty("complaintsByDepartment")
     private Map<String, Long> complaintsByDepartment;
 
+    @JsonProperty("aiInsights")
+    private String aiInsights;
+
     public AnalyticsDashboardResponse() {}
 
     // Getters and Setters
@@ -76,4 +79,7 @@ public class AnalyticsDashboardResponse {
 
     public Map<String, Long> getComplaintsByDepartment() { return complaintsByDepartment; }
     public void setComplaintsByDepartment(Map<String, Long> complaintsByDepartment) { this.complaintsByDepartment = complaintsByDepartment; }
+
+    public String getAiInsights() { return aiInsights; }
+    public void setAiInsights(String aiInsights) { this.aiInsights = aiInsights; }
 }

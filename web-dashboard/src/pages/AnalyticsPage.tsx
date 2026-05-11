@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend
+  LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
+  ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
@@ -11,6 +12,9 @@ const TOOLTIP_STYLE = {
   labelStyle: { color: 'var(--text)' },
   itemStyle: { color: 'var(--accent)' },
 };
+
+interface HeatmapPoint { ward: string; count: number; lat: number; lng: number; }
+interface DeptRanking { department: string; total: number; resolutionRate: number; performance: string; rank: number; }
 
 const MONTHLY_DATA = [
   { month: 'Dec', submitted: 98, resolved: 72, escalated: 8 },
@@ -41,13 +45,25 @@ const CATEGORY_PIE = [
 export default function AnalyticsPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [loading, setLoading] = useState(false);
+  const [aiInsights, setAiInsights] = useState<string>('');
+  const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
+  const [deptRanking, setDeptRanking] = useState<DeptRanking[]>([]);
+  const [aiStatus, setAiStatus] = useState<{ llmAvailable: boolean; provider: string } | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
     setLoading(true);
-    apiGet('/analytics/dashboard', accessToken)
-      .catch(() => null)
-      .finally(() => setLoading(false));
+    Promise.allSettled([
+      apiGet<{ insights: string }>('/ai/insights?scope=all', accessToken),
+      apiGet<HeatmapPoint[]>('/analytics/heatmap', accessToken),
+      apiGet<DeptRanking[]>('/analytics/departments/ranking', accessToken),
+      apiGet<{ llmAvailable: boolean; provider: string }>('/ai/status', accessToken),
+    ]).then(([insightsRes, heatmapRes, rankingRes, statusRes]) => {
+      if (insightsRes.status === 'fulfilled') setAiInsights(insightsRes.value.insights);
+      if (heatmapRes.status === 'fulfilled') setHeatmapData(heatmapRes.value);
+      if (rankingRes.status === 'fulfilled') setDeptRanking(rankingRes.value);
+      if (statusRes.status === 'fulfilled') setAiStatus(statusRes.value);
+    }).finally(() => setLoading(false));
   }, [accessToken]);
 
   return (
@@ -198,6 +214,139 @@ export default function AnalyticsPage() {
             </table>
           </div>
         </div>
+
+        {/* AI Insights Panel */}
+        <div className="card full" style={{ background: 'linear-gradient(135deg, var(--bg-2) 0%, var(--bg-3) 100%)', border: '1px solid var(--accent-glow)' }}>
+          <div className="card-header">
+            <div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                🤖 AI Insights
+                {aiStatus && (
+                  <span style={{
+                    fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 12,
+                    background: aiStatus.llmAvailable ? 'var(--green-bg)' : 'var(--bg-3)',
+                    color: aiStatus.llmAvailable ? 'var(--green)' : 'var(--text-3)',
+                  }}>
+                    {aiStatus.provider}
+                  </span>
+                )}
+              </div>
+              <div className="card-subtitle">AI-generated analysis of current platform state</div>
+            </div>
+          </div>
+          {aiInsights ? (
+            <div style={{
+              background: 'var(--bg)', borderRadius: 8, padding: '14px 16px',
+              fontSize: '0.875rem', color: 'var(--text-2)', lineHeight: 1.7,
+              whiteSpace: 'pre-wrap', fontFamily: 'inherit',
+            }}>
+              {aiInsights}
+            </div>
+          ) : (
+            <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', padding: '8px 0' }}>
+              {loading ? 'Generating insights...' : 'No insights available. Configure CEREBRAS_API_KEY for LLM-powered insights.'}
+            </div>
+          )}
+        </div>
+
+        {/* Heatmap — Ward-level complaint distribution */}
+        {heatmapData.length > 0 && (
+          <div className="card full">
+            <div className="card-header">
+              <div>
+                <div className="card-title">Complaint Heatmap by Ward</div>
+                <div className="card-subtitle">Geographic distribution of complaints</div>
+              </div>
+            </div>
+            <div style={{ height: 280 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                  <XAxis dataKey="lng" name="Longitude" tick={{ fill: 'var(--text-3)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v.toFixed(3)} />
+                  <YAxis dataKey="lat" name="Latitude" tick={{ fill: 'var(--text-3)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v.toFixed(3)} />
+                  <ZAxis dataKey="count" range={[40, 400]} name="Complaints" />
+                  <Tooltip
+                    cursor={{ strokeDasharray: '3 3' }}
+                    contentStyle={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                    formatter={(value: number, name: string) => [value, name]}
+                  />
+                  <Scatter
+                    data={heatmapData}
+                    fill="var(--accent)"
+                    fillOpacity={0.7}
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Ward table */}
+            <div className="table-wrap" style={{ border: 'none', borderRadius: 0, marginTop: 8 }}>
+              <table>
+                <thead>
+                  <tr><th>Ward</th><th>Complaints</th><th>Volume</th></tr>
+                </thead>
+                <tbody>
+                  {[...heatmapData].sort((a, b) => b.count - a.count).map((w) => {
+                    const maxCount = Math.max(...heatmapData.map((x) => x.count));
+                    const pct = Math.round((w.count / maxCount) * 100);
+                    return (
+                      <tr key={w.ward}>
+                        <td>{w.ward}</td>
+                        <td><span style={{ fontWeight: 600, color: 'var(--accent)' }}>{w.count}</span></td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ flex: 1, height: 6, background: 'var(--bg-3)', borderRadius: 3, overflow: 'hidden', maxWidth: 120 }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent)', borderRadius: 3 }} />
+                            </div>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{pct}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Department Ranking (from real API) */}
+        {deptRanking.length > 0 && (
+          <div className="card full">
+            <div className="card-header">
+              <div>
+                <div className="card-title">Department Ranking</div>
+                <div className="card-subtitle">Ranked by resolution rate — live data</div>
+              </div>
+            </div>
+            <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Department</th><th>Total Complaints</th><th>Resolution Rate</th><th>Performance</th></tr>
+                </thead>
+                <tbody>
+                  {deptRanking.map((d) => {
+                    const perfColor = d.performance === 'Excellent' ? 'var(--green)' : d.performance === 'Good' ? 'var(--yellow)' : 'var(--red)';
+                    return (
+                      <tr key={d.department}>
+                        <td><span style={{ fontWeight: 700, color: d.rank <= 3 ? 'var(--accent)' : 'var(--text-3)' }}>#{d.rank}</span></td>
+                        <td style={{ fontWeight: 600 }}>{d.department}</td>
+                        <td className="text-muted">{d.total}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ flex: 1, height: 6, background: 'var(--bg-3)', borderRadius: 3, overflow: 'hidden', maxWidth: 100 }}>
+                              <div style={{ width: `${d.resolutionRate}%`, height: '100%', background: 'var(--accent)', borderRadius: 3 }} />
+                            </div>
+                            <span style={{ fontWeight: 600 }}>{d.resolutionRate}%</span>
+                          </div>
+                        </td>
+                        <td><span style={{ color: perfColor, fontWeight: 600, fontSize: '0.82rem' }}>{d.performance}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * REST Controller for analytics and reporting endpoints.
  */
@@ -17,39 +20,39 @@ public class AnalyticsController {
     @Autowired
     private AnalyticsService analyticsService;
 
-    /**
-     * Get dashboard metrics.
-     */
+    /** Get dashboard metrics with AI insights. */
     @GetMapping("/dashboard")
     public ResponseEntity<AnalyticsDashboardResponse> getDashboardMetrics() {
-        AnalyticsDashboardResponse metrics = analyticsService.getDashboardMetrics();
-        return ResponseEntity.ok(metrics);
+        return ResponseEntity.ok(analyticsService.getDashboardMetrics());
     }
 
-    /**
-     * Get complaints by category.
-     */
+    /** Get complaints grouped by category. */
     @GetMapping("/complaints/category")
-    public ResponseEntity<?> getComplaintsByCategory() {
-        Object result = analyticsService.getComplaintsByCategory();
-        return ResponseEntity.ok(result);
+    public ResponseEntity<Map<String, Long>> getComplaintsByCategory() {
+        return ResponseEntity.ok(analyticsService.getComplaintsByCategory());
     }
 
-    /**
-     * Get department performance.
-     */
+    /** Get department performance with ranking. */
     @GetMapping("/departments/performance")
-    public ResponseEntity<?> getDepartmentPerformance() {
-        Object result = analyticsService.getDepartmentPerformance();
-        return ResponseEntity.ok(result);
+    public ResponseEntity<List<Map<String, Object>>> getDepartmentPerformance() {
+        return ResponseEntity.ok(analyticsService.getDepartmentPerformance());
     }
 
-    /**
-     * Get resolution time analytics.
-     */
+    /** Get resolution time analytics. */
     @GetMapping("/resolution-time")
-    public ResponseEntity<?> getResolutionTimeAnalytics() {
-        Object result = analyticsService.getResolutionTimeAnalytics();
-        return ResponseEntity.ok(result);
+    public ResponseEntity<Map<String, Object>> getResolutionTimeAnalytics() {
+        return ResponseEntity.ok(analyticsService.getResolutionTimeAnalytics());
+    }
+
+    /** Get heatmap data for geographic complaint distribution. */
+    @GetMapping("/heatmap")
+    public ResponseEntity<List<Map<String, Object>>> getHeatmapData() {
+        return ResponseEntity.ok(analyticsService.getHeatmapData());
+    }
+
+    /** Get department performance ranking. */
+    @GetMapping("/departments/ranking")
+    public ResponseEntity<List<Map<String, Object>>> getDepartmentRanking() {
+        return ResponseEntity.ok(analyticsService.getDepartmentPerformance());
     }
 }
