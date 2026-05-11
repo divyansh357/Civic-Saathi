@@ -1,6 +1,8 @@
 package com.civic.modules.complaint.workflow;
 
 import com.civic.modules.complaint.entity.Complaint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -13,6 +15,8 @@ import java.util.Set;
  */
 @Component
 public class ComplaintWorkflow {
+
+    private static final Logger logger = LoggerFactory.getLogger(ComplaintWorkflow.class);
 
     /**
      * Check if a transition from currentStatus to newStatus is valid.
@@ -58,18 +62,22 @@ public class ComplaintWorkflow {
      * Apply status transition to complaint.
      */
     public void applyTransition(Complaint complaint, String newStatus) {
-        if (!isValidTransition(complaint.getStatus(), newStatus)) {
+        Complaint.ComplaintStatus currentStatus = complaint.getStatus();
+        Complaint.ComplaintStatus targetStatus = Complaint.ComplaintStatus.valueOf(newStatus.toUpperCase());
+        
+        if (!isValidTransition(currentStatus.name(), newStatus)) {
             throw new IllegalStateException(
-                "Invalid complaint status transition from " + complaint.getStatus() + " to " + newStatus
+                "Invalid complaint status transition from " + currentStatus + " to " + newStatus
             );
         }
         
-        complaint.setStatus(newStatus);
+        complaint.setStatus(targetStatus);
         complaint.setUpdatedAt(LocalDateTime.now());
         
-        // Set resolved timestamp when moving to RESOLVED or CLOSED
-        if (newStatus.equals(ComplaintStatus.RESOLVED.getValue()) || newStatus.equals(ComplaintStatus.CLOSED.getValue())) {
-            complaint.setResolvedAt(LocalDateTime.now());
+        // Note: resolvedAt is no longer stored directly on complaint
+        // This should be tracked through ComplaintStatusHistory
+        if (targetStatus == Complaint.ComplaintStatus.RESOLVED || targetStatus == Complaint.ComplaintStatus.CLOSED) {
+            logger.info("Complaint {} moved to terminal state: {}", complaint.getId(), targetStatus);
         }
     }
 

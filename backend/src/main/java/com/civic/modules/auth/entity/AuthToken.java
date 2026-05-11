@@ -2,18 +2,24 @@ package com.civic.modules.auth.entity;
 
 import com.civic.modules.user.entity.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Authentication token entity for session management.
+ * Uses native PostgreSQL uuid type for the primary key.
  */
 @Entity
 @Table(name = "auth_tokens")
 public class AuthToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -38,12 +44,13 @@ public class AuthToken {
     private boolean active = true;
 
     // Getters and Setters
+
     public String getId() {
-        return id;
+        return id != null ? id.toString() : null;
     }
 
     public void setId(String id) {
-        this.id = id;
+        this.id = id != null ? UUID.fromString(id) : null;
     }
 
     public User getUser() {
@@ -54,6 +61,7 @@ public class AuthToken {
         this.user = user;
     }
 
+    /** Convenience getter — delegates to the User relationship. */
     public String getUserId() {
         return user != null ? user.getId() : null;
     }

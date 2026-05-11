@@ -1,0 +1,82 @@
+package com.civic.modules.geography.entity;
+
+import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+/**
+ * Ward entity representing a ward within a city.
+ */
+@Entity
+@Table(name = "wards", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"city_id", "name"})
+})
+public class Ward {
+
+    @Id
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "city_id", nullable = false)
+    private City city;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    // Constructors
+    public Ward() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Getters and Setters
+    public String getId() {
+        return id != null ? id.toString() : null;
+    }
+
+    public void setId(String id) {
+        this.id = id != null ? UUID.fromString(id) : null;
+    }
+
+    public UUID getUuid() {
+        return id;
+    }
+
+    public City getCity() {
+        return city;
+    }
+
+    public void setCity(City city) {
+        this.city = city;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+}

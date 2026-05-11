@@ -3,21 +3,27 @@ package com.civic.modules.worker.entity;
 import com.civic.modules.user.entity.User;
 import com.civic.modules.department.entity.Department;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Worker entity representing government field workers.
+ * Uses native PostgreSQL uuid type for the primary key.
  */
 @Entity
 @Table(name = "workers")
 public class Worker {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -30,37 +36,43 @@ public class Worker {
     @Column(nullable = false)
     private String status; // ACTIVE, INACTIVE, ON_LEAVE
 
-    @Column
     private String specialization;
 
-    @Column
     private Double latitude;
-
-    @Column
     private Double longitude;
 
-    @Column
+    @Column(name = "complaints_assigned", nullable = false)
     private Integer complaintsAssigned = 0;
 
-    @Column
+    @Column(name = "complaints_resolved", nullable = false)
     private Integer complaintsResolved = 0;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column
+    @Column(name = "last_active_at")
     private LocalDateTime lastActiveAt;
+
+    // Constructors
+    public Worker() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 
     // Getters and Setters
     public String getId() {
-        return id;
+        return id != null ? id.toString() : null;
     }
 
     public void setId(String id) {
-        this.id = id;
+        this.id = id != null ? UUID.fromString(id) : null;
+    }
+
+    public UUID getUuid() {
+        return id;
     }
 
     public User getUser() {
@@ -165,5 +177,20 @@ public class Worker {
 
     public void setLastActiveAt(LocalDateTime lastActiveAt) {
         this.lastActiveAt = lastActiveAt;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

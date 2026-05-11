@@ -1,68 +1,97 @@
 package com.civic.modules.assignment.entity;
 
 import com.civic.modules.complaint.entity.Complaint;
-import com.civic.modules.department.entity.Department;
 import com.civic.modules.worker.entity.Worker;
+import com.civic.modules.user.entity.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Assignment entity representing the assignment of a complaint to a worker.
+ * Updated to match the database schema with proper status tracking.
  */
 @Entity
 @Table(name = "assignments")
 public class Assignment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "complaint_id", nullable = false)
     private Complaint complaint;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id", nullable = false)
-    private Department department;
+    @JoinColumn(name = "worker_id", nullable = false)
+    private Worker worker;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_worker_id")
-    private Worker assignedWorker;
+    @JoinColumn(name = "assigned_by", nullable = false)
+    private User assignedBy;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String assignmentType; // AUTO, MANUAL
+    private AssignmentStatus status = AssignmentStatus.ASSIGNED;
 
-    @Column(nullable = false)
-    private String status; // ASSIGNED, REASSIGNED, IN_PROGRESS, COMPLETED, ESCALATED
+    @Column(name = "deadline_at")
+    private LocalDateTime deadlineAt;
 
-    @Column(nullable = false)
-    private Integer priority; // 1 (Low) to 5 (Critical)
+    @Column(name = "assigned_at", nullable = false)
+    private LocalDateTime assignedAt;
 
-    @Column(nullable = false)
-    private LocalDateTime slaDeadline;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    @Column
+    @Column(name = "accepted_at")
     private LocalDateTime acceptedAt;
 
-    @Column
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    // Enum for assignment status
+    public enum AssignmentStatus {
+        ASSIGNED, ACCEPTED, REJECTED, IN_PROGRESS, COMPLETED, CANCELLED
+    }
+
+    // Constructors
+    public Assignment() {
+        this.assignedAt = LocalDateTime.now();
+    }
+
+    public Assignment(Complaint complaint, Worker worker, User assignedBy) {
+        this();
+        this.complaint = complaint;
+        this.worker = worker;
+        this.assignedBy = assignedBy;
+    }
+
     // Getters and Setters
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
+    }
+
+    // Backward compatibility method
+    @Deprecated
+    public String getIdAsString() {
+        return id != null ? id.toString() : null;
+    }
+
+    @Deprecated
+    public void setId(String id) {
+        this.id = id != null ? UUID.fromString(id) : null;
     }
 
     public Complaint getComplaint() {
@@ -74,87 +103,100 @@ public class Assignment {
     }
 
     public String getComplaintId() {
-        return complaint != null ? complaint.getId() : null;
+        return complaint != null ? complaint.getId().toString() : null;
     }
 
-    public Department getDepartment() {
-        return department;
+    public Worker getWorker() {
+        return worker;
     }
 
-    public void setDepartment(Department department) {
-        this.department = department;
+    public void setWorker(Worker worker) {
+        this.worker = worker;
     }
 
-    public String getDepartmentId() {
-        return department != null ? department.getId() : null;
-    }
-
+    // Backward compatibility method
+    @Deprecated
     public Worker getAssignedWorker() {
-        return assignedWorker;
+        return worker;
     }
 
-    public void setAssignedWorker(Worker assignedWorker) {
-        this.assignedWorker = assignedWorker;
+    @Deprecated
+    public void setAssignedWorker(Worker worker) {
+        this.worker = worker;
     }
 
+    public String getWorkerId() {
+        return worker != null ? worker.getId() : null;
+    }
+
+    @Deprecated
     public String getAssignedWorkerId() {
-        return assignedWorker != null ? assignedWorker.getId() : null;
+        return getWorkerId();
     }
 
-    public String getAssignmentType() {
-        return assignmentType;
+    public User getAssignedBy() {
+        return assignedBy;
     }
 
-    public void setAssignmentType(String assignmentType) {
-        this.assignmentType = assignmentType;
+    public void setAssignedBy(User assignedBy) {
+        this.assignedBy = assignedBy;
     }
 
-    public String getStatus() {
+    public AssignmentStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(AssignmentStatus status) {
         this.status = status;
     }
 
-    public Integer getPriority() {
-        return priority;
+    // Backward compatibility method
+    @Deprecated
+    public String getStatusAsString() {
+        return status != null ? status.name() : null;
     }
 
-    public void setPriority(Integer priority) {
-        this.priority = priority;
+    @Deprecated
+    public void setStatus(String status) {
+        this.status = status != null ? AssignmentStatus.valueOf(status.toUpperCase()) : null;
     }
 
+    public LocalDateTime getDeadlineAt() {
+        return deadlineAt;
+    }
+
+    public void setDeadlineAt(LocalDateTime deadlineAt) {
+        this.deadlineAt = deadlineAt;
+    }
+
+    // Backward compatibility method
+    @Deprecated
     public LocalDateTime getSlaDeadline() {
-        return slaDeadline;
+        return deadlineAt;
     }
 
+    @Deprecated
     public void setSlaDeadline(LocalDateTime slaDeadline) {
-        this.slaDeadline = slaDeadline;
+        this.deadlineAt = slaDeadline;
     }
 
-    public String getNotes() {
-        return notes;
+    public LocalDateTime getAssignedAt() {
+        return assignedAt;
     }
 
-    public void setNotes(String notes) {
-        this.notes = notes;
+    public void setAssignedAt(LocalDateTime assignedAt) {
+        this.assignedAt = assignedAt;
     }
 
+    // Backward compatibility method
+    @Deprecated
     public LocalDateTime getCreatedAt() {
-        return createdAt;
+        return assignedAt;
     }
 
+    @Deprecated
     public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+        this.assignedAt = createdAt;
     }
 
     public LocalDateTime getAcceptedAt() {
@@ -165,11 +207,58 @@ public class Assignment {
         this.acceptedAt = acceptedAt;
     }
 
+    public LocalDateTime getRejectedAt() {
+        return rejectedAt;
+    }
+
+    public void setRejectedAt(LocalDateTime rejectedAt) {
+        this.rejectedAt = rejectedAt;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
     public LocalDateTime getCompletedAt() {
         return completedAt;
     }
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    // Utility methods
+    public void accept() {
+        this.status = AssignmentStatus.ACCEPTED;
+        this.acceptedAt = LocalDateTime.now();
+    }
+
+    public void reject(String reason) {
+        this.status = AssignmentStatus.REJECTED;
+        this.rejectedAt = LocalDateTime.now();
+        this.rejectionReason = reason;
+    }
+
+    public void startProgress() {
+        this.status = AssignmentStatus.IN_PROGRESS;
+    }
+
+    public void complete() {
+        this.status = AssignmentStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
+    }
+
+    public void cancel() {
+        this.status = AssignmentStatus.CANCELLED;
+    }
+
+    public boolean isActive() {
+        return status == AssignmentStatus.ASSIGNED || 
+               status == AssignmentStatus.ACCEPTED || 
+               status == AssignmentStatus.IN_PROGRESS;
     }
 }

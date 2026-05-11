@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.UUID;
 
 /**
  * Service for worker management.
@@ -38,7 +40,7 @@ public class WorkerService {
      * Get worker by ID.
      */
     public WorkerResponse getWorkerById(String id) {
-        Optional<Worker> worker = workerRepository.findById(id);
+        Optional<Worker> worker = workerRepository.findById(UUID.fromString(id));
         if (worker.isPresent()) {
             return workerMapper.toResponse(worker.get());
         }
@@ -49,7 +51,7 @@ public class WorkerService {
      * Get workers by department.
      */
     public Page<WorkerResponse> getWorkersByDepartment(String departmentId, Pageable pageable) {
-        return workerRepository.findByDepartmentId(departmentId, pageable)
+        return workerRepository.findByDepartmentId(UUID.fromString(departmentId), pageable)
                 .map(workerMapper::toResponse);
     }
 
@@ -75,7 +77,7 @@ public class WorkerService {
      * Increment complaints assigned to worker.
      */
     public void incrementComplaintsAssigned(String workerId) {
-        Optional<Worker> workerOptional = workerRepository.findById(workerId);
+        Optional<Worker> workerOptional = workerRepository.findById(UUID.fromString(workerId));
         if (workerOptional.isPresent()) {
             Worker worker = workerOptional.get();
             worker.setComplaintsAssigned(worker.getComplaintsAssigned() + 1);
@@ -87,9 +89,10 @@ public class WorkerService {
      * Delete a worker.
      */
     public void deleteWorker(String id) {
-        if (!workerRepository.existsById(id)) {
+        UUID uuid = UUID.fromString(id);
+        if (!workerRepository.existsById(uuid)) {
             throw new RuntimeException("Worker not found with ID: " + id);
         }
-        workerRepository.deleteById(id);
+        workerRepository.deleteById(uuid);
     }
 }

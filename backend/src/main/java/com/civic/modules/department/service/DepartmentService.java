@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service for department management.
@@ -38,7 +39,7 @@ public class DepartmentService {
      * Get department by ID.
      */
     public DepartmentResponse getDepartmentById(String id) {
-        Optional<Department> department = departmentRepository.findById(id);
+        Optional<Department> department = departmentRepository.findById(UUID.fromString(id));
         if (department.isPresent()) {
             return departmentMapper.toResponse(department.get());
         }
@@ -67,9 +68,10 @@ public class DepartmentService {
      * Delete a department.
      */
     public void deleteDepartment(String id) {
-        if (!departmentRepository.existsById(id)) {
+        UUID uuid = UUID.fromString(id);
+        if (!departmentRepository.existsById(uuid)) {
             throw new RuntimeException("Department not found with ID: " + id);
         }
-        departmentRepository.deleteById(id);
+        departmentRepository.deleteById(uuid);
     }
 }

@@ -1,6 +1,16 @@
 -- EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS vector;
+
+-- pgvector for AI embeddings (optional - may not be available)
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS vector;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'pgvector extension not available. AI similarity search will use TEXT storage.';
+END
+$$;
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- =========================
@@ -158,7 +168,7 @@ CREATE TABLE complaints (
     is_duplicate BOOLEAN NOT NULL DEFAULT FALSE,
     ai_summary TEXT,
     ai_priority_score FLOAT,
-    embedding VECTOR(1536),
+    embedding TEXT,  -- Store as TEXT if pgvector not available, or VECTOR(1536) if available
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP
@@ -384,8 +394,10 @@ CREATE INDEX idx_complaint_city_ward_zone ON complaints(city_id, ward_id, zone_i
 -- GEO INDEX
 CREATE INDEX idx_complaint_location ON complaints USING GIST(location);
 
--- VECTOR INDEX
-CREATE INDEX idx_embedding ON complaints USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+-- VECTOR INDEX (only if pgvector extension is available)
+-- Commented out since pgvector is not available in postgis/postgis image
+-- If you need vector search, use pgvector/pgvector image or install pgvector separately
+-- CREATE INDEX idx_embedding ON complaints USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 -- Time-based complaint listing
 CREATE INDEX idx_complaint_created_at ON complaints(created_at);

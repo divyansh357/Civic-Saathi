@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service for notification management.
@@ -56,7 +57,7 @@ public class NotificationService {
      * Mark notification as read.
      */
     public NotificationResponse markAsRead(String notificationId) {
-        Optional<Notification> notificationOptional = notificationRepository.findById(notificationId);
+        Optional<Notification> notificationOptional = notificationRepository.findById(UUID.fromString(notificationId));
         if (notificationOptional.isPresent()) {
             Notification notification = notificationOptional.get();
             notification.setRead(true);

@@ -11,11 +11,11 @@ import org.springframework.stereotype.Component;
 public class NotificationMapper {
     public NotificationResponse toResponse(Notification notification) {
         NotificationResponse response = new NotificationResponse();
-        response.setId(notification.getId());
+        response.setId(notification.getId().toString());
         response.setTitle(notification.getTitle());
         response.setMessage(notification.getMessage());
-        response.setType(notification.getType());
-        response.setRead(notification.isRead());
+        response.setType(notification.getNotificationType() != null ? notification.getNotificationType().getName() : null);
+        response.setRead(notification.getIsRead() != null ? notification.getIsRead() : false);
         response.setCreatedAt(notification.getCreatedAt());
         return response;
     }

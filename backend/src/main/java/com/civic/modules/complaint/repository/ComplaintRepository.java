@@ -10,12 +10,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * JPA repository for Complaint entity.
  */
 @Repository
-public interface ComplaintRepository extends JpaRepository<Complaint, String> {
+public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
 
     /**
      * Find all complaints by user ID.

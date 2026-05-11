@@ -10,12 +10,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Repository for Department entity.
  */
 @Repository
-public interface DepartmentRepository extends JpaRepository<Department, String> {
+public interface DepartmentRepository extends JpaRepository<Department, UUID> {
     Optional<Department> findByNameIgnoreCase(String name);
     Page<Department> findByActive(boolean active, Pageable pageable);
     Page<Department> findByCategoryType(String categoryType, Pageable pageable);

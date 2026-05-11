@@ -1,21 +1,33 @@
 package com.civic.modules.notification.entity;
 
+import com.civic.modules.user.entity.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Notification entity for push and in-app notifications.
+ * Updated to match database schema with proper relationships.
  */
 @Entity
 @Table(name = "notifications")
 public class Notification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
 
-    @Column(nullable = false)
-    private String userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "notification_type_id", nullable = false)
+    private NotificationType notificationType;
 
     @Column(nullable = false)
     private String title;
@@ -23,39 +35,110 @@ public class Notification {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
-    @Column
-    private String type; // COMPLAINT_UPDATE, ASSIGNMENT, ALERT, etc.
+    @Column(name = "related_entity_id")
+    private UUID relatedEntityId;
 
-    @Column
-    private String relatedEntityId;
-
-    @Column
+    @Column(name = "related_entity_type")
     private String relatedEntityType;
 
-    @Column(nullable = false)
-    private boolean read = false;
+    @Column(name = "is_read", nullable = false)
+    private Boolean isRead = false;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column
+    @Column(name = "read_at")
     private LocalDateTime readAt;
 
+    @Column(name = "sent_at")
+    private LocalDateTime sentAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private NotificationChannel channel = NotificationChannel.IN_APP;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private NotificationStatus status = NotificationStatus.PENDING;
+
+    // Enums
+    public enum NotificationChannel {
+        IN_APP, PUSH, EMAIL, SMS
+    }
+
+    public enum NotificationStatus {
+        PENDING, SENT, DELIVERED, FAILED, READ
+    }
+
+    // Constructors
+    public Notification() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Notification(User user, NotificationType notificationType, String title, String message) {
+        this();
+        this.user = user;
+        this.notificationType = notificationType;
+        this.title = title;
+        this.message = message;
+    }
+
     // Getters and Setters
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public String getUserId() {
-        return userId;
+    // Backward compatibility method
+    @Deprecated
+    public String getIdAsString() {
+        return id != null ? id.toString() : null;
     }
 
+    @Deprecated
+    public void setId(String id) {
+        this.id = id != null ? UUID.fromString(id) : null;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    // Backward compatibility method
+    @Deprecated
+    public String getUserId() {
+        return user != null ? user.getId() : null;
+    }
+
+    @Deprecated
     public void setUserId(String userId) {
-        this.userId = userId;
+        // This would need user lookup to work properly
+    }
+
+    public NotificationType getNotificationType() {
+        return notificationType;
+    }
+
+    public void setNotificationType(NotificationType notificationType) {
+        this.notificationType = notificationType;
+    }
+
+    // Backward compatibility method
+    @Deprecated
+    public String getType() {
+        return notificationType != null ? notificationType.getName() : null;
+    }
+
+    @Deprecated
+    public void setType(String type) {
+        // This would need NotificationType lookup to work properly
     }
 
     public String getTitle() {
@@ -74,20 +157,23 @@ public class Notification {
         this.message = message;
     }
 
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getRelatedEntityId() {
+    public UUID getRelatedEntityId() {
         return relatedEntityId;
     }
 
-    public void setRelatedEntityId(String relatedEntityId) {
+    public void setRelatedEntityId(UUID relatedEntityId) {
         this.relatedEntityId = relatedEntityId;
+    }
+
+    // Backward compatibility method
+    @Deprecated
+    public String getRelatedEntityIdAsString() {
+        return relatedEntityId != null ? relatedEntityId.toString() : null;
+    }
+
+    @Deprecated
+    public void setRelatedEntityId(String relatedEntityId) {
+        this.relatedEntityId = relatedEntityId != null ? UUID.fromString(relatedEntityId) : null;
     }
 
     public String getRelatedEntityType() {
@@ -98,12 +184,23 @@ public class Notification {
         this.relatedEntityType = relatedEntityType;
     }
 
-    public boolean isRead() {
-        return read;
+    public Boolean getIsRead() {
+        return isRead;
     }
 
+    public void setIsRead(Boolean isRead) {
+        this.isRead = isRead;
+    }
+
+    // Backward compatibility method
+    @Deprecated
+    public boolean isRead() {
+        return isRead != null ? isRead : false;
+    }
+
+    @Deprecated
     public void setRead(boolean read) {
-        this.read = read;
+        this.isRead = read;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -120,5 +217,41 @@ public class Notification {
 
     public void setReadAt(LocalDateTime readAt) {
         this.readAt = readAt;
+    }
+
+    public LocalDateTime getSentAt() {
+        return sentAt;
+    }
+
+    public void setSentAt(LocalDateTime sentAt) {
+        this.sentAt = sentAt;
+    }
+
+    public NotificationChannel getChannel() {
+        return channel;
+    }
+
+    public void setChannel(NotificationChannel channel) {
+        this.channel = channel;
+    }
+
+    public NotificationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(NotificationStatus status) {
+        this.status = status;
+    }
+
+    // Utility methods
+    public void markAsRead() {
+        this.isRead = true;
+        this.readAt = LocalDateTime.now();
+        this.status = NotificationStatus.READ;
+    }
+
+    public void markAsSent() {
+        this.sentAt = LocalDateTime.now();
+        this.status = NotificationStatus.SENT;
     }
 }

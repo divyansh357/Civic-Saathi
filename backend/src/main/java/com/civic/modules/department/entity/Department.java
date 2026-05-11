@@ -1,56 +1,69 @@
 package com.civic.modules.department.entity;
 
+import com.civic.modules.geography.entity.City;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Department entity representing government departments.
+ * Uses native PostgreSQL uuid type for the primary key.
  */
 @Entity
 @Table(name = "departments")
 public class Department {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
 
-    @Column(nullable = false)
+    @Column(unique = true, nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column
     private String email;
-
-    @Column
     private String phone;
-
-    @Column
     private String address;
 
-    @Column
-    private String city;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "city_id")
+    private City city;
 
-    @Column
-    private String categoryType; // e.g., WATER, ELECTRICITY, ROADS, etc.
-
-    @Column(nullable = false)
-    private boolean active = true;
+    @Column(name = "category_type")
+    private String categoryType;
 
     @Column(nullable = false)
+    private Boolean active = true;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Constructors
+    public Department() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 
     // Getters and Setters
     public String getId() {
-        return id;
+        return id != null ? id.toString() : null;
     }
 
     public void setId(String id) {
-        this.id = id;
+        this.id = id != null ? UUID.fromString(id) : null;
+    }
+
+    public UUID getUuid() {
+        return id;
     }
 
     public String getName() {
@@ -93,11 +106,11 @@ public class Department {
         this.address = address;
     }
 
-    public String getCity() {
+    public City getCity() {
         return city;
     }
 
-    public void setCity(String city) {
+    public void setCity(City city) {
         this.city = city;
     }
 
@@ -109,12 +122,16 @@ public class Department {
         this.categoryType = categoryType;
     }
 
-    public boolean isActive() {
+    public Boolean getActive() {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public boolean isActive() {
+        return active != null && active;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -131,5 +148,20 @@ public class Department {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

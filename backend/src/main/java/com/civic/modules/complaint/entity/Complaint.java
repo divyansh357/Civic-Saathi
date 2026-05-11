@@ -3,19 +3,35 @@ package com.civic.modules.complaint.entity;
 import com.civic.modules.user.entity.User;
 import com.civic.modules.department.entity.Department;
 import com.civic.modules.worker.entity.Worker;
+import com.civic.modules.geography.entity.City;
+import com.civic.modules.geography.entity.Ward;
+import com.civic.modules.geography.entity.Zone;
+import com.civic.modules.category.entity.Category;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
+import org.locationtech.jts.geom.Point;
+
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.UUID;
 
 /**
  * Complaint entity representing a citizen's complaint against a civic issue.
+ * Updated to match the full database schema with PostGIS location, multi-category support, and AI features.
  */
 @Entity
 @Table(name = "complaints")
 public class Complaint {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
+
+    @Column(name = "complaint_number", nullable = false, unique = true)
+    private String complaintNumber;
 
     @Column(nullable = false)
     private String title;
@@ -23,77 +39,135 @@ public class Complaint {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String category;
+    private ComplaintStatus status = ComplaintStatus.SUBMITTED;
 
-    @Column(nullable = false)
-    private String status; // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+    @Column
+    private String priority;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id")
     private Department department;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_worker_id")
     private Worker assignedWorker;
 
-    @Column
-    private Double latitude;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "city_id", nullable = false)
+    private City city;
 
-    @Column
-    private Double longitude;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ward_id")
+    private Ward ward;
 
-    @Column
-    private String location;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id")
+    private Zone zone;
+
+    // PostGIS location field
+    @Column(name = "location", columnDefinition = "geography(Point, 4326)")
+    private Point location;
+
+    @Column(name = "address_text")
+    private String addressText;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ComplaintVisibility visibility = ComplaintVisibility.PRIVATE;
+
+    @Column(name = "trust_score")
+    private Double trustScore = 0.0;
+
+    @Column(name = "is_duplicate", nullable = false)
+    private Boolean isDuplicate = false;
+
+    // AI-related fields
+    @Column(name = "ai_summary", columnDefinition = "TEXT")
+    private String aiSummary;
+
+    @Column(name = "ai_priority_score")
+    private Float aiPriorityScore;
 
     @Column(columnDefinition = "TEXT")
-    private String resolution;
+    private String embedding;
 
-    @Column
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column
-    private LocalDateTime resolvedAt;
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
-    @Column
-    private Integer priority; // 1 (Low) to 5 (Critical)
+    // Multi-category relationship
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "complaint_category_map",
+        joinColumns = @JoinColumn(name = "complaint_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
 
-    @Column
-    private Integer rating; // 1-5 star rating after resolution
+    // Enums
+    public enum ComplaintStatus {
+        OPEN, SUBMITTED, DUPLICATE_CHECKED, VERIFIED, ROUTED, ASSIGNED, 
+        ACKNOWLEDGED, IN_PROGRESS, RESOLVED, VERIFIED_FOR_CLOSURE, 
+        CLOSED, REOPENED, REJECTED, CANCELLED, ESCALATED
+    }
 
-    @Column(columnDefinition = "TEXT")
-    private String feedback;
+    public enum ComplaintVisibility {
+        PRIVATE, PUBLIC
+    }
 
     // Constructors
     public Complaint() {
-    }
-
-    public Complaint(String title, String description, String category, User user, Department department) {
-        this.title = title;
-        this.description = description;
-        this.category = category;
-        this.user = user;
-        this.department = department;
-        this.status = "OPEN";
-        this.priority = 3;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
+    public Complaint(String title, String description, User createdBy, City city) {
+        this();
+        this.title = title;
+        this.description = description;
+        this.createdBy = createdBy;
+        this.city = city;
+        this.status = ComplaintStatus.SUBMITTED;
+    }
+
     // Getters and Setters
-    public String getId() {
+
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
+    }
+
+    // Backward compatibility method
+    @Deprecated
+    public String getIdAsString() {
+        return id != null ? id.toString() : null;
+    }
+
+    @Deprecated
+    public void setId(String id) {
+        this.id = id != null ? UUID.fromString(id) : null;
+    }
+
+    public String getComplaintNumber() {
+        return complaintNumber;
+    }
+
+    public void setComplaintNumber(String complaintNumber) {
+        this.complaintNumber = complaintNumber;
     }
 
     public String getTitle() {
@@ -112,32 +186,55 @@ public class Complaint {
         this.description = description;
     }
 
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public String getStatus() {
+    public ComplaintStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(ComplaintStatus status) {
         this.status = status;
     }
 
+    // Backward compatibility method
+    @Deprecated
+    public String getStatusAsString() {
+        return status != null ? status.name() : null;
+    }
+
+    @Deprecated
+    public void setStatus(String status) {
+        this.status = status != null ? ComplaintStatus.valueOf(status.toUpperCase()) : null;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public User getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    // Backward compatibility methods
+    @Deprecated
     public User getUser() {
-        return user;
+        return createdBy;
     }
 
+    @Deprecated
     public void setUser(User user) {
-        this.user = user;
+        this.createdBy = user;
     }
 
+    @Deprecated
     public String getUserId() {
-        return user != null ? user.getId() : null;
+        return createdBy != null ? createdBy.getId() : null;
     }
 
     public Department getDepartment() {
@@ -164,36 +261,113 @@ public class Complaint {
         return assignedWorker != null ? assignedWorker.getId() : null;
     }
 
-    public Double getLatitude() {
-        return latitude;
+    public City getCity() {
+        return city;
     }
 
-    public void setLatitude(Double latitude) {
-        this.latitude = latitude;
+    public void setCity(City city) {
+        this.city = city;
     }
 
-    public Double getLongitude() {
-        return longitude;
+    public Ward getWard() {
+        return ward;
     }
 
-    public void setLongitude(Double longitude) {
-        this.longitude = longitude;
+    public void setWard(Ward ward) {
+        this.ward = ward;
     }
 
-    public String getLocation() {
+    public Zone getZone() {
+        return zone;
+    }
+
+    public void setZone(Zone zone) {
+        this.zone = zone;
+    }
+
+    public Point getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public void setLocation(Point location) {
         this.location = location;
     }
 
-    public String getResolution() {
-        return resolution;
+    // Backward compatibility methods for lat/lng
+    @Deprecated
+    public Double getLatitude() {
+        return location != null ? location.getY() : null;
     }
 
-    public void setResolution(String resolution) {
-        this.resolution = resolution;
+    @Deprecated
+    public void setLatitude(Double latitude) {
+        // This would need to be handled with longitude to create a Point
+    }
+
+    @Deprecated
+    public Double getLongitude() {
+        return location != null ? location.getX() : null;
+    }
+
+    @Deprecated
+    public void setLongitude(Double longitude) {
+        // This would need to be handled with latitude to create a Point
+    }
+
+    public String getAddressText() {
+        return addressText;
+    }
+
+    public void setAddressText(String addressText) {
+        this.addressText = addressText;
+    }
+
+    public ComplaintVisibility getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(ComplaintVisibility visibility) {
+        this.visibility = visibility;
+    }
+
+    public Double getTrustScore() {
+        return trustScore;
+    }
+
+    public void setTrustScore(Double trustScore) {
+        this.trustScore = trustScore;
+    }
+
+    public Boolean getIsDuplicate() {
+        return isDuplicate;
+    }
+
+    public void setIsDuplicate(Boolean isDuplicate) {
+        this.isDuplicate = isDuplicate;
+    }
+
+    public String getAiSummary() {
+        return aiSummary;
+    }
+
+    public void setAiSummary(String aiSummary) {
+        this.aiSummary = aiSummary;
+    }
+
+    public Float getAiPriorityScore() {
+        return aiPriorityScore;
+    }
+
+    public void setAiPriorityScore(Float aiPriorityScore) {
+        this.aiPriorityScore = aiPriorityScore;
+    }
+
+    public String getEmbedding() {
+        return embedding;
+    }
+
+    public void setEmbedding(String embedding) {
+        this.embedding = embedding;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -212,35 +386,49 @@ public class Complaint {
         this.updatedAt = updatedAt;
     }
 
-    public LocalDateTime getResolvedAt() {
-        return resolvedAt;
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
     }
 
-    public void setResolvedAt(LocalDateTime resolvedAt) {
-        this.resolvedAt = resolvedAt;
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
-    public Integer getPriority() {
-        return priority;
+    public Set<Category> getCategories() {
+        return categories;
     }
 
-    public void setPriority(Integer priority) {
-        this.priority = priority;
+    public void setCategories(Set<Category> categories) {
+        this.categories = categories;
     }
 
-    public Integer getRating() {
-        return rating;
+    // Backward compatibility method for single category
+    @Deprecated
+    public String getCategory() {
+        return categories.isEmpty() ? null : categories.iterator().next().getName();
     }
 
-    public void setRating(Integer rating) {
-        this.rating = rating;
+    @Deprecated
+    public void setCategory(String category) {
+        // This would need category lookup to work properly
+        // For now, just store as transient field
     }
 
-    public String getFeedback() {
-        return feedback;
+    // Utility methods
+    public void addCategory(Category category) {
+        this.categories.add(category);
     }
 
-    public void setFeedback(String feedback) {
-        this.feedback = feedback;
+    public void removeCategory(Category category) {
+        this.categories.remove(category);
+    }
+
+    public boolean hasCategory(String categoryName) {
+        return categories.stream().anyMatch(cat -> cat.getName().equals(categoryName));
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

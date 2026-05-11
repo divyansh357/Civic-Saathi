@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service for authentication operations.
@@ -151,7 +152,7 @@ public class AuthService {
 
         String refreshedUserId = requiredUserId(storedToken.getUserId());
 
-        User user = userRepository.findById(Objects.requireNonNull(refreshedUserId))
+        User user = userRepository.findById(UUID.fromString(Objects.requireNonNull(refreshedUserId)))
             .orElseThrow(() -> new InactiveUserException("User account is inactive"));
 
         if (!user.isActive()) {
@@ -183,7 +184,7 @@ public class AuthService {
     public AuthenticatedUserResponse getCurrentUserById(String userId) {
         String requiredUserId = requiredUserId(userId);
 
-        User user = userRepository.findById(Objects.requireNonNull(requiredUserId))
+        User user = userRepository.findById(UUID.fromString(Objects.requireNonNull(requiredUserId)))
                 .orElseThrow(() -> new InactiveUserException("User account is inactive"));
 
         if (!user.isActive()) {
@@ -216,7 +217,7 @@ public class AuthService {
 
     private void revokeActiveRefreshTokens(String userId) {
         List<AuthToken> activeRefreshTokens = authTokenRepository
-                .findAllByUserIdAndTokenTypeAndActiveTrue(userId, REFRESH_TOKEN_TYPE);
+                .findAllByUserIdAndTokenTypeAndActiveTrue(UUID.fromString(userId), REFRESH_TOKEN_TYPE);
 
         for (AuthToken activeToken : activeRefreshTokens) {
             revokeStoredToken(activeToken);

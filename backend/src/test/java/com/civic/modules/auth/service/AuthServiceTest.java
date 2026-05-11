@@ -22,6 +22,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -58,6 +60,7 @@ class AuthServiceTest {
         request.setPassword("password");
 
         User user = buildUser("user-1", "citizen@civic.com", "encoded-password", "CITIZEN", true);
+        String userId = user.getId(); // Get the actual UUID string
 
         AuthResponse expected = new AuthResponse();
         expected.setAccessToken("access-token");
@@ -66,11 +69,11 @@ class AuthServiceTest {
         when(userRepository.findByEmailIgnoreCase("citizen@civic.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(authTokenRepository.findAllByUserIdAndTokenTypeAndActiveTrue("user-1", "REFRESH"))
+        when(authTokenRepository.findAllByUserIdAndTokenTypeAndActiveTrue(UUID.fromString(userId), "REFRESH"))
                 .thenReturn(Collections.emptyList());
-        when(jwtTokenProvider.generateAccessToken("user-1", "citizen@civic.com", "CITIZEN"))
+        when(jwtTokenProvider.generateAccessToken(userId, "citizen@civic.com", "CITIZEN"))
                 .thenReturn("access-token");
-        when(jwtTokenProvider.generateRefreshToken("user-1")).thenReturn("refresh-token");
+        when(jwtTokenProvider.generateRefreshToken(userId)).thenReturn("refresh-token");
         when(jwtTokenProvider.getRefreshTokenExpiresAt()).thenReturn(LocalDateTime.now().plusDays(7));
         when(jwtTokenProvider.getAccessTokenExpirySeconds()).thenReturn(900L);
         when(authTokenRepository.save(any(AuthToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -108,6 +111,7 @@ class AuthServiceTest {
         request.setRole("citizen");
 
         User savedUser = buildUser("user-2", "citizen@civic.com", "encoded-password", "CITIZEN", true);
+        String userId = savedUser.getId(); // Get the actual UUID string
 
         AuthResponse expected = new AuthResponse();
         expected.setAccessToken("access-token");
@@ -117,9 +121,9 @@ class AuthServiceTest {
         when(userRepository.findByPhone("9999999999")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtTokenProvider.generateAccessToken("user-2", "citizen@civic.com", "CITIZEN"))
+        when(jwtTokenProvider.generateAccessToken(userId, "citizen@civic.com", "CITIZEN"))
                 .thenReturn("access-token");
-        when(jwtTokenProvider.generateRefreshToken("user-2")).thenReturn("refresh-token");
+        when(jwtTokenProvider.generateRefreshToken(userId)).thenReturn("refresh-token");
         when(jwtTokenProvider.getRefreshTokenExpiresAt()).thenReturn(LocalDateTime.now().plusDays(7));
         when(jwtTokenProvider.getAccessTokenExpirySeconds()).thenReturn(900L);
         when(authMapper.toAuthResponse("access-token", "refresh-token", savedUser, 900L)).thenReturn(expected);
@@ -165,6 +169,7 @@ class AuthServiceTest {
     @SuppressWarnings("null")
     void refreshTokenShouldRotateToken() {
         User user = buildUser("user-1", "citizen@civic.com", "encoded-password", "CITIZEN", true);
+        String userId = user.getId(); // Get the actual UUID string
 
         AuthToken storedRefreshToken = new AuthToken();
         storedRefreshToken.setUser(user);
@@ -180,11 +185,11 @@ class AuthServiceTest {
         when(jwtTokenProvider.validateToken("refresh-token-old")).thenReturn(true);
         when(authTokenRepository.findByTokenAndActiveTrue("refresh-token-old"))
                 .thenReturn(Optional.of(storedRefreshToken));
-        when(jwtTokenProvider.getUserIdFromToken("refresh-token-old")).thenReturn("user-1");
-        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
-        when(jwtTokenProvider.generateAccessToken("user-1", "citizen@civic.com", "CITIZEN"))
+        when(jwtTokenProvider.getUserIdFromToken("refresh-token-old")).thenReturn(userId);
+        when(userRepository.findById(UUID.fromString(userId))).thenReturn(Optional.of(user));
+        when(jwtTokenProvider.generateAccessToken(userId, "citizen@civic.com", "CITIZEN"))
                 .thenReturn("access-token-new");
-        when(jwtTokenProvider.generateRefreshToken("user-1")).thenReturn("refresh-token-new");
+        when(jwtTokenProvider.generateRefreshToken(userId)).thenReturn("refresh-token-new");
         when(jwtTokenProvider.getRefreshTokenExpiresAt()).thenReturn(LocalDateTime.now().plusDays(7));
         when(jwtTokenProvider.getAccessTokenExpirySeconds()).thenReturn(900L);
         when(authTokenRepository.save(any(AuthToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -200,7 +205,9 @@ class AuthServiceTest {
 
     private User buildUser(String id, String email, String passwordHash, String role, boolean active) {
         User user = new User();
-        user.setId(id);
+        // Generate a valid UUID from the string ID for testing
+        UUID uuid = UUID.nameUUIDFromBytes(id.getBytes());
+        user.setId(uuid.toString());
         user.setEmail(email);
         user.setPasswordHash(passwordHash);
         user.setRole(role);

@@ -11,30 +11,31 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Repository for Assignment entity.
  */
 @Repository
-public interface AssignmentRepository extends JpaRepository<Assignment, String> {
+public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 
     /**
      * Find assignment by complaint ID.
      */
     @Query("SELECT a FROM Assignment a WHERE a.complaint.id = :complaintId")
-    Optional<Assignment> findByComplaintId(@Param("complaintId") String complaintId);
+    Optional<Assignment> findByComplaintId(@Param("complaintId") UUID complaintId);
 
     /**
      * Find assignments by department ID.
      */
     @Query("SELECT a FROM Assignment a WHERE a.department.id = :departmentId")
-    Page<Assignment> findByDepartmentId(@Param("departmentId") String departmentId, Pageable pageable);
+    Page<Assignment> findByDepartmentId(@Param("departmentId") UUID departmentId, Pageable pageable);
 
     /**
      * Find assignments by worker ID.
      */
     @Query("SELECT a FROM Assignment a WHERE a.assignedWorker.id = :workerId")
-    Page<Assignment> findByAssignedWorkerId(@Param("workerId") String workerId, Pageable pageable);
+    Page<Assignment> findByAssignedWorkerId(@Param("workerId") UUID workerId, Pageable pageable);
 
     /**
      * Find assignments by status.
@@ -56,13 +57,13 @@ public interface AssignmentRepository extends JpaRepository<Assignment, String> 
      * Count assignments by department.
      */
     @Query("SELECT COUNT(a) FROM Assignment a WHERE a.department.id = :departmentId")
-    long countByDepartmentId(@Param("departmentId") String departmentId);
+    long countByDepartmentId(@Param("departmentId") UUID departmentId);
 
     /**
      * Count assignments by worker.
      */
     @Query("SELECT COUNT(a) FROM Assignment a WHERE a.assignedWorker.id = :workerId")
-    long countByAssignedWorkerId(@Param("workerId") String workerId);
+    long countByAssignedWorkerId(@Param("workerId") UUID workerId);
 
     /**
      * Count assignments by status.

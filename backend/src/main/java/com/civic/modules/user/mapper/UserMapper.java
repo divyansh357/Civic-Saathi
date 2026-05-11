@@ -15,8 +15,8 @@ public class UserMapper {
         response.setName(user.getName());
         response.setEmail(user.getEmail());
         response.setPhone(user.getPhone());
-        response.setRole(user.getRole());
-        response.setCity(user.getCity());
+        response.setRole(user.getRole()); // Uses deprecated method for backward compatibility
+        response.setCity(user.getCity() != null ? user.getCity().getName() : null); // Convert City entity to String
         response.setProfilePictureUrl(user.getProfilePictureUrl());
         response.setVerified(user.isVerified());
         return response;

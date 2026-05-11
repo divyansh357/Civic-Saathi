@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service for user management.
@@ -30,7 +31,7 @@ public class UserService {
      * Get user by ID.
      */
     public UserResponse getUserById(String id) {
-        Optional<User> user = userRepository.findById(id);
+        Optional<User> user = userRepository.findById(UUID.fromString(id));
         if (user.isPresent()) {
             return userMapper.toResponse(user.get());
         }
@@ -60,7 +61,7 @@ public class UserService {
      * Update user profile.
      */
     public UserResponse updateUserProfile(String id, User updateData) {
-        Optional<User> userOptional = userRepository.findById(id);
+        Optional<User> userOptional = userRepository.findById(UUID.fromString(id));
         if (userOptional.isEmpty()) {
             throw new RuntimeException("User not found with ID: " + id);
         }
@@ -80,9 +81,10 @@ public class UserService {
      * Delete user.
      */
     public void deleteUser(String id) {
-        if (!userRepository.existsById(id)) {
+        UUID uuid = UUID.fromString(id);
+        if (!userRepository.existsById(uuid)) {
             throw new RuntimeException("User not found with ID: " + id);
         }
-        userRepository.deleteById(id);
+        userRepository.deleteById(uuid);
     }
 }

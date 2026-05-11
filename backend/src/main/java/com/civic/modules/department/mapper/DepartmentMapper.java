@@ -16,7 +16,7 @@ public class DepartmentMapper {
         response.setDescription(department.getDescription());
         response.setEmail(department.getEmail());
         response.setPhone(department.getPhone());
-        response.setCity(department.getCity());
+        response.setCity(department.getCity() != null ? department.getCity().getName() : null);
         response.setCategoryType(department.getCategoryType());
         response.setActive(department.isActive());
         return response;
