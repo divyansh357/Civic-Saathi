@@ -7,6 +7,10 @@ export interface User {
 	phone?: string;
 	role: UserRole;
 	cityId?: string;
+	city?: string;
+	status?: string;
+	verified?: boolean;
+	profilePictureUrl?: string;
 }
 
 export interface AuthTokens {

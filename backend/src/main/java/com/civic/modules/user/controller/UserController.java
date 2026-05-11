@@ -21,6 +21,35 @@ public class UserController {
     private UserService userService;
 
     /**
+     * Get current user's own profile (uses JWT identity).
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMyProfile(@RequestHeader("User-Id") String userId) {
+        UserResponse response = userService.getUserById(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Update current user's own profile.
+     */
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateMyProfile(
+            @RequestHeader("User-Id") String userId,
+            @RequestBody User updateData) {
+        UserResponse response = userService.updateUserProfile(userId, updateData);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get all users (admin only).
+     */
+    @GetMapping
+    public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+        Page<UserResponse> users = userService.getAllUsers(pageable);
+        return ResponseEntity.ok(users);
+    }
+
+    /**
      * Get user by ID.
      */
     @GetMapping("/{id}")

@@ -23,6 +23,38 @@ public class ComplaintController {
     private ComplaintService complaintService;
 
     /**
+     * Get public complaints (transparency module — no auth required).
+     */
+    @GetMapping("/public")
+    public ResponseEntity<Page<ComplaintResponse>> getPublicComplaints(Pageable pageable) {
+        Page<ComplaintResponse> complaints = complaintService.getComplaintsByStatus("SUBMITTED", pageable);
+        return ResponseEntity.ok(complaints);
+    }
+
+    /**
+     * Search complaints by keyword.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<ComplaintResponse>> searchComplaints(
+            @RequestParam String q,
+            Pageable pageable) {
+        Page<ComplaintResponse> complaints = complaintService.searchComplaints(q, pageable);
+        return ResponseEntity.ok(complaints);
+    }
+
+    /**
+     * Get all complaints (officer/admin view with optional filters).
+     */
+    @GetMapping
+    public ResponseEntity<Page<ComplaintResponse>> getAllComplaints(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        Page<ComplaintResponse> complaints = complaintService.getAllComplaints(status, search, pageable);
+        return ResponseEntity.ok(complaints);
+    }
+
+    /**
      * Create a new complaint.
      */
     @PostMapping

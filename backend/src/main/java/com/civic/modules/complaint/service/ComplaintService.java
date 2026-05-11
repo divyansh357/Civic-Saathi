@@ -43,6 +43,30 @@ public class ComplaintService {
     @Autowired
     private ComplaintWorkflow complaintWorkflow;
 
+    /**
+     * Get all complaints with optional status/search filters.
+     */
+    @Transactional(readOnly = true)
+    public Page<ComplaintResponse> getAllComplaints(String status, String search, Pageable pageable) {
+        if (search != null && !search.isBlank()) {
+            return complaintRepository.searchComplaints(search.trim(), pageable)
+                .map(complaintMapper::toResponse);
+        }
+        if (status != null && !status.isBlank()) {
+            return complaintRepository.findByStatus(status, pageable)
+                .map(complaintMapper::toResponse);
+        }
+        return complaintRepository.findAll(pageable).map(complaintMapper::toResponse);
+    }
+
+    /**
+     * Search complaints by keyword.
+     */
+    @Transactional(readOnly = true)
+    public Page<ComplaintResponse> searchComplaints(String query, Pageable pageable) {
+        return complaintRepository.searchComplaints(query, pageable).map(complaintMapper::toResponse);
+    }
+
     /** Create a new complaint. */
     public ComplaintResponse createComplaint(CreateComplaintRequest request, String userId) {
         Complaint complaint = complaintMapper.toEntity(request, userId);

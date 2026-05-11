@@ -28,6 +28,14 @@ public class UserService {
     private UserMapper userMapper;
 
     /**
+     * Get all users (paginated).
+     */
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable).map(userMapper::toResponse);
+    }
+
+    /**
      * Get user by ID.
      */
     public UserResponse getUserById(String id) {

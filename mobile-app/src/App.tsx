@@ -20,6 +20,7 @@ import HomeScreen from '@screens/citizen/HomeScreen';
 import NewComplaintScreen from '@screens/citizen/NewComplaintScreen';
 import ComplaintDetailScreen from '@screens/citizen/ComplaintDetailScreen';
 import FeedbackScreen from '@screens/citizen/FeedbackScreen';
+import ProfileScreen from '@screens/citizen/ProfileScreen';
 
 // Worker screens
 import WorkerHomeScreen from '@screens/worker/WorkerHomeScreen';
@@ -30,7 +31,7 @@ import NotificationsScreen from '@screens/NotificationsScreen';
 // ─── Screen types ─────────────────────────────────────────────────────────────
 
 type AuthScreen = 'login' | 'signup';
-type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail' | 'notifications' | 'feedback';
+type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail' | 'notifications' | 'feedback' | 'profile';
 type WorkerScreen = 'home' | 'notifications';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -184,6 +185,7 @@ export default function App() {
             setCitizenScreen('complaint-detail');
           }}
           onNavigateToNotifications={() => setCitizenScreen('notifications')}
+          onNavigateToProfile={() => setCitizenScreen('profile')}
         />
       )}
 
@@ -215,6 +217,10 @@ export default function App() {
 
       {citizenScreen === 'notifications' && (
         <NotificationsScreen onBack={() => setCitizenScreen('home')} />
+      )}
+
+      {citizenScreen === 'profile' && (
+        <ProfileScreen onBack={() => setCitizenScreen('home')} />
       )}
     </SafeAreaView>
   );

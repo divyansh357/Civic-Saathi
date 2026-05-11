@@ -191,6 +191,69 @@ public class AssignmentService {
     }
 
     /**
+     * Worker acknowledges an assignment.
+     */
+    public AssignmentResponse acknowledgeAssignment(String assignmentId) {
+        Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
+            .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+        assignment.accept();
+        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+    }
+
+    /**
+     * Worker starts working on an assignment.
+     */
+    public AssignmentResponse startAssignment(String assignmentId) {
+        Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
+            .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+        assignment.startProgress();
+        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+    }
+
+    /**
+     * Worker completes an assignment.
+     */
+    public AssignmentResponse completeAssignment(String assignmentId, String notes) {
+        Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
+            .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+        assignment.complete();
+
+        // Update complaint to RESOLVED
+        Complaint complaint = assignment.getComplaint();
+        complaint.setStatus(Complaint.ComplaintStatus.RESOLVED);
+        complaint.setResolvedAt(LocalDateTime.now());
+        complaint.setUpdatedAt(LocalDateTime.now());
+        complaintRepository.save(complaint);
+
+        // Update worker resolved count
+        Worker worker = assignment.getWorker();
+        if (worker != null) {
+            worker.setComplaintsResolved(worker.getComplaintsResolved() + 1);
+            workerRepository.save(worker);
+        }
+
+        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+    }
+
+    /**
+     * Worker rejects an assignment.
+     */
+    public AssignmentResponse rejectAssignment(String assignmentId, String reason) {
+        Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
+            .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+        assignment.reject(reason);
+        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+    }
+
+    /**
+     * Get all assignments (paginated).
+     */
+    @Transactional(readOnly = true)
+    public Page<AssignmentResponse> getAllAssignments(Pageable pageable) {
+        return assignmentRepository.findAll(pageable).map(assignmentMapper::toResponse);
+    }
+
+    /**
      * Get assignments by department.
      */
     public Page<AssignmentResponse> getAssignmentsByDepartment(String departmentId, Pageable pageable) {

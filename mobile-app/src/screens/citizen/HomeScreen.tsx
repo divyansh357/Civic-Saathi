@@ -69,9 +69,10 @@ interface HomeScreenProps {
   onNewComplaint: () => void;
   onComplaintDetail: (complaint: Complaint) => void;
   onNavigateToNotifications: () => void;
+  onNavigateToProfile: () => void;
 }
 
-export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNavigateToNotifications }: HomeScreenProps) {
+export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNavigateToNotifications, onNavigateToProfile }: HomeScreenProps) {
   const user = useAuthStore((s) => s.user);
   const { complaints, setComplaints, isLoading, setLoading } = useComplaintStore();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -115,7 +116,12 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
     >
       {/* Greeting */}
       <View style={styles.greeting}>
-        <View>
+        <Pressable style={styles.avatarBtn} onPress={onNavigateToProfile}>
+          <Text style={styles.avatarText}>
+            {(user?.name ?? 'U').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+          </Text>
+        </Pressable>
+        <View style={{ flex: 1 }}>
           <Text style={styles.greetingText}>Hello, {user?.name?.split(' ')[0] ?? 'Citizen'} 👋</Text>
           <Text style={styles.greetingSubtext}>Report civic issues in your area</Text>
         </View>
@@ -175,9 +181,14 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6FA' },
   content: { padding: 16, paddingBottom: 32 },
-  greeting: { marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  greetingText: { fontSize: 22, fontWeight: '700', color: '#0F172A' },
-  greetingSubtext: { fontSize: 14, color: '#64748B', marginTop: 2 },
+  greeting: { marginBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatarBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#0F766E',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  greetingText: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  greetingSubtext: { fontSize: 13, color: '#64748B', marginTop: 1 },
   notificationBtn: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF',
     alignItems: 'center', justifyContent: 'center',

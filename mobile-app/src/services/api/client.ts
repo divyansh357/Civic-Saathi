@@ -95,3 +95,18 @@ export function apiPost<TResponse, TBody = unknown>(
 ): Promise<TResponse> {
   return request<TResponse>(path, { method: 'POST', body, accessToken });
 }
+
+export function apiPut<TResponse, TBody = unknown>(
+  path: string,
+  body?: TBody,
+  accessToken?: string
+): Promise<TResponse> {
+  return request<TResponse>(path, { method: 'PUT', body, accessToken });
+}
+
+export function apiDelete<TResponse>(
+  path: string,
+  accessToken?: string
+): Promise<TResponse> {
+  return request<TResponse>(path, { method: 'DELETE', accessToken });
+}

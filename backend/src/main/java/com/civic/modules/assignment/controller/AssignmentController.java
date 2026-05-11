@@ -152,6 +152,70 @@ public class AssignmentController {
     }
 
     /**
+     * Worker acknowledges an assignment.
+     */
+    @PostMapping("/{assignmentId}/acknowledge")
+    @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> acknowledgeAssignment(@PathVariable String assignmentId) {
+        AssignmentResponse assignment = assignmentService.acknowledgeAssignment(assignmentId);
+        return ResponseEntity.ok(Map.of("status", "success", "data", assignment));
+    }
+
+    /**
+     * Worker starts working on an assignment.
+     */
+    @PostMapping("/{assignmentId}/start")
+    @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> startAssignment(@PathVariable String assignmentId) {
+        AssignmentResponse assignment = assignmentService.startAssignment(assignmentId);
+        return ResponseEntity.ok(Map.of("status", "success", "data", assignment));
+    }
+
+    /**
+     * Worker completes an assignment.
+     */
+    @PostMapping("/{assignmentId}/complete")
+    @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> completeAssignment(
+            @PathVariable String assignmentId,
+            @RequestBody(required = false) Map<String, String> body) {
+        String notes = body != null ? body.get("notes") : null;
+        AssignmentResponse assignment = assignmentService.completeAssignment(assignmentId, notes);
+        return ResponseEntity.ok(Map.of("status", "success", "data", assignment));
+    }
+
+    /**
+     * Worker rejects an assignment.
+     */
+    @PostMapping("/{assignmentId}/reject")
+    @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> rejectAssignment(
+            @PathVariable String assignmentId,
+            @RequestBody(required = false) Map<String, String> body) {
+        String reason = body != null ? body.getOrDefault("reason", "Rejected by worker") : "Rejected by worker";
+        AssignmentResponse assignment = assignmentService.rejectAssignment(assignmentId, reason);
+        return ResponseEntity.ok(Map.of("status", "success", "data", assignment));
+    }
+
+    /**
+     * Get all assignments (admin/officer view).
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> getAllAssignments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("assignedAt").descending());
+        Page<AssignmentResponse> assignments = assignmentService.getAllAssignments(pageable);
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "data", assignments.getContent(),
+            "totalItems", assignments.getTotalElements(),
+            "totalPages", assignments.getTotalPages()
+        ));
+    }
+
+    /**
      * Trigger escalation for overdue assignments.
      */
     @PostMapping("/escalate-overdue")
