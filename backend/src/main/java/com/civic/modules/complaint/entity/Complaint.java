@@ -106,6 +106,18 @@ public class Complaint {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "sla_deadline")
+    private LocalDateTime slaDeadline;
+
+    @Column(name = "escalated_at")
+    private LocalDateTime escalatedAt;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
+    @Column(name = "closed_at")
+    private LocalDateTime closedAt;
+
     // Multi-category relationship
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -392,6 +404,43 @@ public class Complaint {
 
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public LocalDateTime getSlaDeadline() {
+        return slaDeadline;
+    }
+
+    public void setSlaDeadline(LocalDateTime slaDeadline) {
+        this.slaDeadline = slaDeadline;
+    }
+
+    public LocalDateTime getEscalatedAt() {
+        return escalatedAt;
+    }
+
+    public void setEscalatedAt(LocalDateTime escalatedAt) {
+        this.escalatedAt = escalatedAt;
+    }
+
+    public LocalDateTime getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public void setResolvedAt(LocalDateTime resolvedAt) {
+        this.resolvedAt = resolvedAt;
+    }
+
+    public LocalDateTime getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(LocalDateTime closedAt) {
+        this.closedAt = closedAt;
+    }
+
+    public boolean isSlaBreached() {
+        return slaDeadline != null && LocalDateTime.now().isAfter(slaDeadline)
+            && status != ComplaintStatus.RESOLVED && status != ComplaintStatus.CLOSED;
     }
 
     public Set<Category> getCategories() {

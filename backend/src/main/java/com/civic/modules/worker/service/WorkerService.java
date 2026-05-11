@@ -74,6 +74,30 @@ public class WorkerService {
     }
 
     /**
+     * Update an existing worker.
+     */
+    public WorkerResponse updateWorker(String id, Worker updates) {
+        Worker worker = workerRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Worker not found: " + id));
+        if (updates.getDesignation() != null) worker.setDesignation(updates.getDesignation());
+        if (updates.getSpecialization() != null) worker.setSpecialization(updates.getSpecialization());
+        worker.setUpdatedAt(LocalDateTime.now());
+        return workerMapper.toResponse(workerRepository.save(worker));
+    }
+
+    /**
+     * Toggle worker availability (ACTIVE ↔ INACTIVE).
+     */
+    public WorkerResponse toggleAvailability(String id) {
+        Worker worker = workerRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Worker not found: " + id));
+        String newStatus = "ACTIVE".equals(worker.getStatus()) ? "INACTIVE" : "ACTIVE";
+        worker.setStatus(newStatus);
+        worker.setUpdatedAt(LocalDateTime.now());
+        return workerMapper.toResponse(workerRepository.save(worker));
+    }
+
+    /**
      * Increment complaints assigned to worker.
      */
     public void incrementComplaintsAssigned(String workerId) {

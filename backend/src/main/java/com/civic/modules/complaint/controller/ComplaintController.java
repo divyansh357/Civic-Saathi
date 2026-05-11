@@ -87,6 +87,27 @@ public class ComplaintController {
     }
 
     /**
+     * Escalate a complaint manually.
+     */
+    @PostMapping("/{id}/escalate")
+    public ResponseEntity<ComplaintResponse> escalateComplaint(
+            @PathVariable String id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.getOrDefault("reason", "Manual escalation") : "Manual escalation";
+        ComplaintResponse response = complaintService.escalateComplaint(id, reason);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Trigger auto-escalation of SLA-breached complaints (admin/scheduler).
+     */
+    @PostMapping("/escalate/sla-breached")
+    public ResponseEntity<java.util.Map<String, Object>> autoEscalateSlaBreached() {
+        int count = complaintService.autoEscalateSlaBreached();
+        return ResponseEntity.ok(java.util.Map.of("escalated", count));
+    }
+
+    /**
      * Submit feedback for a complaint.
      */
     @PostMapping("/{id}/feedback")

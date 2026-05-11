@@ -60,6 +60,17 @@ public class DepartmentController {
     }
 
     /**
+     * Update a department.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<DepartmentResponse> updateDepartment(
+            @PathVariable String id,
+            @RequestBody Department department) {
+        DepartmentResponse response = departmentService.updateDepartment(id, department);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Delete a department.
      */
     @DeleteMapping("/{id}")

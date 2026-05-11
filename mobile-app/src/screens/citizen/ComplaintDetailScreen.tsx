@@ -1,4 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { useState } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, Pressable,
+  Alert, ActivityIndicator, TextInput
+} from 'react-native';
+import { useAuthStore } from '@store/index';
+import { apiPost } from '@services/api/client';
 import { Complaint } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -20,20 +26,55 @@ const STATUS_ORDER = ['SUBMITTED', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOL
 
 function formatDate(iso?: string) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
 }
 
 interface Props {
   complaint: Complaint;
   onBack: () => void;
+  onFeedback?: (complaint: Complaint) => void;
 }
 
-export default function ComplaintDetailScreen({ complaint, onBack }: Props) {
+export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }: Props) {
+  const accessToken = useAuthStore((s) => s.accessToken);
   const color = STATUS_COLORS[complaint.status] ?? '#64748b';
   const currentStep = STATUS_ORDER.indexOf(complaint.status);
+  const [reopening, setReopening] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+  const [showReopenForm, setShowReopenForm] = useState(false);
+
+  const canRequestFeedback = complaint.status === 'RESOLVED' || complaint.status === 'CLOSED';
+  const canReopen = complaint.status === 'RESOLVED' || complaint.status === 'CLOSED';
+
+  const handleReopenRequest = async () => {
+    if (!reopenReason.trim()) {
+      Alert.alert('Reason Required', 'Please provide a reason for reopening this complaint.');
+      return;
+    }
+    if (!accessToken) return;
+    setReopening(true);
+    try {
+      await apiPost(
+        '/reopen-requests',
+        { complaintId: complaint.id, reason: reopenReason.trim() },
+        accessToken
+      );
+      Alert.alert('Request Submitted', 'Your reopen request has been submitted for review.');
+      setShowReopenForm(false);
+      setReopenReason('');
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to submit reopen request.');
+    } finally {
+      setReopening(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backIcon}>←</Text>
@@ -142,16 +183,68 @@ export default function ComplaintDetailScreen({ complaint, onBack }: Props) {
           </View>
         </View>
 
-        {/* Resolved state */}
-        {complaint.status === 'RESOLVED' && (
-          <View style={[styles.card, { borderColor: '#34d39940', backgroundColor: '#f0fdf9' }]}>
-            <Text style={{ fontSize: 24, textAlign: 'center', marginBottom: 8 }}>🎉</Text>
-            <Text style={{ textAlign: 'center', fontWeight: '700', color: '#065f46', fontSize: 15 }}>
-              Issue Resolved!
+        {/* Resolved — feedback CTA */}
+        {canRequestFeedback && (
+          <View style={[styles.card, styles.resolvedCard]}>
+            <Text style={styles.resolvedEmoji}>🎉</Text>
+            <Text style={styles.resolvedTitle}>Issue Resolved!</Text>
+            <Text style={styles.resolvedSubtitle}>
+              This complaint has been resolved. How was your experience?
             </Text>
-            <Text style={{ textAlign: 'center', color: '#047857', fontSize: 13, marginTop: 4 }}>
-              This complaint has been successfully resolved. Thank you for reporting.
+            {onFeedback && (
+              <Pressable style={styles.feedbackBtn} onPress={() => onFeedback(complaint)}>
+                <Text style={styles.feedbackBtnText}>⭐ Rate Resolution</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {/* Reopen request */}
+        {canReopen && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Not satisfied?</Text>
+            <Text style={styles.reopenSubtitle}>
+              If the issue was not properly resolved, you can request to reopen it.
             </Text>
+            {!showReopenForm ? (
+              <Pressable style={styles.reopenBtn} onPress={() => setShowReopenForm(true)}>
+                <Text style={styles.reopenBtnText}>🔄 Request Reopen</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.reopenForm}>
+                <Text style={styles.reopenFormLabel}>Reason for reopening</Text>
+                <TextInput
+                  style={styles.reopenTextAreaInput}
+                  placeholder="Describe why the issue needs to be reopened..."
+                  placeholderTextColor="#94A3B8"
+                  value={reopenReason}
+                  onChangeText={setReopenReason}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  maxLength={500}
+                />
+                <View style={styles.reopenActions}>
+                  <Pressable
+                    style={styles.cancelBtn}
+                    onPress={() => { setShowReopenForm(false); setReopenReason(''); }}
+                  >
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.submitReopenBtn, !reopenReason.trim() && styles.submitReopenBtnDisabled]}
+                    onPress={() => void handleReopenRequest()}
+                    disabled={!reopenReason.trim() || reopening}
+                  >
+                    {reopening ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.submitReopenBtnText}>Submit Request</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -170,7 +263,7 @@ const styles = StyleSheet.create({
   backIcon: { fontSize: 20, color: '#0F172A' },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#0F172A' },
   scroll: { flex: 1 },
-  content: { padding: 16, gap: 12, paddingBottom: 32 },
+  content: { padding: 16, gap: 12, paddingBottom: 40 },
   statusBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     padding: 12, borderRadius: 10, borderWidth: 1,
@@ -187,7 +280,7 @@ const styles = StyleSheet.create({
   tagsRow: { flexDirection: 'row', gap: 8 },
   tag: { backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   tagText: { fontSize: 11, fontWeight: '600', color: '#475569' },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: '#0F172A', marginBottom: 14 },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: '#0F172A', marginBottom: 10 },
   timeline: { gap: 0 },
   timelineItem: { flexDirection: 'row', gap: 12 },
   timelineLeft: { alignItems: 'center', width: 28 },
@@ -208,4 +301,37 @@ const styles = StyleSheet.create({
   detailRow: { marginBottom: 12 },
   detailLabel: { fontSize: 11, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 },
   detailValue: { fontSize: 14, color: '#1E293B', lineHeight: 20 },
+  // Resolved card
+  resolvedCard: { borderColor: '#34d39940', backgroundColor: '#f0fdf9' },
+  resolvedEmoji: { fontSize: 22, textAlign: 'center', marginBottom: 6 },
+  resolvedTitle: { textAlign: 'center', fontWeight: '700', color: '#065f46', fontSize: 15, marginBottom: 4 },
+  resolvedSubtitle: { textAlign: 'center', color: '#047857', fontSize: 13, marginBottom: 14 },
+  feedbackBtn: {
+    backgroundColor: '#0F766E', borderRadius: 10, paddingVertical: 12, alignItems: 'center',
+  },
+  feedbackBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  // Reopen
+  reopenSubtitle: { fontSize: 13, color: '#64748B', marginBottom: 12, lineHeight: 18 },
+  reopenBtn: {
+    backgroundColor: '#FEF3C7', borderRadius: 10, paddingVertical: 12,
+    alignItems: 'center', borderWidth: 1, borderColor: '#FDE68A',
+  },
+  reopenBtnText: { fontSize: 14, fontWeight: '600', color: '#92400E' },
+  reopenForm: { gap: 10 },
+  reopenFormLabel: { fontSize: 13, fontWeight: '600', color: '#334155' },
+  reopenTextAreaInput: {
+    backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 14, color: '#0F172A', minHeight: 80,
+  },
+  reopenActions: { flexDirection: 'row', gap: 10 },
+  cancelBtn: {
+    flex: 1, backgroundColor: '#F1F5F9', borderRadius: 10, paddingVertical: 12, alignItems: 'center',
+  },
+  cancelBtnText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  submitReopenBtn: {
+    flex: 2, backgroundColor: '#0F766E', borderRadius: 10, paddingVertical: 12, alignItems: 'center',
+  },
+  submitReopenBtnDisabled: { backgroundColor: '#94A3B8' },
+  submitReopenBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });

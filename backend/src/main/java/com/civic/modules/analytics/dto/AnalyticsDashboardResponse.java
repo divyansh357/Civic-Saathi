@@ -1,11 +1,13 @@
 package com.civic.modules.analytics.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 
 /**
- * Analytics dashboard DTO.
+ * Analytics dashboard DTO — full Level B response.
  */
 public class AnalyticsDashboardResponse {
+
     @JsonProperty("totalComplaints")
     private long totalComplaints;
 
@@ -15,8 +17,14 @@ public class AnalyticsDashboardResponse {
     @JsonProperty("resolvedComplaints")
     private long resolvedComplaints;
 
+    @JsonProperty("escalatedComplaints")
+    private long escalatedComplaints;
+
     @JsonProperty("averageResolutionTime")
     private double averageResolutionTime;
+
+    @JsonProperty("slaBreachRate")
+    private double slaBreachRate;
 
     @JsonProperty("departments")
     private long departments;
@@ -27,63 +35,45 @@ public class AnalyticsDashboardResponse {
     @JsonProperty("citySatisfactionScore")
     private double citySatisfactionScore;
 
-    public AnalyticsDashboardResponse() {
-    }
+    @JsonProperty("complaintsByStatus")
+    private Map<String, Long> complaintsByStatus;
+
+    @JsonProperty("complaintsByDepartment")
+    private Map<String, Long> complaintsByDepartment;
+
+    public AnalyticsDashboardResponse() {}
 
     // Getters and Setters
-    public long getTotalComplaints() {
-        return totalComplaints;
-    }
+    public long getTotalComplaints() { return totalComplaints; }
+    public void setTotalComplaints(long totalComplaints) { this.totalComplaints = totalComplaints; }
 
-    public void setTotalComplaints(long totalComplaints) {
-        this.totalComplaints = totalComplaints;
-    }
+    public long getOpenComplaints() { return openComplaints; }
+    public void setOpenComplaints(long openComplaints) { this.openComplaints = openComplaints; }
 
-    public long getOpenComplaints() {
-        return openComplaints;
-    }
+    public long getResolvedComplaints() { return resolvedComplaints; }
+    public void setResolvedComplaints(long resolvedComplaints) { this.resolvedComplaints = resolvedComplaints; }
 
-    public void setOpenComplaints(long openComplaints) {
-        this.openComplaints = openComplaints;
-    }
+    public long getEscalatedComplaints() { return escalatedComplaints; }
+    public void setEscalatedComplaints(long escalatedComplaints) { this.escalatedComplaints = escalatedComplaints; }
 
-    public long getResolvedComplaints() {
-        return resolvedComplaints;
-    }
+    public double getAverageResolutionTime() { return averageResolutionTime; }
+    public void setAverageResolutionTime(double averageResolutionTime) { this.averageResolutionTime = averageResolutionTime; }
 
-    public void setResolvedComplaints(long resolvedComplaints) {
-        this.resolvedComplaints = resolvedComplaints;
-    }
+    public double getSlaBreachRate() { return slaBreachRate; }
+    public void setSlaBreachRate(double slaBreachRate) { this.slaBreachRate = slaBreachRate; }
 
-    public double getAverageResolutionTime() {
-        return averageResolutionTime;
-    }
+    public long getDepartments() { return departments; }
+    public void setDepartments(long departments) { this.departments = departments; }
 
-    public void setAverageResolutionTime(double averageResolutionTime) {
-        this.averageResolutionTime = averageResolutionTime;
-    }
+    public long getWorkers() { return workers; }
+    public void setWorkers(long workers) { this.workers = workers; }
 
-    public long getDepartments() {
-        return departments;
-    }
+    public double getCitySatisfactionScore() { return citySatisfactionScore; }
+    public void setCitySatisfactionScore(double citySatisfactionScore) { this.citySatisfactionScore = citySatisfactionScore; }
 
-    public void setDepartments(long departments) {
-        this.departments = departments;
-    }
+    public Map<String, Long> getComplaintsByStatus() { return complaintsByStatus; }
+    public void setComplaintsByStatus(Map<String, Long> complaintsByStatus) { this.complaintsByStatus = complaintsByStatus; }
 
-    public long getWorkers() {
-        return workers;
-    }
-
-    public void setWorkers(long workers) {
-        this.workers = workers;
-    }
-
-    public double getCitySatisfactionScore() {
-        return citySatisfactionScore;
-    }
-
-    public void setCitySatisfactionScore(double citySatisfactionScore) {
-        this.citySatisfactionScore = citySatisfactionScore;
-    }
+    public Map<String, Long> getComplaintsByDepartment() { return complaintsByDepartment; }
+    public void setComplaintsByDepartment(Map<String, Long> complaintsByDepartment) { this.complaintsByDepartment = complaintsByDepartment; }
 }

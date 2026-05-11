@@ -18,12 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Service layer for complaint management.
- * Handles business logic and data persistence.
  */
 @Service
 @Transactional
@@ -43,144 +43,153 @@ public class ComplaintService {
     @Autowired
     private ComplaintWorkflow complaintWorkflow;
 
-    /**
-     * Create a new complaint.
-     */
+    /** Create a new complaint. */
     public ComplaintResponse createComplaint(CreateComplaintRequest request, String userId) {
         Complaint complaint = complaintMapper.toEntity(request, userId);
-        Complaint savedComplaint = complaintRepository.save(complaint);
-        return complaintMapper.toResponse(savedComplaint);
+        // Set SLA deadline based on priority (hours): 1=CRITICAL, 2=HIGH, 3=MEDIUM, 4=LOW
+        int priorityVal = request.getPriority() != null ? request.getPriority() : 3;
+        int slaHours = switch (priorityVal) {
+            case 1  -> 4;   // CRITICAL
+            case 2  -> 24;  // HIGH
+            case 4  -> 168; // LOW (7 days)
+            default -> 48;  // MEDIUM
+        };
+        complaint.setSlaDeadline(LocalDateTime.now().plusHours(slaHours));
+        Complaint saved = complaintRepository.save(complaint);
+        return complaintMapper.toResponse(saved);
     }
 
-    /**
-     * Get complaint by ID.
-     */
+    /** Get complaint by ID. */
+    @Transactional(readOnly = true)
     public ComplaintResponse getComplaintById(String id) {
-        Optional<Complaint> complaint = complaintRepository.findById(UUID.fromString(id));
-        if (complaint.isPresent()) {
-            return complaintMapper.toResponse(complaint.get());
-        }
-        throw new RuntimeException("Complaint not found with ID: " + id);
+        return complaintRepository.findById(UUID.fromString(id))
+            .map(complaintMapper::toResponse)
+            .orElseThrow(() -> new RuntimeException("Complaint not found: " + id));
     }
 
-    /**
-     * Get all complaints for a user.
-     */
+    /** Get all complaints for a user. */
+    @Transactional(readOnly = true)
     public Page<ComplaintResponse> getComplaintsByUserId(String userId, Pageable pageable) {
-        return complaintRepository.findByUserId(userId, pageable)
-                .map(complaintMapper::toResponse);
+        return complaintRepository.findByUserId(userId, pageable).map(complaintMapper::toResponse);
     }
 
-    /**
-     * Get all complaints for a department.
-     */
+    /** Get all complaints for a department. */
+    @Transactional(readOnly = true)
     public Page<ComplaintResponse> getComplaintsByDepartmentId(String departmentId, Pageable pageable) {
-        return complaintRepository.findByDepartmentId(departmentId, pageable)
-                .map(complaintMapper::toResponse);
+        return complaintRepository.findByDepartmentId(departmentId, pageable).map(complaintMapper::toResponse);
     }
 
-    /**
-     * Get all complaints with a specific status.
-     */
+    /** Get all complaints with a specific status. */
+    @Transactional(readOnly = true)
     public Page<ComplaintResponse> getComplaintsByStatus(String status, Pageable pageable) {
-        return complaintRepository.findByStatus(status, pageable)
-                .map(complaintMapper::toResponse);
+        return complaintRepository.findByStatus(status, pageable).map(complaintMapper::toResponse);
     }
 
-    /**
-     * Update complaint status with workflow validation.
-     */
+    /** Update complaint status with workflow validation. */
     public ComplaintResponse updateComplaintStatus(String id, UpdateComplaintStatusRequest request) {
-        Optional<Complaint> complaintOptional = complaintRepository.findById(UUID.fromString(id));
-        if (complaintOptional.isEmpty()) {
-            throw new RuntimeException("Complaint not found with ID: " + id);
-        }
+        Complaint complaint = complaintRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Complaint not found: " + id));
 
-        Complaint complaint = complaintOptional.get();
-
-        // Apply workflow transition
         complaintWorkflow.applyTransition(complaint, request.getStatus());
 
-        // Update additional fields if provided
-        // Note: Resolution is now handled through ComplaintStatusHistory or separate resolution tracking
-        if (request.getResolution() != null) {
-            // For now, we can store resolution info in a comment or status history
-            // This would need to be implemented with the new entity structure
-            logger.info("Resolution provided for complaint {}: {}", complaint.getId(), request.getResolution());
+        // Track timestamps for key transitions
+        Complaint.ComplaintStatus newStatus = complaint.getStatus();
+        if (newStatus == Complaint.ComplaintStatus.RESOLVED) {
+            complaint.setResolvedAt(LocalDateTime.now());
+        } else if (newStatus == Complaint.ComplaintStatus.CLOSED) {
+            complaint.setClosedAt(LocalDateTime.now());
+        } else if (newStatus == Complaint.ComplaintStatus.ESCALATED) {
+            complaint.setEscalatedAt(LocalDateTime.now());
         }
 
         if (request.getAssignedWorkerId() != null) {
             Worker worker = workerRepository.findById(UUID.fromString(request.getAssignedWorkerId()))
-                    .orElseThrow(() -> new RuntimeException("Worker not found with ID: " + request.getAssignedWorkerId()));
+                .orElseThrow(() -> new RuntimeException("Worker not found: " + request.getAssignedWorkerId()));
             complaint.setAssignedWorker(worker);
         }
 
-        Complaint updatedComplaint = complaintRepository.save(complaint);
-        return complaintMapper.toResponse(updatedComplaint);
+        return complaintMapper.toResponse(complaintRepository.save(complaint));
     }
 
-    /**
-     * Add feedback and rating to resolved complaint.
-     * Note: This method should be updated to use the new Feedback entity
-     */
-    public ComplaintResponse submitFeedback(String id, Integer rating, String feedback) {
-        Optional<Complaint> complaintOptional = complaintRepository.findById(UUID.fromString(id));
-        if (complaintOptional.isEmpty()) {
-            throw new RuntimeException("Complaint not found with ID: " + id);
+    /** Escalate a complaint (SLA breach or manual). */
+    public ComplaintResponse escalateComplaint(String id, String reason) {
+        Complaint complaint = complaintRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Complaint not found: " + id));
+
+        if (!complaintWorkflow.canEscalate(complaint.getStatus())) {
+            throw new IllegalStateException("Complaint cannot be escalated from status: " + complaint.getStatus());
         }
 
-        Complaint complaint = complaintOptional.get();
-        
-        // TODO: Create a Feedback entity instead of storing directly on complaint
-        // For now, just update the complaint timestamp
-        complaint.setUpdatedAt(LocalDateTime.now());
-        
-        logger.info("Feedback submitted for complaint {}: rating={}, feedback={}", id, rating, feedback);
-
-        Complaint updatedComplaint = complaintRepository.save(complaint);
-        return complaintMapper.toResponse(updatedComplaint);
+        complaintWorkflow.applyTransition(complaint, "ESCALATED");
+        complaint.setEscalatedAt(LocalDateTime.now());
+        logger.info("Complaint {} escalated. Reason: {}", id, reason);
+        return complaintMapper.toResponse(complaintRepository.save(complaint));
     }
 
-    /**
-     * Delete a complaint.
-     */
+    /** Auto-escalate all SLA-breached complaints. */
+    public int autoEscalateSlaBreached() {
+        List<Complaint> breached = complaintRepository.findSlaBreachedComplaints(LocalDateTime.now());
+        int count = 0;
+        for (Complaint c : breached) {
+            if (complaintWorkflow.canEscalate(c.getStatus())) {
+                c.setStatus(Complaint.ComplaintStatus.ESCALATED);
+                c.setEscalatedAt(LocalDateTime.now());
+                c.setUpdatedAt(LocalDateTime.now());
+                complaintRepository.save(c);
+                count++;
+            }
+        }
+        logger.info("Auto-escalated {} SLA-breached complaints", count);
+        return count;
+    }
+
+    /** Submit feedback for a complaint (delegates to FeedbackService — kept for backward compat). */
+    public ComplaintResponse submitFeedback(String id, Integer rating, String feedback) {
+        Complaint complaint = complaintRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Complaint not found: " + id));
+        complaint.setUpdatedAt(LocalDateTime.now());
+        logger.info("Feedback for complaint {}: rating={}", id, rating);
+        return complaintMapper.toResponse(complaintRepository.save(complaint));
+    }
+
+    /** Delete a complaint. */
     public void deleteComplaint(String id) {
         UUID uuid = UUID.fromString(id);
         if (!complaintRepository.existsById(uuid)) {
-            throw new RuntimeException("Complaint not found with ID: " + id);
+            throw new RuntimeException("Complaint not found: " + id);
         }
         complaintRepository.deleteById(uuid);
     }
 
-    /**
-     * Get complaint statistics.
-     */
+    /** Get complaint statistics. */
+    @Transactional(readOnly = true)
     public ComplaintStatistics getStatistics() {
-        long openCount = complaintRepository.countByStatus("OPEN");
-        long inProgressCount = complaintRepository.countByStatus("IN_PROGRESS");
-        long resolvedCount = complaintRepository.countByStatus("RESOLVED");
-        long closedCount = complaintRepository.countByStatus("CLOSED");
-        long totalCount = openCount + inProgressCount + resolvedCount + closedCount;
-
-        return new ComplaintStatistics(openCount, inProgressCount, resolvedCount, closedCount, totalCount);
+        long open = complaintRepository.countByStatus("SUBMITTED")
+                  + complaintRepository.countByStatus("VERIFIED")
+                  + complaintRepository.countByStatus("ASSIGNED");
+        long inProgress = complaintRepository.countByStatus("IN_PROGRESS");
+        long resolved = complaintRepository.countByStatus("RESOLVED");
+        long closed = complaintRepository.countByStatus("CLOSED");
+        long escalated = complaintRepository.countByStatus("ESCALATED");
+        long total = complaintRepository.count();
+        return new ComplaintStatistics(open, inProgress, resolved, closed, escalated, total);
     }
 
-    /**
-     * Statistics DTO for complaints.
-     */
     public static class ComplaintStatistics {
         public long openCount;
         public long inProgressCount;
         public long resolvedCount;
         public long closedCount;
+        public long escalatedCount;
         public long totalCount;
 
-        public ComplaintStatistics(long openCount, long inProgressCount, long resolvedCount, long closedCount, long totalCount) {
-            this.openCount = openCount;
-            this.inProgressCount = inProgressCount;
-            this.resolvedCount = resolvedCount;
-            this.closedCount = closedCount;
-            this.totalCount = totalCount;
+        public ComplaintStatistics(long open, long inProgress, long resolved, long closed, long escalated, long total) {
+            this.openCount = open;
+            this.inProgressCount = inProgress;
+            this.resolvedCount = resolved;
+            this.closedCount = closed;
+            this.escalatedCount = escalated;
+            this.totalCount = total;
         }
     }
 }

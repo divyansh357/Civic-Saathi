@@ -19,6 +19,7 @@ import SignupScreen from '@screens/auth/SignupScreen';
 import HomeScreen from '@screens/citizen/HomeScreen';
 import NewComplaintScreen from '@screens/citizen/NewComplaintScreen';
 import ComplaintDetailScreen from '@screens/citizen/ComplaintDetailScreen';
+import FeedbackScreen from '@screens/citizen/FeedbackScreen';
 
 // Worker screens
 import WorkerHomeScreen from '@screens/worker/WorkerHomeScreen';
@@ -29,7 +30,7 @@ import NotificationsScreen from '@screens/NotificationsScreen';
 // ─── Screen types ─────────────────────────────────────────────────────────────
 
 type AuthScreen = 'login' | 'signup';
-type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail' | 'notifications';
+type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail' | 'notifications' | 'feedback';
 type WorkerScreen = 'home' | 'notifications';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -197,6 +198,18 @@ export default function App() {
         <ComplaintDetailScreen
           complaint={selectedComplaint}
           onBack={() => setCitizenScreen('home')}
+          onFeedback={(c) => {
+            setSelectedComplaint(c);
+            setCitizenScreen('feedback');
+          }}
+        />
+      )}
+
+      {citizenScreen === 'feedback' && selectedComplaint && (
+        <FeedbackScreen
+          complaint={selectedComplaint}
+          onBack={() => setCitizenScreen('complaint-detail')}
+          onSuccess={() => setCitizenScreen('home')}
         />
       )}
 

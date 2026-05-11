@@ -68,7 +68,7 @@ export default function DashboardPage() {
     .filter(([, v]) => v > 0)
     .map(([name, value]) => ({ name, value }));
 
-  const categoryData = Object.entries(analytics.complaintsByCategory ?? {})
+  const categoryData = Object.entries(analytics.complaintsByDepartment ?? analytics.complaintsByCategory ?? {})
     .map(([name, value]) => ({ name, value }));
 
   const statCards = [
@@ -76,7 +76,7 @@ export default function DashboardPage() {
     { label: 'Open / Active', value: analytics.openComplaints ?? 0, icon: '🔄', color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
     { label: 'Resolved', value: analytics.resolvedComplaints ?? 0, icon: '✅', color: 'var(--green)', bg: 'var(--green-bg)' },
     { label: 'Escalated', value: analytics.escalatedComplaints ?? 0, icon: '🚨', color: 'var(--red)', bg: 'var(--red-bg)' },
-    { label: 'Avg Resolution', value: `${analytics.avgResolutionHours ?? 0}h`, icon: '⏱️', color: 'var(--purple)', bg: 'var(--purple-bg)' },
+    { label: 'Avg Resolution', value: `${analytics.averageResolutionTime ?? analytics.avgResolutionHours ?? 0}h`, icon: '⏱️', color: 'var(--purple)', bg: 'var(--purple-bg)' },
     { label: 'SLA Breach Rate', value: `${analytics.slaBreachRate ?? 0}%`, icon: '⚠️', color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
   ];
 

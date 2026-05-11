@@ -62,6 +62,26 @@ public class WorkerController {
     }
 
     /**
+     * Update a worker.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<WorkerResponse> updateWorker(
+            @PathVariable String id,
+            @RequestBody Worker worker) {
+        WorkerResponse response = workerService.updateWorker(id, worker);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Toggle worker availability.
+     */
+    @PostMapping("/{id}/availability")
+    public ResponseEntity<WorkerResponse> toggleAvailability(@PathVariable String id) {
+        WorkerResponse response = workerService.toggleAvailability(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Delete a worker.
      */
     @DeleteMapping("/{id}")

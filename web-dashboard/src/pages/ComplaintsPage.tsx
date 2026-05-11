@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
-import { apiGet, apiPut } from '../services/api/client';
-import { Complaint, ComplaintStatus, PagedResponse } from '../types';
+import { apiGet, apiPut, apiPost } from '../services/api/client';
+import { Complaint, ComplaintStatus, PagedResponse, ReopenRequest } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/StatusBadge';
 
 const STATUS_OPTIONS: ComplaintStatus[] = [
@@ -23,7 +23,16 @@ interface DetailModalProps {
 function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
   const [newStatus, setNewStatus] = useState<ComplaintStatus>(complaint.status);
   const [saving, setSaving] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+  const [reopenRequests, setReopenRequests] = useState<ReopenRequest[]>([]);
   const accessToken = useAuthStore((s) => s.accessToken);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    apiGet<ReopenRequest[]>(`/reopen-requests/complaint/${complaint.id}`, accessToken)
+      .catch(() => [])
+      .then((data) => setReopenRequests(Array.isArray(data) ? data : []));
+  }, [complaint.id, accessToken]);
 
   const handleUpdate = async () => {
     if (newStatus === complaint.status) { onClose(); return; }
@@ -36,6 +45,31 @@ function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
       alert(e instanceof Error ? e.message : 'Update failed');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleEscalate = async () => {
+    setEscalating(true);
+    try {
+      await apiPost(`/complaints/${complaint.id}/escalate`, { reason: 'Manual escalation by officer' }, accessToken ?? undefined);
+      onStatusUpdate(complaint.id, 'ESCALATED');
+      onClose();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Escalation failed');
+    } finally {
+      setEscalating(false);
+    }
+  };
+
+  const handleReopenAction = async (requestId: string, action: 'approve' | 'reject') => {
+    try {
+      await apiPost(`/reopen-requests/${requestId}/${action}`, {}, accessToken ?? undefined);
+      setReopenRequests((prev) => prev.map((r) =>
+        r.id === requestId ? { ...r, status: action === 'approve' ? 'APPROVED' : 'REJECTED' } : r
+      ));
+      if (action === 'approve') onStatusUpdate(complaint.id, 'REOPENED');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : `Failed to ${action} reopen request`);
     }
   };
 
@@ -116,9 +150,43 @@ function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
               ))}
             </select>
           </div>
+
+          {/* Reopen Requests */}
+          {reopenRequests.length > 0 && (
+            <div>
+              <div className="form-label" style={{ marginBottom: 8 }}>Reopen Requests ({reopenRequests.length})</div>
+              {reopenRequests.map((r) => (
+                <div key={r.id} style={{
+                  background: 'var(--bg-2)', borderRadius: 8, padding: '10px 12px',
+                  marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>{r.reason ?? 'No reason provided'}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 2 }}>
+                      Reopen #{r.reopenCount} · {r.status}
+                    </div>
+                  </div>
+                  {r.status === 'REQUESTED' && (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-sm" style={{ background: 'var(--green-bg)', color: 'var(--green)', border: 'none' }}
+                        onClick={() => void handleReopenAction(r.id, 'approve')}>✓ Approve</button>
+                      <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
+                        onClick={() => void handleReopenAction(r.id, 'reject')}>✕ Reject</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          {!['RESOLVED', 'CLOSED', 'ESCALATED'].includes(complaint.status) && (
+            <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
+              onClick={() => void handleEscalate()} disabled={escalating}>
+              {escalating ? '...' : '🚨 Escalate'}
+            </button>
+          )}
           <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={saving}>
             {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Saving...</> : 'Update Status'}
           </button>

@@ -21,15 +21,19 @@ export interface AuthTokens {
 
 export type ComplaintStatus =
   | 'SUBMITTED'
+  | 'DUPLICATE_CHECKED'
   | 'VERIFIED'
   | 'ROUTED'
   | 'ASSIGNED'
+  | 'ACKNOWLEDGED'
   | 'IN_PROGRESS'
   | 'RESOLVED'
+  | 'VERIFIED_FOR_CLOSURE'
   | 'CLOSED'
   | 'REOPENED'
   | 'REJECTED'
-  | 'ESCALATED';
+  | 'ESCALATED'
+  | 'CANCELLED';
 
 export type ComplaintPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'VERY_LOW';
 
@@ -51,6 +55,9 @@ export interface Complaint {
   address?: string;
   city?: string;
   imageUrls?: string[];
+  slaDeadline?: string;
+  escalatedAt?: string;
+  resolvedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -65,6 +72,7 @@ export interface Department {
   headName?: string;
   email?: string;
   phone?: string;
+  description?: string;
 }
 
 export interface Worker {
@@ -76,7 +84,10 @@ export interface Worker {
   departmentId?: string;
   departmentName?: string;
   available?: boolean;
+  status?: string;
   activeComplaintsCount?: number;
+  complaintsAssigned?: number;
+  complaintsResolved?: number;
 }
 
 export interface Assignment {
@@ -87,11 +98,12 @@ export interface Assignment {
   departmentName?: string;
   workerId?: string;
   workerName?: string;
-  status: 'PENDING' | 'ACKNOWLEDGED' | 'IN_PROGRESS' | 'COMPLETED' | 'ESCALATED';
+  status: 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'ACKNOWLEDGED' | 'ESCALATED';
   priority?: ComplaintPriority;
   slaDeadline?: string;
   assignedAt?: string;
   completedAt?: string;
+  rejectionReason?: string;
   escalationReason?: string;
   notes?: string;
 }
@@ -111,10 +123,36 @@ export interface AnalyticsDashboard {
   resolvedComplaints?: number;
   escalatedComplaints?: number;
   avgResolutionHours?: number;
+  averageResolutionTime?: number;
   slaBreachRate?: number;
   complaintsByStatus?: Record<string, number>;
   complaintsByCategory?: Record<string, number>;
   complaintsByDepartment?: Record<string, number>;
+  departments?: number;
+  workers?: number;
+  citySatisfactionScore?: number;
+}
+
+export interface Feedback {
+  id: string;
+  complaintId: string;
+  userId?: string;
+  userName?: string;
+  rating: number;
+  comment?: string;
+  isSatisfied?: boolean;
+  createdAt?: string;
+}
+
+export interface ReopenRequest {
+  id: string;
+  complaintId: string;
+  userId?: string;
+  userName?: string;
+  reason?: string;
+  reopenCount?: number;
+  status: 'REQUESTED' | 'APPROVED' | 'REJECTED';
+  createdAt?: string;
 }
 
 export interface PagedResponse<T> {

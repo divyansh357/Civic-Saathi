@@ -65,6 +65,21 @@ public class DepartmentService {
     }
 
     /**
+     * Update an existing department.
+     */
+    public DepartmentResponse updateDepartment(String id, Department updates) {
+        Department department = departmentRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Department not found: " + id));
+        if (updates.getName() != null) department.setName(updates.getName());
+        if (updates.getDescription() != null) department.setDescription(updates.getDescription());
+        if (updates.getEmail() != null) department.setEmail(updates.getEmail());
+        if (updates.getPhone() != null) department.setPhone(updates.getPhone());
+        if (updates.getActive() != null) department.setActive(updates.getActive());
+        department.setUpdatedAt(LocalDateTime.now());
+        return departmentMapper.toResponse(departmentRepository.save(department));
+    }
+
+    /**
      * Delete a department.
      */
     public void deleteDepartment(String id) {
