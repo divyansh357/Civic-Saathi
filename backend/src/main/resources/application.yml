@@ -17,7 +17,7 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:validate}  # Changed to 'validate' - Hibernate will NOT modify schema
+      ddl-auto: ${JPA_DDL_AUTO:none}  # 'none' = use existing schema as-is (schema managed by db/schema.sql)
     properties:
       hibernate:
         format_sql: true

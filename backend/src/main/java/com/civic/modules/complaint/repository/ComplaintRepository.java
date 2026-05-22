@@ -78,8 +78,9 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
                                   @Param("endDate") LocalDateTime endDate);
 
     /** Average resolution time in hours for resolved complaints. */
-    @Query("SELECT AVG(FUNCTION('TIMESTAMPDIFF', HOUR, c.createdAt, c.resolvedAt)) " +
-           "FROM Complaint c WHERE c.resolvedAt IS NOT NULL")
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600) " +
+                   "FROM complaints WHERE resolved_at IS NOT NULL",
+           nativeQuery = true)
     Double avgResolutionHours();
 
     /** Count complaints grouped by status (for analytics). */
