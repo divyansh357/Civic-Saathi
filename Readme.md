@@ -64,9 +64,9 @@ docker compose up -d postgres
 
 Wait for the health check to pass, then apply the schema:
 
-```bash
+```powershell
 # Connect to the running container and apply schema
-docker exec -i civic_postgres psql -U postgres -d Civic < ../db/schema.sql
+Get-Content ..\db\schema.sql | docker exec -i civic_postgres psql -U postgres -d Civic
 ```
 
 ### 3. Start the backend
@@ -92,6 +92,10 @@ npm run dev
 cd mobile-app
 npm install
 npm run start
+
+cd mobile-app
+npm run tunnel
+
 # Scan QR code with Expo Go app
 ```
 

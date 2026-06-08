@@ -128,14 +128,6 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
             <Text style={styles.switchLink}>Create one</Text>
           </Pressable>
         </View>
-
-        {/* Demo hint */}
-        <View style={styles.demoBox}>
-          <Text style={styles.demoTitle}>Demo credentials</Text>
-          <Text style={styles.demoLine}>Citizen: citizen@civic.com / password</Text>
-          <Text style={styles.demoLine}>Worker: worker@civic.com / password</Text>
-          <Text style={styles.demoLine}>Admin: admin@civic.com / password</Text>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -211,12 +203,4 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
   switchText: { fontSize: 14, color: '#64748B' },
   switchLink: { fontSize: 14, fontWeight: '700', color: '#0F766E' },
-  demoBox: {
-    marginTop: 24, padding: 14,
-    backgroundColor: '#F0FDF9', borderRadius: 12,
-    borderWidth: 1, borderColor: '#A7F3D0',
-    width: '100%', maxWidth: 400,
-  },
-  demoTitle: { fontSize: 11, fontWeight: '700', color: '#065F46', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  demoLine: { fontSize: 12, color: '#047857', marginBottom: 2 },
 });

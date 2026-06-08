@@ -24,14 +24,23 @@ const withLeadingSlash = (path: string): string => (path.startsWith('/') ? path 
 
 const resolveUrl = (path: string): string => `${API_CONFIG.baseUrl}${withLeadingSlash(path)}`;
 
+/** Returns true when the base URL is a localtunnel host (*.loca.lt). */
+const isTunnelUrl = (): boolean => API_CONFIG.baseUrl.includes('.loca.lt');
+
 async function request<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeoutMs);
 
   try {
     const headers: Record<string, string> = {
-      Accept: 'application/json'
+      Accept: 'application/json',
     };
+
+    // Bypass the localtunnel browser-challenge interstitial page.
+    // Without this header, loca.lt serves an HTML gate instead of the API response.
+    if (isTunnelUrl()) {
+      headers['bypass-tunnel-reminder'] = 'true';
+    }
 
     if (options.body !== undefined) {
       headers['Content-Type'] = 'application/json';

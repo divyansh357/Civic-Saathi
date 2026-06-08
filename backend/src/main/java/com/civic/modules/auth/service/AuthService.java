@@ -6,12 +6,14 @@ import com.civic.modules.auth.dto.AuthenticatedUserResponse;
 import com.civic.modules.auth.dto.LoginRequest;
 import com.civic.modules.auth.dto.SignupRequest;
 import com.civic.modules.auth.entity.AuthToken;
+import com.civic.modules.auth.entity.Role;
 import com.civic.modules.auth.exception.InactiveUserException;
 import com.civic.modules.auth.exception.InvalidCredentialsException;
 import com.civic.modules.auth.exception.InvalidTokenException;
 import com.civic.modules.auth.exception.ResourceConflictException;
 import com.civic.modules.auth.mapper.AuthMapper;
 import com.civic.modules.auth.repository.AuthTokenRepository;
+import com.civic.modules.auth.repository.RoleRepository;
 import com.civic.modules.user.entity.User;
 import com.civic.modules.user.repository.UserRepository;
 import com.civic.security.JwtTokenProvider;
@@ -44,6 +46,9 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -98,12 +103,20 @@ public class AuthService {
         user.setEmail(normalizedEmail);
         user.setPhone(normalizedPhone);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setRole(normalizeRole(request.getRole()));
         user.setVerified(false);
         user.setStatus("ACTIVE");
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         user.setLastLoginAt(LocalDateTime.now());
+
+        // Resolve and assign the role via the roles table
+        String roleName = normalizeRole(request.getRole());
+        Role role = roleRepository.findByName(roleName)
+                .orElseGet(() -> {
+                    Role newRole = new Role(roleName);
+                    return roleRepository.save(newRole);
+                });
+        user.addRole(role);
 
         User savedUser = userRepository.save(user);
         return issueTokenPair(savedUser);
