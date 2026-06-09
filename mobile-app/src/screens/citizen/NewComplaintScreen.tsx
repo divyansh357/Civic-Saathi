@@ -67,7 +67,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   const isTitleValid = title.trim().length >= 5;
   const isDescriptionValid = description.trim().length >= 10;
   const isCategoryValid = category !== '';
-  const isLocationValid = location !== null && address.trim().length > 0;
+  const isLocationValid = location !== null || address.trim().length > 0;
   const isPhotoValid = images.length > 0;
   const canSubmit = isTitleValid && isCategoryValid && isDescriptionValid && isLocationValid && isPhotoValid;
 
