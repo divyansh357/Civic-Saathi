@@ -6,6 +6,7 @@ interface ApiRequestOptions {
   method?: HttpMethod;
   body?: unknown;
   accessToken?: string;
+  extraHeaders?: Record<string, string>;
 }
 
 export class ApiClientError extends Error {
@@ -48,6 +49,10 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
 
     if (options.accessToken) {
       headers.Authorization = `Bearer ${options.accessToken}`;
+    }
+
+    if (options.extraHeaders) {
+      Object.assign(headers, options.extraHeaders);
     }
 
     const response = await fetch(resolveUrl(path), {
@@ -103,6 +108,15 @@ export function apiPost<TResponse, TBody = unknown>(
   accessToken?: string
 ): Promise<TResponse> {
   return request<TResponse>(path, { method: 'POST', body, accessToken });
+}
+
+export function apiPostWithHeaders<TResponse, TBody = unknown>(
+  path: string,
+  body?: TBody,
+  accessToken?: string,
+  extraHeaders?: Record<string, string>
+): Promise<TResponse> {
+  return request<TResponse>(path, { method: 'POST', body, accessToken, extraHeaders });
 }
 
 export function apiPut<TResponse, TBody = unknown>(
