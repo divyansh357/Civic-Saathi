@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import {
-  View, StyleSheet, KeyboardAvoidingView, Platform,
-  ScrollView, Pressable,
+  View, Text, TextInput, Pressable, StyleSheet,
+  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ScrollView,
 } from 'react-native';
-import { Text, TextInput, Button, useTheme, HelperText, IconButton, Surface, TouchableRipple } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
+import { Button } from 'react-native-paper';
 import { apiPost } from '@services/api/client';
 import { isValidEmail } from '@utils/index';
 
@@ -14,20 +16,26 @@ interface RoleOption {
   label: string;
   icon: string;
   description: string;
+  color: string;
+  bg: string;
 }
 
 const ROLES: RoleOption[] = [
   {
     id: 'citizen',
     label: 'Citizen',
-    icon: 'account',
+    icon: '👤',
     description: 'Report civic issues in your area',
+    color: '#2F3E32',
+    bg: '#E1E5E1',
   },
   {
     id: 'worker',
     label: 'Field Worker',
-    icon: 'hard-hat',
+    icon: '👷',
     description: 'Resolve assigned civic complaints',
+    color: '#2F3E32',
+    bg: '#E1E5E1',
   },
 ];
 
@@ -53,27 +61,57 @@ function Field({
   const [show, setShow] = useState(false);
   return (
     <View style={fieldStyles.group}>
-      <TextInput
-        mode="outlined"
-        label={label + (optional ? ' (optional)' : '')}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        keyboardType={keyboardType}
-        secureTextEntry={secure && !show}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        error={!!error}
-        right={secure ? <TextInput.Icon icon={show ? "eye-off" : "eye"} onPress={() => setShow(!show)} /> : undefined}
-      />
-      {hint && !error && <HelperText type="info" visible>{hint}</HelperText>}
-      {error ? <HelperText type="error" visible>{error}</HelperText> : null}
+      <View style={fieldStyles.labelRow}>
+        <Text style={fieldStyles.label}>{label}</Text>
+        {optional && <Text style={fieldStyles.optional}>optional</Text>}
+      </View>
+      <View style={[fieldStyles.inputWrap, error ? fieldStyles.inputError : null]}>
+        <TextInput
+          style={fieldStyles.input}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor="#7F8D82"
+          keyboardType={keyboardType}
+          secureTextEntry={secure && !show}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={false}
+        />
+        {secure && (
+          <Pressable style={fieldStyles.eyeBtn} onPress={() => setShow((v) => !v)}>
+            <Ionicons name={show ? 'eye-off' : 'eye'} size={22} color="#4A5D4E" />
+          </Pressable>
+        )}
+      </View>
+      {hint && !error && <Text style={fieldStyles.hint}>{hint}</Text>}
+      {error && <Text style={fieldStyles.errorHint}>⚠ {error}</Text>}
     </View>
   );
 }
 
 const fieldStyles = StyleSheet.create({
-  group: { marginBottom: 12 },
+  group: { marginBottom: 16 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 },
+  label: { fontSize: 13, fontWeight: '600', color: '#4A5D4E' },
+  optional: { fontSize: 12, color: '#7F8D82' },
+  inputWrap: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    backgroundColor: '#E1E5E1',
+    borderRadius: 16,
+    height: 56,
+    paddingHorizontal: 16,
+  },
+  input: {
+    flex: 1, height: '100%', color: '#2F3E32', fontSize: 16,
+  },
+  inputError: { borderWidth: 1, borderColor: '#FCA5A5' },
+  eyeBtn: {
+    height: 56, width: 40,
+    alignItems: 'flex-end', justifyContent: 'center',
+  },
+  hint: { fontSize: 12, color: '#7F8D82', marginTop: 6, paddingHorizontal: 4 },
+  errorHint: { fontSize: 12, color: '#DC2626', marginTop: 6, paddingHorizontal: 4 },
 });
 
 // ─── Main SignupScreen ────────────────────────────────────────────────────────
@@ -83,7 +121,6 @@ interface Props {
 }
 
 export default function SignupScreen({ onGoToLogin }: Props) {
-  const theme = useTheme();
   const [step, setStep] = useState<'role' | 'details'>('role');
   const [selectedRole, setSelectedRole] = useState<string>('');
 
@@ -155,49 +192,45 @@ export default function SignupScreen({ onGoToLogin }: Props) {
 
   if (step === 'role') {
     return (
-      <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.flex}>
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.logoEmoji}>🏙️</Text>
-            <Text variant="headlineMedium" style={styles.pageTitle}>Let&apos;s make change together</Text>
-            <Text variant="titleMedium" style={styles.pageSubtitle}>Select your role to get started</Text>
+            <Text style={styles.pageTitle}>Let's make change together</Text>
+            <Text style={styles.pageSubtitle}>Select your role to get started</Text>
           </View>
 
           {/* Role cards */}
           <View style={styles.formSection}>
-            {ROLES.map((role) => {
-              const isSelected = selectedRole === role.id;
-              return (
-                <Surface
-                  key={role.id}
-                  style={[
-                    styles.roleCard,
-                    isSelected && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryContainer },
-                    !isSelected && { borderColor: theme.colors.surfaceVariant, backgroundColor: theme.colors.surface },
-                  ]}
-                  elevation={isSelected ? 2 : 1}
-                >
-                  <TouchableRipple
-                    style={styles.roleCardRipple}
-                    onPress={() => setSelectedRole(role.id)}
-                    borderless
-                  >
-                    <>
-                      <View style={[styles.roleIconWrap, { backgroundColor: isSelected ? theme.colors.primary : theme.colors.surfaceVariant }]}>
-                        <IconButton icon={role.icon} iconColor={isSelected ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} size={24} />
-                      </View>
-                      <View style={styles.roleInfo}>
-                        <Text variant="titleMedium" style={{ color: isSelected ? theme.colors.primary : theme.colors.onSurface }}>
-                          {role.label}
-                        </Text>
-                        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>{role.description}</Text>
-                      </View>
-                    </>
-                  </TouchableRipple>
-                </Surface>
-              );
-            })}
+            {ROLES.map((role) => (
+              <Pressable
+                key={role.id}
+                style={[
+                  styles.roleCard,
+                  selectedRole === role.id && styles.roleCardSelected,
+                ]}
+                onPress={() => setSelectedRole(role.id)}
+              >
+                <View style={[styles.roleIconWrap, { backgroundColor: role.bg }]}>
+                  <Text style={styles.roleIcon}>{role.icon}</Text>
+                </View>
+                <View style={styles.roleInfo}>
+                  <Text style={[styles.roleLabel, selectedRole === role.id && { color: role.color }]}>
+                    {role.label}
+                  </Text>
+                  <Text style={styles.roleDesc}>{role.description}</Text>
+                </View>
+                <View style={[
+                  styles.radioOuter,
+                  selectedRole === role.id && styles.radioOuterSelected,
+                ]}>
+                  {selectedRole === role.id && (
+                    <View style={styles.radioInner} />
+                  )}
+                </View>
+              </Pressable>
+            ))}
           </View>
 
           <View style={styles.formSection}>
@@ -206,16 +239,18 @@ export default function SignupScreen({ onGoToLogin }: Props) {
               onPress={() => selectedRole && setStep('details')}
               disabled={!selectedRole}
               style={styles.primaryBtn}
-              contentStyle={styles.primaryBtnContent}
+              contentStyle={{ height: 56 }}
+              labelStyle={styles.primaryBtnText}
+              buttonColor="#6A8D73"
             >
               Continue
             </Button>
           </View>
 
           <View style={styles.switchRow}>
-            <Text variant="bodyMedium">Already have an account? </Text>
+            <Text style={styles.switchText}>Already have an account? </Text>
             <Pressable onPress={() => onGoToLogin()}>
-              <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Sign in</Text>
+              <Text style={styles.switchLink}>Sign in</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -229,8 +264,9 @@ export default function SignupScreen({ onGoToLogin }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: theme.colors.background }]}
+      style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      pointerEvents={loading ? 'none' : 'auto'}
     >
       <ScrollView
         contentContainerStyle={styles.container}
@@ -239,14 +275,11 @@ export default function SignupScreen({ onGoToLogin }: Props) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            onPress={() => setStep('role')}
-            style={styles.backBtn}
-          />
-          <Text variant="headlineMedium" style={styles.pageTitle}>Your Details</Text>
-          <Text variant="titleMedium" style={styles.pageSubtitle}>Creating a {roleObj.label} account</Text>
+          <Pressable style={styles.backBtn} onPress={() => setStep('role')}>
+            <Text style={styles.backIcon}>←</Text>
+          </Pressable>
+          <Text style={styles.pageTitle}>Your Details</Text>
+          <Text style={styles.pageSubtitle}>Creating a {roleObj.label} account</Text>
         </View>
 
         {/* Form */}
@@ -298,7 +331,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
           {/* ── Worker-specific fields ── */}
           {selectedRole === 'worker' && (
             <>
-              <View style={[styles.divider, { backgroundColor: theme.colors.surfaceVariant }]} />
+              <View style={styles.divider} />
               <Field
                 label="Designation / Job Title"
                 value={designation}
@@ -319,28 +352,30 @@ export default function SignupScreen({ onGoToLogin }: Props) {
 
           {/* API error */}
           {apiError ? (
-            <Surface style={[styles.errorBox, { backgroundColor: theme.colors.errorContainer }]}>
-              <Text style={{ color: theme.colors.onErrorContainer }}>⚠ {apiError}</Text>
-            </Surface>
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>⚠ {apiError}</Text>
+            </View>
           ) : null}
 
           {/* Submit */}
           <Button
             mode="contained"
             onPress={() => { void handleSubmit(); }}
-            loading={loading}
             disabled={!canSubmit || loading}
+            loading={loading}
             style={styles.primaryBtn}
-            contentStyle={styles.primaryBtnContent}
+            contentStyle={{ height: 56 }}
+            labelStyle={styles.primaryBtnText}
+            buttonColor="#6A8D73"
           >
             Sign up
           </Button>
         </View>
 
         <View style={styles.switchRow}>
-          <Text variant="bodyMedium">Already have an account? </Text>
+          <Text style={styles.switchText}>Already have an account? </Text>
           <Pressable onPress={() => onGoToLogin()}>
-            <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Sign in</Text>
+            <Text style={styles.switchLink}>Sign in</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -349,25 +384,29 @@ export default function SignupScreen({ onGoToLogin }: Props) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  flex: { flex: 1, backgroundColor: '#F3F4F1' },
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 30,
     paddingTop: 40,
     paddingBottom: 40,
   },
 
   // Header
-  header: { alignItems: 'center', marginBottom: 32, width: '100%', position: 'relative' },
+  header: { alignItems: 'center', marginBottom: 40, width: '100%', position: 'relative' },
   backBtn: {
     position: 'absolute',
-    left: -12,
-    top: -8,
+    left: 0,
+    top: 4,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#E1E5E1',
+    alignItems: 'center', justifyContent: 'center',
   },
+  backIcon: { fontSize: 20, color: '#2F3E32', fontWeight: 'bold' },
   logoEmoji: { fontSize: 48, marginBottom: 16 },
-  pageTitle: { fontWeight: '700', textAlign: 'center', marginBottom: 4 },
-  pageSubtitle: { textAlign: 'center', opacity: 0.8 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#2F3E32', letterSpacing: -0.5, textAlign: 'center' },
+  pageSubtitle: { fontSize: 18, fontWeight: '500', color: '#2F3E32', marginTop: 4, textAlign: 'center' },
 
   formSection: {
     width: '100%',
@@ -377,39 +416,55 @@ const styles = StyleSheet.create({
 
   // Role cards
   roleCard: {
-    borderRadius: 16,
-    borderWidth: 2,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16,
+    borderWidth: 2, borderColor: '#FFFFFF',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
     marginBottom: 16,
-    overflow: 'hidden',
   },
-  roleCardRipple: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 16,
+  roleCardSelected: {
+    borderColor: '#6A8D73',
+    backgroundColor: '#F3F4F1',
   },
   roleIconWrap: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 48, height: 48, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
   },
-  roleInfo: { flex: 1, justifyContent: 'center' },
+  roleIcon: { fontSize: 22 },
+  roleInfo: { flex: 1 },
+  roleLabel: { fontSize: 16, fontWeight: '700', color: '#2F3E32' },
+  roleDesc: { fontSize: 13, color: '#7F8D82', marginTop: 2 },
+  radioOuter: {
+    width: 24, height: 24, borderRadius: 12,
+    borderWidth: 2, borderColor: '#C4CBC5',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  radioOuterSelected: {
+    borderColor: '#6A8D73',
+  },
+  radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#6A8D73' },
 
-  divider: { height: 1, marginVertical: 24 },
+  divider: { height: 1, backgroundColor: '#E1E5E1', marginVertical: 16 },
 
   // Error
   errorBox: {
-    borderRadius: 12, padding: 12, marginBottom: 16,
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 16, padding: 12, marginBottom: 16,
   },
+  errorText: { fontSize: 13, color: '#DC2626', lineHeight: 18 },
 
   // Buttons
   primaryBtn: {
-    marginTop: 8,
-    borderRadius: 8,
+    height: 56, borderRadius: 28,
+    backgroundColor: '#6A8D73',
+    alignItems: 'center', justifyContent: 'center', marginTop: 8,
   },
-  primaryBtnContent: {
-    height: 52,
-  },
+  primaryBtnDisabled: { opacity: 0.6 },
+  primaryBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 18 },
 
   // Footer
-  switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
+  switchText: { fontSize: 15, color: '#4A5D4E' },
+  switchLink: { fontSize: 15, fontWeight: '700', color: '#2F3E32', textDecorationLine: 'underline' },
 });

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import {
-  View, StyleSheet, KeyboardAvoidingView, Platform,
-  ScrollView, Pressable,
+  View, Text, TextInput, Pressable, StyleSheet,
+  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ScrollView,
 } from 'react-native';
-import { Text, TextInput, Button, useTheme, HelperText } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
+import { Button } from 'react-native-paper';
 import { useAuthStore } from '@store/index';
 import { isValidEmail } from '@utils/index';
 
@@ -17,7 +19,6 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
   const authError = useAuthStore((s) => s.error);
-  const theme = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,8 +35,9 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
 
   return (
     <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: theme.colors.background }]}
+      style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      pointerEvents={isLoading ? 'none' : 'auto'}
     >
       <ScrollView
         contentContainerStyle={styles.container}
@@ -44,83 +46,74 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
       >
         {/* Logo & Header */}
         <View style={styles.headerSection}>
-          <View style={[styles.logoBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Text style={styles.logoEmoji}>🏙️</Text>
-          </View>
-          <Text variant="headlineMedium" style={[styles.headerTitle, { color: theme.colors.onBackground }]}>
-            Welcome back
-          </Text>
-          <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-            Sign in to your account
-          </Text>
+          <Text style={styles.logoEmoji}>🏙️</Text>
+          <Text style={styles.headerTitle}>Welcome back</Text>
+          <Text style={styles.headerSubtitle}>Sign in to your account</Text>
         </View>
 
         {/* Success message from signup */}
         {successMessage ? (
           <Pressable
-            style={[styles.successBox, { backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary }]}
+            style={styles.successBox}
             onPress={onClearSuccessMessage}
           >
-            <Text style={{ color: theme.colors.primary, fontWeight: '500', fontSize: 13 }}>
-              ✓ {successMessage}
-            </Text>
+            <Text style={styles.successText}>✓ {successMessage}</Text>
           </Pressable>
         ) : null}
 
-        {/* Form */}
+        {/* Inputs Section */}
         <View style={styles.formSection}>
-          <TextInput
-            label="Email"
-            mode="outlined"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="your@email.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            left={<TextInput.Icon icon="email-outline" />}
-            error={!!emailError}
-            outlineStyle={styles.inputOutline}
-          />
-          <HelperText type="error" visible={!!emailError}>
-            {emailError}
-          </HelperText>
+          {/* Email */}
+          <View style={[styles.inputWrap, emailError ? styles.inputError : null]}>
+            <Text style={styles.inputIcon}>✉️</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="E-mail"
+              placeholderTextColor="#7F8D82"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+            />
+          </View>
+          {emailError ? <Text style={styles.errorHint}>⚠ {emailError}</Text> : null}
 
-          <TextInput
-            label="Password"
-            mode="outlined"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Your password"
-            secureTextEntry={!showPassword}
-            autoComplete="password"
-            left={<TextInput.Icon icon="lock-outline" />}
-            right={
-              <TextInput.Icon
-                icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                onPress={() => setShowPassword(!showPassword)}
-              />
-            }
-            outlineStyle={styles.inputOutline}
-          />
+          {/* Password */}
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputIcon}>🔒</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor="#7F8D82"
+              secureTextEntry={!showPassword}
+              autoComplete="password"
+            />
+            <Pressable style={styles.eyeBtn} onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color="#4A5D4E" />
+            </Pressable>
+          </View>
 
           {/* Error */}
           {authError ? (
-            <View style={[styles.errorBox, { backgroundColor: theme.colors.errorContainer, borderColor: theme.colors.error }]}>
-              <Text style={{ fontSize: 13, color: theme.colors.error }}>⚠ {authError}</Text>
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>⚠ {authError}</Text>
             </View>
           ) : null}
 
-          {/* Submit — M3 filled button */}
+          {/* Submit */}
           <Button
             mode="contained"
             onPress={() => { void handleLogin(); }}
             disabled={!canLogin || isLoading}
             loading={isLoading}
             style={styles.primaryBtn}
-            contentStyle={styles.primaryBtnContent}
-            labelStyle={styles.primaryBtnLabel}
+            contentStyle={{ height: 56 }}
+            labelStyle={styles.primaryBtnText}
+            buttonColor="#6A8D73"
           >
             Login
           </Button>
@@ -128,12 +121,10 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
 
         {/* Switch to signup */}
         <View style={styles.switchRow}>
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-            Don&apos;t have an account?{' '}
-          </Text>
-          <Button mode="text" onPress={onGoToSignup} compact labelStyle={styles.switchLink}>
-            Create new account
-          </Button>
+          <Text style={styles.switchText}>Don't have an account? </Text>
+          <Pressable onPress={onGoToSignup}>
+            <Text style={styles.switchLink}>Create new account</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -141,74 +132,87 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  flex: { flex: 1, backgroundColor: '#F3F4F1' },
   container: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 28,
+    paddingHorizontal: 30,
     paddingVertical: 40,
   },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: 36,
-    marginTop: 20,
+  headerSection: { 
+    alignItems: 'center', 
+    marginBottom: 40,
+    marginTop: 20
   },
-  logoBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+  logoEmoji: { 
+    fontSize: 48, 
+    marginBottom: 16 
   },
-  logoEmoji: { fontSize: 36 },
-  headerTitle: {
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    marginBottom: 4,
+  headerTitle: { 
+    fontSize: 24, 
+    fontWeight: '700', 
+    color: '#2F3E32', 
+    letterSpacing: -0.5 
+  },
+  headerSubtitle: { 
+    fontSize: 18, 
+    fontWeight: '500', 
+    color: '#2F3E32', 
+    marginTop: 4 
   },
   formSection: {
     width: '100%',
     maxWidth: 400,
+    gap: 16,
   },
-  inputOutline: {
-    borderRadius: 12,
-  },
-  errorBox: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  successBox: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
-    width: '100%',
-    maxWidth: 400,
-  },
-  primaryBtn: {
-    marginTop: 12,
-    borderRadius: 24,
-  },
-  primaryBtnContent: {
-    height: 52,
-  },
-  primaryBtnLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  switchRow: {
+  inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 32,
+    backgroundColor: '#E1E5E1',
+    borderRadius: 16,
+    height: 56,
+    paddingHorizontal: 16,
   },
-  switchLink: {
-    fontWeight: '700',
-    fontSize: 14,
+  inputIcon: {
+    fontSize: 18,
+    marginRight: 12,
+    color: '#4A5D4E',
+    opacity: 0.7,
   },
+  input: {
+    flex: 1,
+    height: '100%',
+    color: '#2F3E32',
+    fontSize: 16,
+  },
+  inputError: { borderWidth: 1, borderColor: '#FCA5A5' },
+  errorHint: { fontSize: 12, color: '#DC2626', marginTop: -10, marginBottom: 6, paddingHorizontal: 4 },
+  eyeBtn: {
+    height: 56, width: 40,
+    alignItems: 'flex-end', justifyContent: 'center',
+  },
+  errorBox: {
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 16, padding: 12, marginTop: -4, marginBottom: 8,
+  },
+  errorText: { fontSize: 13, color: '#DC2626' },
+  successBox: {
+    backgroundColor: '#F0FDF9', borderWidth: 1, borderColor: '#A7F3D0',
+    borderRadius: 16, padding: 12, marginBottom: 20, width: '100%', maxWidth: 400,
+  },
+  successText: { fontSize: 13, color: '#065F46', fontWeight: '500' },
+  primaryBtn: {
+    height: 56, 
+    borderRadius: 28,
+    backgroundColor: '#6A8D73',
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginTop: 8,
+  },
+  primaryBtnDisabled: { opacity: 0.6 },
+  primaryBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 18 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 40 },
+  switchText: { fontSize: 15, color: '#4A5D4E' },
+  switchLink: { fontSize: 15, fontWeight: '700', color: '#2F3E32', textDecorationLine: 'underline' },
 });

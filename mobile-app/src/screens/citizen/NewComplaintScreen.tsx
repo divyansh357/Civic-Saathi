@@ -6,6 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Audio } from 'expo-av';
+import { Button } from 'react-native-paper';
 import { useAuthStore } from '@store/index';
 import { apiPost, apiPostWithHeaders } from '@services/api/client';
 
@@ -67,7 +68,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   const isTitleValid = title.trim().length >= 5;
   const isDescriptionValid = description.trim().length >= 10;
   const isCategoryValid = category !== '';
-  const isLocationValid = location !== null || address.trim().length > 0;
+  const isLocationValid = address.trim().length > 0;
   const isPhotoValid = images.length > 0;
   const canSubmit = isTitleValid && isCategoryValid && isDescriptionValid && isLocationValid && isPhotoValid;
 
@@ -174,9 +175,8 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
         address: formattedAddress,
       });
       
-      if (!address) {
-        setAddress(formattedAddress);
-      }
+      // Always update address to ensure it is populated
+      setAddress(formattedAddress);
     } catch (error) {
       console.error('Location error:', error);
       Alert.alert('Location Error', 'Could not get your current location. Please enter address manually.');
@@ -574,17 +574,18 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
         </View>
 
         {/* Submit */}
-        <Pressable
-          style={[styles.submitBtn, (!canSubmit && attemptedSubmit) && styles.submitBtnDisabled]}
+        <Button
+          mode="contained"
           onPress={() => void handleSubmit()}
           disabled={submitting}
+          loading={submitting}
+          style={styles.submitBtn}
+          contentStyle={{ height: 56 }}
+          labelStyle={styles.submitText}
+          buttonColor="#0F766E"
         >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitText}>Submit Complaint</Text>
-          )}
-        </Pressable>
+          Submit Complaint
+        </Button>
 
         <Text style={styles.disclaimer}>
           Your complaint will be reviewed and assigned to the relevant department within 24 hours.
