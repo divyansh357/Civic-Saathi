@@ -127,6 +127,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   // Auto-fetch location on component mount
   useEffect(() => {
     requestLocationPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const requestLocationPermission = async () => {

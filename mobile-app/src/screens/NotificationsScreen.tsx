@@ -87,13 +87,16 @@ export default function NotificationsScreen({ onBack }: NotificationsScreenProps
     switch (notification.type) {
       case 'complaint_status':
         // Navigate to complaint detail
+        // eslint-disable-next-line no-console
         console.log('Navigate to complaint:', notification.data?.complaintId);
         break;
       case 'assignment':
         // Navigate to assignment detail
+        // eslint-disable-next-line no-console
         console.log('Navigate to assignment:', notification.data?.assignmentId);
         break;
       default:
+        // eslint-disable-next-line no-console
         console.log('Notification pressed:', notification.id);
     }
   };
@@ -129,7 +132,7 @@ export default function NotificationsScreen({ onBack }: NotificationsScreenProps
             <Text style={styles.emptyIcon}>🔔</Text>
             <Text style={styles.emptyTitle}>No notifications</Text>
             <Text style={styles.emptySubtitle}>
-              You'll receive updates about your complaints and assignments here
+              You&apos;ll receive updates about your complaints and assignments here
             </Text>
           </View>
         ) : (

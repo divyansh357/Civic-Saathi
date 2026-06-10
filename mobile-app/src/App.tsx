@@ -8,6 +8,8 @@ import {
   View,
   Animated,
 } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
+import { civicTheme } from '@theme/index';
 import { useAuthStore } from '@store/index';
 import { Complaint } from '@/types';
 import { notificationService } from '@services/notifications';
@@ -37,7 +39,7 @@ type WorkerScreen = 'home' | 'notifications';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
-export default function App() {
+function AppContent() {
   const hydrateUser = useAuthStore((s) => s.hydrateUser);
   const isLoading = useAuthStore((s) => s.isLoading);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -251,6 +253,7 @@ export default function App() {
 // ─── Admin notice screen ──────────────────────────────────────────────────────
 
 function AdminNoticeScreen({ userName, onLogout }: { userName: string; onLogout: () => void }) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pressable } = require('react-native') as typeof import('react-native');
   return (
     <View style={adminStyles.container}>
@@ -288,6 +291,16 @@ const adminStyles = StyleSheet.create({
   },
   logoutText: { fontSize: 14, fontWeight: '600', color: '#DC2626' },
 });
+
+// ─── Root Provider ────────────────────────────────────────────────────────────
+
+export default function App() {
+  return (
+    <PaperProvider theme={civicTheme}>
+      <AppContent />
+    </PaperProvider>
+  );
+}
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

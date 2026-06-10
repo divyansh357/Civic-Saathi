@@ -17,10 +17,12 @@ module.exports = function (api) {
             '@constants': './src/constants',
             '@types': './src/types',
             '@context': './src/context',
-            '@navigation': './src/navigation'
+            '@navigation': './src/navigation',
+            '@theme': './src/theme'
           }
         }
-      ]
+      ],
+      'react-native-paper/babel'
     ]
   };
 };
