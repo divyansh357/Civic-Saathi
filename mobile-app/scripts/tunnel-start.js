@@ -58,7 +58,7 @@ async function main() {
   console.log(`\n🚀  Starting Expo …\n`);
   const expo = spawn(
     'npx',
-    ['expo', 'start', ...extraArgs],
+    ['expo', 'start', '--tunnel', ...extraArgs],
     {
       cwd: path.resolve(__dirname, '..'),
       stdio: 'inherit',
