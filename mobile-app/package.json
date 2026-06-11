@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --tunnel",
     "tunnel": "node scripts/tunnel-start.js",
     "tunnel:clear": "node scripts/tunnel-start.js -- --clear",
     "android": "expo run:android",

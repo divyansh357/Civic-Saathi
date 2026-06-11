@@ -1,3 +1,5 @@
+name: civic-saathi
+
 version: '2.4'
 services:
   # ── PostgreSQL with PostGIS ──────────────────────────────────────────────────
