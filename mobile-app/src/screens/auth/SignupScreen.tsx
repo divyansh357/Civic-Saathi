@@ -4,6 +4,8 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Button } from 'react-native-paper';
 import { apiPost } from '@services/api/client';
 import { isValidEmail } from '@utils/index';
 
@@ -24,24 +26,16 @@ const ROLES: RoleOption[] = [
     label: 'Citizen',
     icon: '👤',
     description: 'Report civic issues in your area',
-    color: '#0F766E',
-    bg: '#F0FDF9',
+    color: '#2F3E32',
+    bg: '#E1E5E1',
   },
   {
     id: 'worker',
     label: 'Field Worker',
     icon: '👷',
     description: 'Resolve assigned civic complaints',
-    color: '#D97706',
-    bg: '#FFFBEB',
-  },
-  {
-    id: 'admin',
-    label: 'Admin / Officer',
-    icon: '🏛️',
-    description: 'Manage departments and assignments',
-    color: '#7C3AED',
-    bg: '#F5F3FF',
+    color: '#2F3E32',
+    bg: '#E1E5E1',
   },
 ];
 
@@ -71,17 +65,13 @@ function Field({
         <Text style={fieldStyles.label}>{label}</Text>
         {optional && <Text style={fieldStyles.optional}>optional</Text>}
       </View>
-      <View style={fieldStyles.inputWrap}>
+      <View style={[fieldStyles.inputWrap, error ? fieldStyles.inputError : null]}>
         <TextInput
-          style={[
-            fieldStyles.input,
-            secure && fieldStyles.inputWithEye,
-            error ? fieldStyles.inputError : null,
-          ]}
+          style={fieldStyles.input}
           value={value}
           onChangeText={onChange}
           placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor="#7F8D82"
           keyboardType={keyboardType}
           secureTextEntry={secure && !show}
           autoCapitalize={autoCapitalize}
@@ -89,7 +79,7 @@ function Field({
         />
         {secure && (
           <Pressable style={fieldStyles.eyeBtn} onPress={() => setShow((v) => !v)}>
-            <Text style={fieldStyles.eyeIcon}>{show ? '🙈' : '👁️'}</Text>
+            <Ionicons name={show ? 'eye-off' : 'eye'} size={22} color="#4A5D4E" />
           </Pressable>
         )}
       </View>
@@ -100,28 +90,28 @@ function Field({
 }
 
 const fieldStyles = StyleSheet.create({
-  group: { marginBottom: 14 },
-  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  label: { fontSize: 12, fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.4 },
-  optional: { fontSize: 11, color: '#94A3B8' },
-  inputWrap: { flexDirection: 'row', alignItems: 'center' },
+  group: { marginBottom: 16 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 },
+  label: { fontSize: 13, fontWeight: '600', color: '#4A5D4E' },
+  optional: { fontSize: 12, color: '#7F8D82' },
+  inputWrap: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    backgroundColor: '#E1E5E1',
+    borderRadius: 16,
+    height: 56,
+    paddingHorizontal: 16,
+  },
   input: {
-    flex: 1, height: 48, borderWidth: 1.5, borderColor: '#E2E8F0',
-    borderRadius: 12, paddingHorizontal: 14,
-    backgroundColor: '#F8FAFC', color: '#0F172A', fontSize: 14,
+    flex: 1, height: '100%', color: '#2F3E32', fontSize: 16,
   },
-  inputWithEye: { borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRightWidth: 0 },
-  inputError: { borderColor: '#FCA5A5' },
+  inputError: { borderWidth: 1, borderColor: '#FCA5A5' },
   eyeBtn: {
-    height: 48, width: 48,
-    borderWidth: 1.5, borderColor: '#E2E8F0', borderLeftWidth: 0,
-    borderTopRightRadius: 12, borderBottomRightRadius: 12,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center', justifyContent: 'center',
+    height: 56, width: 40,
+    alignItems: 'flex-end', justifyContent: 'center',
   },
-  eyeIcon: { fontSize: 16 },
-  hint: { fontSize: 11, color: '#94A3B8', marginTop: 4 },
-  errorHint: { fontSize: 11, color: '#DC2626', marginTop: 4 },
+  hint: { fontSize: 12, color: '#7F8D82', marginTop: 6, paddingHorizontal: 4 },
+  errorHint: { fontSize: 12, color: '#DC2626', marginTop: 6, paddingHorizontal: 4 },
 });
 
 // ─── Main SignupScreen ────────────────────────────────────────────────────────
@@ -145,10 +135,6 @@ export default function SignupScreen({ onGoToLogin }: Props) {
   const [designation, setDesignation] = useState('');
   const [departmentCode, setDepartmentCode] = useState('');
 
-  // Admin-specific
-  const [city, setCity] = useState('');
-  const [adminCode, setAdminCode] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
 
@@ -167,12 +153,10 @@ export default function SignupScreen({ onGoToLogin }: Props) {
     password === confirmPassword;
 
   const workerValid = commonValid && designation.trim().length >= 2;
-  const adminValid = commonValid && city.trim().length >= 2;
 
   const canSubmit =
     selectedRole === 'citizen' ? commonValid :
-    selectedRole === 'worker' ? workerValid :
-    selectedRole === 'admin' ? adminValid : false;
+    selectedRole === 'worker' ? workerValid : false;
 
   // ── Submit ──────────────────────────────────────────────────────────────────
 
@@ -194,11 +178,6 @@ export default function SignupScreen({ onGoToLogin }: Props) {
       if (departmentCode.trim()) payload.departmentCode = departmentCode.trim();
     }
 
-    if (selectedRole === 'admin') {
-      payload.city = city.trim();
-      if (adminCode.trim()) payload.adminCode = adminCode.trim();
-    }
-
     try {
       await apiPost('/auth/signup', payload);
       onGoToLogin(`Account created! Sign in as ${name.trim().split(' ')[0]}.`);
@@ -217,24 +196,19 @@ export default function SignupScreen({ onGoToLogin }: Props) {
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Pressable style={styles.backBtn} onPress={() => onGoToLogin()}>
-              <Text style={styles.backIcon}>←</Text>
-            </Pressable>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoEmoji}>🏙️</Text>
-            </View>
-            <Text style={styles.pageTitle}>Create Account</Text>
-            <Text style={styles.pageSubtitle}>Choose your role to get started</Text>
+            <Text style={styles.logoEmoji}>🏙️</Text>
+            <Text style={styles.pageTitle}>Let's make change together</Text>
+            <Text style={styles.pageSubtitle}>Select your role to get started</Text>
           </View>
 
           {/* Role cards */}
-          <View style={styles.roleList}>
+          <View style={styles.formSection}>
             {ROLES.map((role) => (
               <Pressable
                 key={role.id}
                 style={[
                   styles.roleCard,
-                  selectedRole === role.id && { borderColor: role.color, backgroundColor: role.bg },
+                  selectedRole === role.id && styles.roleCardSelected,
                 ]}
                 onPress={() => setSelectedRole(role.id)}
               >
@@ -249,23 +223,29 @@ export default function SignupScreen({ onGoToLogin }: Props) {
                 </View>
                 <View style={[
                   styles.radioOuter,
-                  selectedRole === role.id && { borderColor: role.color },
+                  selectedRole === role.id && styles.radioOuterSelected,
                 ]}>
                   {selectedRole === role.id && (
-                    <View style={[styles.radioInner, { backgroundColor: role.color }]} />
+                    <View style={styles.radioInner} />
                   )}
                 </View>
               </Pressable>
             ))}
           </View>
 
-          <Pressable
-            style={[styles.primaryBtn, !selectedRole && styles.primaryBtnDisabled]}
-            onPress={() => selectedRole && setStep('details')}
-            disabled={!selectedRole}
-          >
-            <Text style={styles.primaryBtnText}>Continue →</Text>
-          </Pressable>
+          <View style={styles.formSection}>
+            <Button
+              mode="contained"
+              onPress={() => selectedRole && setStep('details')}
+              disabled={!selectedRole}
+              style={styles.primaryBtn}
+              contentStyle={{ height: 56 }}
+              labelStyle={styles.primaryBtnText}
+              buttonColor="#6A8D73"
+            >
+              Continue
+            </Button>
+          </View>
 
           <View style={styles.switchRow}>
             <Text style={styles.switchText}>Already have an account? </Text>
@@ -286,6 +266,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      pointerEvents={loading ? 'none' : 'auto'}
     >
       <ScrollView
         contentContainerStyle={styles.container}
@@ -297,31 +278,24 @@ export default function SignupScreen({ onGoToLogin }: Props) {
           <Pressable style={styles.backBtn} onPress={() => setStep('role')}>
             <Text style={styles.backIcon}>←</Text>
           </Pressable>
-          <View style={[styles.rolePill, { backgroundColor: roleObj.bg }]}>
-            <Text style={styles.rolePillIcon}>{roleObj.icon}</Text>
-            <Text style={[styles.rolePillText, { color: roleObj.color }]}>{roleObj.label}</Text>
-          </View>
           <Text style={styles.pageTitle}>Your Details</Text>
-          <Text style={styles.pageSubtitle}>Fill in your information to create your account</Text>
+          <Text style={styles.pageSubtitle}>Creating a {roleObj.label} account</Text>
         </View>
 
-        {/* Form card */}
-        <View style={styles.card}>
-          {/* ── Common fields ── */}
-          <Text style={styles.sectionLabel}>Personal Information</Text>
-
+        {/* Form */}
+        <View style={styles.formSection}>
           <Field
             label="Full Name"
             value={name}
             onChange={setName}
-            placeholder="Rahul Sharma"
+            placeholder="Name"
             autoCapitalize="words"
           />
           <Field
             label="Email Address"
             value={email}
             onChange={setEmail}
-            placeholder="rahul@example.com"
+            placeholder="E-mail"
             keyboardType="email-address"
             autoCapitalize="none"
             error={emailError}
@@ -330,30 +304,25 @@ export default function SignupScreen({ onGoToLogin }: Props) {
             label="Phone Number"
             value={phone}
             onChange={setPhone}
-            placeholder="9876543210"
+            placeholder="Phone Number"
             keyboardType="phone-pad"
             autoCapitalize="none"
             error={phoneError}
           />
-
-          <View style={styles.divider} />
-          <Text style={styles.sectionLabel}>Security</Text>
-
           <Field
             label="Password"
             value={password}
             onChange={setPassword}
-            placeholder="Min 8 characters"
+            placeholder="Password"
             secure
             autoCapitalize="none"
-            hint="Use letters, numbers and symbols for a strong password"
             error={passwordError}
           />
           <Field
             label="Confirm Password"
             value={confirmPassword}
             onChange={setConfirmPassword}
-            placeholder="Repeat your password"
+            placeholder="Confirm Password"
             secure
             autoCapitalize="none"
             error={confirmError}
@@ -363,46 +332,20 @@ export default function SignupScreen({ onGoToLogin }: Props) {
           {selectedRole === 'worker' && (
             <>
               <View style={styles.divider} />
-              <Text style={styles.sectionLabel}>Work Details</Text>
               <Field
                 label="Designation / Job Title"
                 value={designation}
                 onChange={setDesignation}
-                placeholder="e.g. Field Engineer, Plumber"
+                placeholder="Designation"
                 autoCapitalize="words"
               />
               <Field
                 label="Department Code"
                 value={departmentCode}
                 onChange={setDepartmentCode}
-                placeholder="e.g. ROADS, WATER (ask your supervisor)"
+                placeholder="Department Code"
                 autoCapitalize="characters"
                 optional
-                hint="Leave blank if you don't know — admin will assign you"
-              />
-            </>
-          )}
-
-          {/* ── Admin-specific fields ── */}
-          {selectedRole === 'admin' && (
-            <>
-              <View style={styles.divider} />
-              <Text style={styles.sectionLabel}>Administrative Details</Text>
-              <Field
-                label="City / Municipality"
-                value={city}
-                onChange={setCity}
-                placeholder="e.g. Bengaluru"
-                autoCapitalize="words"
-              />
-              <Field
-                label="Admin Authorization Code"
-                value={adminCode}
-                onChange={setAdminCode}
-                placeholder="Provided by your organization"
-                autoCapitalize="characters"
-                optional
-                hint="Contact your system administrator if you don't have this"
               />
             </>
           )}
@@ -415,15 +358,18 @@ export default function SignupScreen({ onGoToLogin }: Props) {
           ) : null}
 
           {/* Submit */}
-          <Pressable
-            style={[styles.primaryBtn, (!canSubmit || loading) && styles.primaryBtnDisabled]}
+          <Button
+            mode="contained"
             onPress={() => { void handleSubmit(); }}
             disabled={!canSubmit || loading}
+            loading={loading}
+            style={styles.primaryBtn}
+            contentStyle={{ height: 56 }}
+            labelStyle={styles.primaryBtnText}
+            buttonColor="#6A8D73"
           >
-            {loading
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={styles.primaryBtnText}>Create Account</Text>}
-          </Pressable>
+            Sign up
+          </Button>
         </View>
 
         <View style={styles.switchRow}>
@@ -432,63 +378,54 @@ export default function SignupScreen({ onGoToLogin }: Props) {
             <Text style={styles.switchLink}>Sign in</Text>
           </Pressable>
         </View>
-
-        {/* Terms note */}
-        <Text style={styles.termsNote}>
-          By creating an account you agree to our Terms of Service and Privacy Policy.
-        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#F4F6FA' },
+  flex: { flex: 1, backgroundColor: '#F3F4F1' },
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 30,
+    paddingTop: 40,
     paddingBottom: 40,
   },
 
   // Header
-  header: { alignItems: 'center', marginBottom: 24, width: '100%' },
+  header: { alignItems: 'center', marginBottom: 40, width: '100%', position: 'relative' },
   backBtn: {
-    alignSelf: 'flex-start',
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0',
+    position: 'absolute',
+    left: 0,
+    top: 4,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#E1E5E1',
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: 16,
   },
-  backIcon: { fontSize: 18, color: '#0F172A' },
-  logoCircle: {
-    width: 64, height: 64, borderRadius: 18,
-    backgroundColor: '#0F766E',
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 12,
-    shadowColor: '#0F766E', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
+  backIcon: { fontSize: 20, color: '#2F3E32', fontWeight: 'bold' },
+  logoEmoji: { fontSize: 48, marginBottom: 16 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#2F3E32', letterSpacing: -0.5, textAlign: 'center' },
+  pageSubtitle: { fontSize: 18, fontWeight: '500', color: '#2F3E32', marginTop: 4, textAlign: 'center' },
+
+  formSection: {
+    width: '100%',
+    maxWidth: 400,
+    marginBottom: 20,
   },
-  logoEmoji: { fontSize: 30 },
-  rolePill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 20, marginBottom: 12,
-  },
-  rolePillIcon: { fontSize: 16 },
-  rolePillText: { fontSize: 13, fontWeight: '700' },
-  pageTitle: { fontSize: 22, fontWeight: '800', color: '#0F172A', letterSpacing: -0.3 },
-  pageSubtitle: { fontSize: 13, color: '#64748B', marginTop: 4, textAlign: 'center' },
 
   // Role cards
-  roleList: { width: '100%', gap: 10, marginBottom: 20 },
   roleCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16,
-    borderWidth: 2, borderColor: '#E2E8F0',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+    borderWidth: 2, borderColor: '#FFFFFF',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+    marginBottom: 16,
+  },
+  roleCardSelected: {
+    borderColor: '#6A8D73',
+    backgroundColor: '#F3F4F1',
   },
   roleIconWrap: {
     width: 48, height: 48, borderRadius: 14,
@@ -496,55 +433,38 @@ const styles = StyleSheet.create({
   },
   roleIcon: { fontSize: 22 },
   roleInfo: { flex: 1 },
-  roleLabel: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
-  roleDesc: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  roleLabel: { fontSize: 16, fontWeight: '700', color: '#2F3E32' },
+  roleDesc: { fontSize: 13, color: '#7F8D82', marginTop: 2 },
   radioOuter: {
-    width: 20, height: 20, borderRadius: 10,
-    borderWidth: 2, borderColor: '#CBD5E1',
+    width: 24, height: 24, borderRadius: 12,
+    borderWidth: 2, borderColor: '#C4CBC5',
     alignItems: 'center', justifyContent: 'center',
   },
-  radioInner: { width: 10, height: 10, borderRadius: 5 },
+  radioOuterSelected: {
+    borderColor: '#6A8D73',
+  },
+  radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#6A8D73' },
 
-  // Form card
-  card: {
-    width: '100%', maxWidth: 440,
-    backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20,
-    borderWidth: 1, borderColor: '#E2E8F0',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07, shadowRadius: 16, elevation: 4,
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    fontSize: 11, fontWeight: '700', color: '#94A3B8',
-    textTransform: 'uppercase', letterSpacing: 0.8,
-    marginBottom: 14,
-  },
-  divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 16 },
+  divider: { height: 1, backgroundColor: '#E1E5E1', marginVertical: 16 },
 
   // Error
   errorBox: {
     backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
-    borderRadius: 10, padding: 12, marginBottom: 12,
+    borderRadius: 16, padding: 12, marginBottom: 16,
   },
   errorText: { fontSize: 13, color: '#DC2626', lineHeight: 18 },
 
   // Buttons
   primaryBtn: {
-    height: 52, borderRadius: 14,
-    backgroundColor: '#0F766E',
-    alignItems: 'center', justifyContent: 'center', marginTop: 4,
-    shadowColor: '#0F766E', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+    height: 56, borderRadius: 28,
+    backgroundColor: '#6A8D73',
+    alignItems: 'center', justifyContent: 'center', marginTop: 8,
   },
-  primaryBtnDisabled: { opacity: 0.45, shadowOpacity: 0 },
-  primaryBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  primaryBtnDisabled: { opacity: 0.6 },
+  primaryBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 18 },
 
   // Footer
-  switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
-  switchText: { fontSize: 14, color: '#64748B' },
-  switchLink: { fontSize: 14, fontWeight: '700', color: '#0F766E' },
-  termsNote: {
-    fontSize: 11, color: '#94A3B8', textAlign: 'center',
-    marginTop: 16, lineHeight: 16, paddingHorizontal: 20,
-  },
+  switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
+  switchText: { fontSize: 15, color: '#4A5D4E' },
+  switchLink: { fontSize: 15, fontWeight: '700', color: '#2F3E32', textDecorationLine: 'underline' },
 });

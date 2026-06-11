@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Alert } from 'react-native';
 
 // Notification types based on Level A features

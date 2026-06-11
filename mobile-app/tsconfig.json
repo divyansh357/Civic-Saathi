@@ -50,6 +50,9 @@
       ],
       "@navigation/*": [
         "./src/navigation/*"
+      ],
+      "@theme/*": [
+        "./src/theme/*"
       ]
     },
     "allowJs": true,

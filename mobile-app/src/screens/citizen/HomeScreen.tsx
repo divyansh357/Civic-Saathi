@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, ActivityIndicator
 } from 'react-native';
+import * as Location from 'expo-location';
 import { useAuthStore, useComplaintStore } from '@store/index';
 import { apiGet } from '@services/api/client';
 import { Complaint } from '@/types';
@@ -77,6 +78,10 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
   const { complaints, setComplaints, isLoading, setLoading } = useComplaintStore();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [refreshing, setRefreshing] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [nearbyComplaints, setNearbyComplaints] = useState<Complaint[]>([]);
+  const [loadingLocation, setLoadingLocation] = useState(true);
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const fetchComplaints = async (silent = false) => {
     if (!accessToken) return;
@@ -96,6 +101,46 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
   };
 
   useEffect(() => { void fetchComplaints(); }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Effect 1: Request location permission & get coordinates (runs once on mount)
+  useEffect(() => {
+    (async () => {
+      setLoadingLocation(true);
+      setLocationError(null);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setLocationError('Location permission denied. Enable it in Settings to see nearby complaints.');
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({});
+        setUserCoords({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } catch {
+        setLocationError('Unable to fetch your location. Please try again.');
+      } finally {
+        setLoadingLocation(false);
+      }
+    })();
+  }, []); // runs once on mount
+
+  // Effect 2: Populate nearby complaints when we have BOTH coordinates AND complaints
+  useEffect(() => {
+    if (!userCoords) return; // location not ready yet
+
+    // TODO: Replace this simulation with a real API call when available:
+    // e.g. const res = await apiGet(`/complaints/nearby?lat=${userCoords.latitude}&lng=${userCoords.longitude}`, accessToken);
+    // setNearbyComplaints(res.data ?? []);
+
+    // Simulation: show up to 5 recent complaints as "nearby"
+    if (complaints.length > 0) {
+      setNearbyComplaints(complaints.slice(0, Math.min(5, complaints.length)));
+    } else {
+      setNearbyComplaints([]);
+    }
+  }, [userCoords, complaints]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -168,6 +213,34 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
           complaints.map((c) => (
             <ComplaintCard
               key={c.id}
+              complaint={c}
+              onPress={() => onComplaintDetail(c)}
+            />
+          ))
+        )}
+      </View>
+
+      {/* Complaints Near Me */}
+      <View style={[styles.section, { marginTop: 20 }]}>
+        <Text style={styles.sectionTitle}>Complaints Near Me</Text>
+        {loadingLocation ? (
+          <ActivityIndicator color="#0F766E" style={{ marginTop: 24 }} />
+        ) : locationError ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📍</Text>
+            <Text style={styles.emptyTitle}>Location Required</Text>
+            <Text style={styles.emptySubtitle}>{locationError}</Text>
+          </View>
+        ) : nearbyComplaints.length === 0 ? (
+           <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>✨</Text>
+            <Text style={styles.emptyTitle}>All Clear!</Text>
+            <Text style={styles.emptySubtitle}>No complaints near your location.</Text>
+          </View>
+        ) : (
+          nearbyComplaints.map((c) => (
+            <ComplaintCard
+              key={`nearby-${c.id}`}
               complaint={c}
               onPress={() => onComplaintDetail(c)}
             />

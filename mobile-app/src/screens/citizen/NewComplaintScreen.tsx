@@ -6,8 +6,9 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Audio } from 'expo-av';
+import { Button } from 'react-native-paper';
 import { useAuthStore } from '@store/index';
-import { apiPost } from '@services/api/client';
+import { apiPost, apiPostWithHeaders } from '@services/api/client';
 
 const CATEGORIES = [
   { id: 'ROADS', label: '🛣️ Roads', desc: 'Potholes, damage, cave-ins' },
@@ -19,10 +20,10 @@ const CATEGORIES = [
 ];
 
 const PRIORITIES = [
-  { id: 'CRITICAL', label: '🔴 Critical', color: '#f87171' },
-  { id: 'HIGH', label: '🟠 High', color: '#fb923c' },
-  { id: 'MEDIUM', label: '🟡 Medium', color: '#fbbf24' },
-  { id: 'LOW', label: '🔵 Low', color: '#60a5fa' },
+  { id: 'CRITICAL', label: '🔴 Critical', color: '#f87171', value: 1 },
+  { id: 'HIGH', label: '🟠 High', color: '#fb923c', value: 2 },
+  { id: 'MEDIUM', label: '🟡 Medium', color: '#fbbf24', value: 3 },
+  { id: 'LOW', label: '🔵 Low', color: '#60a5fa', value: 4 },
 ];
 
 interface NewComplaintScreenProps {
@@ -52,6 +53,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [voiceNote, setVoiceNote] = useState<string | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   // Level C: AI suggestions
   const [aiSuggesting, setAiSuggesting] = useState(false);
@@ -62,7 +64,13 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
     complaintId: string; title: string; status: string; similarity: number;
   }>>([]);
 
-  const canSubmit = title.trim().length >= 5 && category !== '' && description.trim().length >= 10;
+  // Validation helpers
+  const isTitleValid = title.trim().length >= 5;
+  const isDescriptionValid = description.trim().length >= 10;
+  const isCategoryValid = category !== '';
+  const isLocationValid = address.trim().length > 0;
+  const isPhotoValid = images.length > 0;
+  const canSubmit = isTitleValid && isCategoryValid && isDescriptionValid && isLocationValid && isPhotoValid;
 
   // AI: suggest category when title + description are long enough
   useEffect(() => {
@@ -120,6 +128,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   // Auto-fetch location on component mount
   useEffect(() => {
     requestLocationPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const requestLocationPermission = async () => {
@@ -138,6 +147,13 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   const getCurrentLocation = async () => {
     setLocationLoading(true);
     try {
+      // Always check/request permission before accessing location
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location Permission', 'Location access is needed to auto-fill your complaint location. Please enable it in Settings.');
+        return;
+      }
+
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
@@ -159,9 +175,8 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
         address: formattedAddress,
       });
       
-      if (!address) {
-        setAddress(formattedAddress);
-      }
+      // Always update address to ensure it is populated
+      setAddress(formattedAddress);
     } catch (error) {
       console.error('Location error:', error);
       Alert.alert('Location Error', 'Could not get your current location. Please enter address manually.');
@@ -279,22 +294,45 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || !accessToken) return;
+    setAttemptedSubmit(true);
+
+    if (!canSubmit) {
+      // Collect missing field names for the alert
+      const missing: string[] = [];
+      if (!isTitleValid) missing.push('Title (min 5 chars)');
+      if (!isCategoryValid) missing.push('Category');
+      if (!isDescriptionValid) missing.push('Description (min 10 chars)');
+      if (!isLocationValid) missing.push('Location');
+      if (!isPhotoValid) missing.push('Photo (at least 1)');
+      Alert.alert('Missing Fields', `Please fill in:\n• ${missing.join('\n• ')}`);
+      return;
+    }
+
+    if (!accessToken) return;
+    const user = useAuthStore.getState().user;
+    if (!user?.id) {
+      Alert.alert('Error', 'User session not found. Please log in again.');
+      return;
+    }
     setSubmitting(true);
     try {
+      // Map priority string to integer: 1=CRITICAL, 2=HIGH, 3=MEDIUM, 4=LOW
+      const priorityInt = PRIORITIES.find(p => p.id === priority)?.value ?? 3;
+
       const complaintData = {
         title: title.trim(),
         description: description.trim(),
         category,
-        priority,
-        address: address.trim(),
+        priority: priorityInt,
+        location: address.trim(),
         latitude: location?.latitude,
         longitude: location?.longitude,
         // TODO: Upload images and voice note to storage service
-        // For now, we'll just submit the text data
       };
 
-      await apiPost('/complaints', complaintData, accessToken);
+      await apiPostWithHeaders('/complaints', complaintData, accessToken, {
+        'User-Id': user.id,
+      });
       
       Alert.alert('Success', 'Your complaint has been submitted successfully!', [
         { text: 'OK', onPress: onSuccess }
@@ -436,8 +474,8 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
 
         {/* Location Section */}
         <View style={styles.field}>
-          <Text style={styles.label}>Location / Address</Text>
-          <View style={styles.locationContainer}>
+          <Text style={styles.label}>Location / Address <Text style={styles.required}>*</Text></Text>
+          <View style={[styles.locationContainer, attemptedSubmit && !isLocationValid && styles.fieldError]}>
             <TextInput
               style={[styles.input, { flex: 1 }]}
               placeholder="Street address or landmark"
@@ -457,6 +495,9 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
               )}
             </Pressable>
           </View>
+          {attemptedSubmit && !isLocationValid && (
+            <Text style={styles.errorText}>📍 Location is required. Tap the pin icon to detect or type an address.</Text>
+          )}
           {location && (
             <View style={styles.locationInfo}>
               <Text style={styles.locationText}>
@@ -468,8 +509,8 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
 
         {/* Images Section */}
         <View style={styles.field}>
-          <Text style={styles.label}>Photos (Optional)</Text>
-          <View style={styles.mediaContainer}>
+          <Text style={styles.label}>Photos <Text style={styles.required}>*</Text></Text>
+          <View style={[styles.mediaContainer, attemptedSubmit && !isPhotoValid && styles.fieldError]}>
             <Pressable style={styles.addMediaBtn} onPress={showImageOptions}>
               <Text style={styles.addMediaIcon}>📷</Text>
               <Text style={styles.addMediaText}>Add Photo</Text>
@@ -491,6 +532,9 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
               </ScrollView>
             )}
           </View>
+          {attemptedSubmit && !isPhotoValid && (
+            <Text style={styles.errorText}>📷 At least one photo is required as evidence.</Text>
+          )}
         </View>
 
         {/* Voice Note Section */}
@@ -530,17 +574,18 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
         </View>
 
         {/* Submit */}
-        <Pressable
-          style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
+        <Button
+          mode="contained"
           onPress={() => void handleSubmit()}
-          disabled={!canSubmit || submitting}
+          disabled={submitting}
+          loading={submitting}
+          style={styles.submitBtn}
+          contentStyle={{ height: 56 }}
+          labelStyle={styles.submitText}
+          buttonColor="#0F766E"
         >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitText}>Submit Complaint</Text>
-          )}
-        </Pressable>
+          Submit Complaint
+        </Button>
 
         <Text style={styles.disclaimer}>
           Your complaint will be reviewed and assigned to the relevant department within 24 hours.
@@ -565,6 +610,8 @@ const styles = StyleSheet.create({
   field: { marginBottom: 20 },
   label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 8 },
   required: { color: '#f87171' },
+  errorText: { fontSize: 12, color: '#ef4444', marginTop: 4, fontWeight: '500' },
+  fieldError: { borderWidth: 1.5, borderColor: '#ef4444', borderRadius: 10 },
   hint: { fontSize: 11, color: '#94A3B8', marginTop: 4, textAlign: 'right' },
   input: {
     backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0',

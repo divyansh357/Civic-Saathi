@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -6,7 +6,10 @@ import {
   StyleSheet,
   Text,
   View,
+  Animated,
 } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
+import { civicTheme } from '@theme/index';
 import { useAuthStore } from '@store/index';
 import { Complaint } from '@/types';
 import { notificationService } from '@services/notifications';
@@ -36,7 +39,7 @@ type WorkerScreen = 'home' | 'notifications';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
-export default function App() {
+function AppContent() {
   const hydrateUser = useAuthStore((s) => s.hydrateUser);
   const isLoading = useAuthStore((s) => s.isLoading);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -87,20 +90,41 @@ export default function App() {
     }
   }, [isAuthenticated, user?.role]);
 
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    if (!bootstrapped || isLoading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 0.4,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [bootstrapped, isLoading, pulseAnim]);
+
   // ── Loading splash ──────────────────────────────────────────────────────────
 
   if (!bootstrapped || isLoading) {
     return (
       <SafeAreaView style={styles.splash}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F4F6FA" />
+        <StatusBar barStyle="dark-content" backgroundColor="#F3F4F1" />
         <View style={styles.splashContent}>
-          <View style={styles.splashLogo}>
+          <Animated.View style={[styles.splashLogo, { opacity: pulseAnim }]}>
             <Text style={styles.splashEmoji}>🏙️</Text>
-          </View>
+          </Animated.View>
           <Text style={styles.splashTitle}>Civic Saathi</Text>
           <ActivityIndicator
             size="large"
-            color="#0F766E"
+            color="#6A8D73"
             style={{ marginTop: 24 }}
           />
           <Text style={styles.splashSubtitle}>Loading your account...</Text>
@@ -229,6 +253,7 @@ export default function App() {
 // ─── Admin notice screen ──────────────────────────────────────────────────────
 
 function AdminNoticeScreen({ userName, onLogout }: { userName: string; onLogout: () => void }) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pressable } = require('react-native') as typeof import('react-native');
   return (
     <View style={adminStyles.container}>
@@ -267,23 +292,33 @@ const adminStyles = StyleSheet.create({
   logoutText: { fontSize: 14, fontWeight: '600', color: '#DC2626' },
 });
 
+// ─── Root Provider ────────────────────────────────────────────────────────────
+
+export default function App() {
+  return (
+    <PaperProvider theme={civicTheme}>
+      <AppContent />
+    </PaperProvider>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F6FA' },
-  splash: { flex: 1, backgroundColor: '#F4F6FA' },
+  container: { flex: 1, backgroundColor: '#F3F4F1' },
+  splash: { flex: 1, backgroundColor: '#F3F4F1' },
   splashContent: {
     flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24,
   },
   splashLogo: {
     width: 80, height: 80, borderRadius: 22,
-    backgroundColor: '#0F766E',
+    backgroundColor: '#6A8D73',
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 16,
-    shadowColor: '#0F766E', shadowOffset: { width: 0, height: 6 },
+    shadowColor: '#6A8D73', shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35, shadowRadius: 14, elevation: 8,
   },
   splashEmoji: { fontSize: 40 },
-  splashTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
-  splashSubtitle: { fontSize: 13, color: '#94A3B8', marginTop: 12 },
+  splashTitle: { fontSize: 24, fontWeight: '800', color: '#2F3E32', letterSpacing: -0.5 },
+  splashSubtitle: { fontSize: 13, color: '#4A5B4D', marginTop: 12 },
 });
