@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: civic-saathi-backend
+    runtime: docker
+    dockerfilePath: ./infra/docker/backend.Dockerfile
+    dockerContext: .
+    branch: dev
+    region: singapore   # closest to South Asia; change to ohio/oregon if targeting US
+    plan: free          # upgrade to starter ($7/mo) to avoid cold starts
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        sync: false     # set manually in Render dashboard (contains password)
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure random value
+      - key: JPA_DDL_AUTO
+        value: none           # schema is managed by db/schema.sql, not Hibernate
+      - key: SERVER_PORT
+        value: "8080"
+      - key: JWT_ACCESS_TOKEN_EXPIRATION_MS
+        value: "900000"
+      - key: JWT_REFRESH_TOKEN_EXPIRATION_MS
+        value: "604800000"
+      - key: CEREBRAS_API_KEY
+        sync: false     # optional — set if you want AI features
+      - key: CEREBRAS_MODEL
+        value: llama3.1-8b
+      - key: CEREBRAS_MAX_TOKENS
+        value: "512"
