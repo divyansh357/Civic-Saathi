@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/complaints")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class ComplaintCommentController {
 
     @Autowired private ComplaintCommentRepository commentRepository;

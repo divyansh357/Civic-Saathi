@@ -31,3 +31,5 @@ services:
         value: llama3.1-8b
       - key: CEREBRAS_MAX_TOKENS
         value: "512"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://civic-saathi-three.vercel.app"

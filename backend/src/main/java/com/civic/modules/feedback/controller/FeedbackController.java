@@ -17,7 +17,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/feedback")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class FeedbackController {
 
     @Autowired
