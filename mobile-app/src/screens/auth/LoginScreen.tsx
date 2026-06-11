@@ -46,7 +46,7 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
       >
         {/* Logo & Header */}
         <View style={styles.headerSection}>
-          <Text style={styles.logoEmoji}>🏙️</Text>
+          <Text style={styles.logoEmoji}><Ionicons name="business" size={20} color="#64748b" /></Text>
           <Text style={styles.headerTitle}>Welcome back</Text>
           <Text style={styles.headerSubtitle}>Sign in to your account</Text>
         </View>
@@ -65,7 +65,7 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
         <View style={styles.formSection}>
           {/* Email */}
           <View style={[styles.inputWrap, emailError ? styles.inputError : null]}>
-            <Text style={styles.inputIcon}>✉️</Text>
+            <Text style={styles.inputIcon}><Ionicons name="mail-outline" size={20} color="#64748b" /></Text>
             <TextInput
               style={styles.input}
               value={email}
@@ -82,7 +82,7 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
 
           {/* Password */}
           <View style={styles.inputWrap}>
-            <Text style={styles.inputIcon}>🔒</Text>
+            <Text style={styles.inputIcon}><Ionicons name="lock-closed-outline" size={20} color="#64748b" /></Text>
             <TextInput
               style={styles.input}
               value={password}

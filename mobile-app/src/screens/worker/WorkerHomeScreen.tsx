@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
 import { apiGet, apiPost } from '@services/api/client';
 import { Assignment } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 
 // Extend Assignment type for mobile
 interface WorkerAssignment extends Assignment {
@@ -84,7 +85,7 @@ function AssignmentCard({ assignment, onAccept, onComplete, onNavigate }: Assign
         </View>
         {sla && (
           <Text style={[styles.slaText, { color: sla.breached ? '#f87171' : sla.label.includes('1h') ? '#fbbf24' : '#94A3B8' }]}>
-            {sla.breached ? '🔴' : '🟡'} {sla.label}
+            {sla.breached ? <Ionicons name="close-circle-outline" size={20} color="red" /> : <Ionicons name="alert-circle-outline" size={20} color="orange" />} {sla.label}
           </Text>
         )}
       </View>
@@ -95,7 +96,7 @@ function AssignmentCard({ assignment, onAccept, onComplete, onNavigate }: Assign
 
       {assignment.complaintAddress && (
         <View style={styles.addressRow}>
-          <Text style={styles.cardAddress} numberOfLines={1}>📍 {assignment.complaintAddress}</Text>
+          <Text style={styles.cardAddress} numberOfLines={1}><Ionicons name="location-outline" size={20} color="#64748b" /> {assignment.complaintAddress}</Text>
           {assignment.distance !== undefined && (
             <Text style={styles.distanceText}>{assignment.distance.toFixed(1)} km</Text>
           )}
@@ -117,7 +118,7 @@ function AssignmentCard({ assignment, onAccept, onComplete, onNavigate }: Assign
         {assignment.complaintLatitude && assignment.complaintLongitude && 
          !['COMPLETED'].includes(assignment.status) && (
           <Pressable style={styles.navBtn} onPress={() => onNavigate(assignment)}>
-            <Text style={styles.navBtnText}>🗺️ Navigate</Text>
+            <Text style={styles.navBtnText}><Ionicons name="map-outline" size={20} color="#64748b" /> Navigate</Text>
           </Pressable>
         )}
         
@@ -313,16 +314,16 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
           <Text style={styles.workerName}>{user?.name ?? 'Worker'}</Text>
           <Text style={styles.workerRole}>Field Worker</Text>
           {workerLocation && (
-            <Text style={styles.locationStatus}>📍 Location enabled</Text>
+            <Text style={styles.locationStatus}><Ionicons name="location-outline" size={20} color="#64748b" /> Location enabled</Text>
           )}
           {locationLoading && (
-            <Text style={styles.locationStatus}>📍 Getting location...</Text>
+            <Text style={styles.locationStatus}><Ionicons name="location-outline" size={20} color="#64748b" /> Getting location...</Text>
           )}
         </View>
         <View style={styles.headerActions}>
           {onNavigateToNotifications && (
             <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
-              <Text style={styles.notificationIcon}>🔔</Text>
+              <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
             </Pressable>
           )}
           <Pressable style={styles.logoutBtn} onPress={() => void logout()}>

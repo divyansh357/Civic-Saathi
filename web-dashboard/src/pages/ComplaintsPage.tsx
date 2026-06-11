@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+﻿import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet, apiPut, apiPost } from '../services/api/client';
 import { Complaint, ComplaintStatus, PagedResponse, ReopenRequest } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/StatusBadge';
+import { AlertTriangle, Search, ClipboardList, MapPin , RefreshCw, X, Check} from 'lucide-react';
 
 const STATUS_OPTIONS: ComplaintStatus[] = [
   'SUBMITTED', 'VERIFIED', 'ROUTED', 'ASSIGNED', 'IN_PROGRESS',
@@ -123,7 +124,7 @@ function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
             {complaint.address && (
               <div style={{ gridColumn: '1 / -1' }}>
                 <div className="form-label">Location</div>
-                <div style={{ color: 'var(--text-2)', marginTop: 4 }}>📍 {complaint.address}</div>
+                <div style={{ color: 'var(--text-2)', marginTop: 4 }}><MapPin size={16} className="icon-inline" /> {complaint.address}</div>
               </div>
             )}
             <div>
@@ -169,9 +170,9 @@ function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
                   {r.status === 'REQUESTED' && (
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-sm" style={{ background: 'var(--green-bg)', color: 'var(--green)', border: 'none' }}
-                        onClick={() => void handleReopenAction(r.id, 'approve')}>✓ Approve</button>
+                        onClick={() => void handleReopenAction(r.id, 'approve')}><><Check size={16} className="icon-inline" /> Approve</></button>
                       <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
-                        onClick={() => void handleReopenAction(r.id, 'reject')}>✕ Reject</button>
+                        onClick={() => void handleReopenAction(r.id, 'reject')}><><X size={16} className="icon-inline" /> Reject</></button>
                     </div>
                   )}
                 </div>
@@ -184,7 +185,7 @@ function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
           {!['RESOLVED', 'CLOSED', 'ESCALATED'].includes(complaint.status) && (
             <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
               onClick={() => void handleEscalate()} disabled={escalating}>
-              {escalating ? '...' : '🚨 Escalate'}
+              {escalating ? '...' : <><AlertTriangle size={16} className="icon-inline" /> Escalate</>}
             </button>
           )}
           <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={saving}>
@@ -263,7 +264,7 @@ export default function ComplaintsPage() {
       <div className="card">
         <div className="filters-bar">
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><Search size={16} className="icon-inline" /></span>
             <input
               className="search-input"
               placeholder="Search complaints..."
@@ -285,7 +286,7 @@ export default function ComplaintsPage() {
           </select>
 
           <button className="btn btn-ghost btn-sm" onClick={() => void fetchComplaints()}>
-            🔄 Refresh
+            <><RefreshCw size={16} className="icon-inline" /> Refresh</>
           </button>
 
           {loading && <span className="spinner" />}
@@ -293,7 +294,7 @@ export default function ComplaintsPage() {
 
         {complaints.length === 0 && !loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📋</div>
+            <div className="empty-state-icon"><ClipboardList size={16} className="icon-inline" /></div>
             <h3>No complaints found</h3>
             <p>Try adjusting your filters or search query</p>
           </div>
@@ -378,3 +379,5 @@ export default function ComplaintsPage() {
     </div>
   );
 }
+
+

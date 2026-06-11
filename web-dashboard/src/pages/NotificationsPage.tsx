@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useAuthStore, useNotificationStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { Notification } from '../types';
+import { AlertTriangle, GitMerge, ClipboardList, Settings, CheckCircle2, AlertCircle , Bell, Check} from 'lucide-react';
+import React from 'react';
 
 const MOCK: Notification[] = [
   { id: 'n1', message: 'Complaint C-1002 has been escalated due to SLA breach', type: 'ESCALATION', read: false, createdAt: '2026-05-10T11:30:00' },
@@ -12,13 +14,13 @@ const MOCK: Notification[] = [
   { id: 'n6', message: 'New worker Deepak Joshi registered in Electricity dept', type: 'SYSTEM', read: true, createdAt: '2026-05-09T18:00:00' },
 ];
 
-const TYPE_ICONS: Record<string, string> = {
-  ESCALATION: '🚨',
-  NEW_COMPLAINT: '📋',
-  ASSIGNMENT: '🔀',
-  RESOLVED: '✅',
-  OVERDUE: '⏰',
-  SYSTEM: '⚙️',
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  ESCALATION: <AlertTriangle size={16} className="icon-inline" />,
+  NEW_COMPLAINT: <ClipboardList size={16} className="icon-inline" />,
+  ASSIGNMENT: <GitMerge size={16} className="icon-inline" />,
+  RESOLVED: <CheckCircle2 size={16} className="icon-inline" />,
+  OVERDUE: <AlertCircle size={16} className="icon-inline" />,
+  SYSTEM: <Settings size={16} className="icon-inline" />,
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -78,7 +80,7 @@ export default function NotificationsPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           {unreadCount > 0 && (
             <button className="btn btn-secondary" onClick={markAllRead}>
-              ✓ Mark all read
+              <Check size={16} className="icon-inline" />  Mark all read
             </button>
           )}
         </div>
@@ -101,7 +103,7 @@ export default function NotificationsPage() {
       <div className="card" style={{ padding: 0 }}>
         {displayed.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">🔔</div>
+            <div className="empty-state-icon"><Bell size={16} className="icon-inline" /></div>
             <h3>No notifications</h3>
             <p>{filter === 'unread' ? 'All notifications have been read' : 'No notifications yet'}</p>
           </div>
@@ -131,7 +133,7 @@ export default function NotificationsPage() {
                   fontSize: '1rem', flexShrink: 0,
                   color: TYPE_COLORS[n.type ?? ''] ?? 'var(--text-3)',
                 }}>
-                  {TYPE_ICONS[n.type ?? ''] ?? '🔔'}
+                  {TYPE_ICONS[n.type ?? ''] ?? '<Bell size={16} className="icon-inline" />'}
                 </div>
 
                 {/* Content */}
@@ -178,3 +180,10 @@ export default function NotificationsPage() {
     </div>
   );
 }
+
+
+
+
+
+
+

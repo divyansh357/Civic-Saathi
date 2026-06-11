@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet,
   ActivityIndicator, KeyboardAvoidingView, Platform,
@@ -14,7 +14,7 @@ import { isValidEmail } from '@utils/index';
 interface RoleOption {
   id: string;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   description: string;
   color: string;
   bg: string;
@@ -24,7 +24,7 @@ const ROLES: RoleOption[] = [
   {
     id: 'citizen',
     label: 'Citizen',
-    icon: '👤',
+    icon: <Ionicons name="person-outline" size={20} color="#64748b" />,
     description: 'Report civic issues in your area',
     color: '#2F3E32',
     bg: '#E1E5E1',
@@ -32,7 +32,7 @@ const ROLES: RoleOption[] = [
   {
     id: 'worker',
     label: 'Field Worker',
-    icon: '👷',
+    icon: <Ionicons name="construct-outline" size={20} color="#64748b" />,
     description: 'Resolve assigned civic complaints',
     color: '#2F3E32',
     bg: '#E1E5E1',
@@ -196,7 +196,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.logoEmoji}>🏙️</Text>
+            <Text style={styles.logoEmoji}><Ionicons name="business" size={20} color="#64748b" /></Text>
             <Text style={styles.pageTitle}>Let's make change together</Text>
             <Text style={styles.pageSubtitle}>Select your role to get started</Text>
           </View>

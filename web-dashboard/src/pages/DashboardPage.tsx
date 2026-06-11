@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { AnalyticsDashboard, Complaint } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
+import { AlertTriangle, ClipboardList , RefreshCw, CheckCircle2, Clock} from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   SUBMITTED: '#60a5fa',
@@ -72,12 +73,12 @@ export default function DashboardPage() {
     .map(([name, value]) => ({ name, value }));
 
   const statCards = [
-    { label: 'Total Complaints', value: analytics.totalComplaints ?? 0, icon: '📋', color: 'var(--blue)', bg: 'var(--blue-bg)' },
-    { label: 'Open / Active', value: analytics.openComplaints ?? 0, icon: '🔄', color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
-    { label: 'Resolved', value: analytics.resolvedComplaints ?? 0, icon: '✅', color: 'var(--green)', bg: 'var(--green-bg)' },
-    { label: 'Escalated', value: analytics.escalatedComplaints ?? 0, icon: '🚨', color: 'var(--red)', bg: 'var(--red-bg)' },
-    { label: 'Avg Resolution', value: `${analytics.averageResolutionTime ?? analytics.avgResolutionHours ?? 0}h`, icon: '⏱️', color: 'var(--purple)', bg: 'var(--purple-bg)' },
-    { label: 'SLA Breach Rate', value: `${analytics.slaBreachRate ?? 0}%`, icon: '⚠️', color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
+    { label: 'Total Complaints', value: analytics.totalComplaints ?? 0, icon: <ClipboardList size={16} className="icon-inline" />, color: 'var(--blue)', bg: 'var(--blue-bg)' },
+    { label: 'Open / Active', value: analytics.openComplaints ?? 0, icon: <RefreshCw size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
+    { label: 'Resolved', value: analytics.resolvedComplaints ?? 0, icon: <CheckCircle2 size={24} color="var(--green)" />, color: 'var(--green)', bg: 'var(--green-bg)' },
+    { label: 'Escalated', value: analytics.escalatedComplaints ?? 0, icon: <AlertTriangle size={16} className="icon-inline" />, color: 'var(--red)', bg: 'var(--red-bg)' },
+    { label: 'Avg Resolution', value: `${analytics.averageResolutionTime ?? analytics.avgResolutionHours ?? 0}h`, icon: <Clock size={24} color="var(--purple)" />, color: 'var(--purple)', bg: 'var(--purple-bg)' },
+    { label: 'SLA Breach Rate', value: `${analytics.slaBreachRate ?? 0}%`, icon: <AlertTriangle size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
   ];
 
   return (
@@ -197,3 +198,6 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
+

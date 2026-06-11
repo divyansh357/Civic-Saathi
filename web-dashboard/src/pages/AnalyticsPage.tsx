@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
+import { AlertTriangle, ClipboardList , CheckCircle2, Clock, Star} from 'lucide-react';
 
 const TOOLTIP_STYLE = {
   contentStyle: { background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 },
@@ -79,18 +80,18 @@ export default function AnalyticsPage() {
       {/* KPI Row */}
       <div className="stats-grid" style={{ marginBottom: 24 }}>
         {[
-          { label: 'Resolution Rate', value: '83.4%', icon: '✅', color: 'var(--green)', bg: 'var(--green-bg)', change: '+2.1%', up: true },
-          { label: 'Avg Resolution Time', value: '28.4h', icon: '⏱️', color: 'var(--blue)', bg: 'var(--blue-bg)', change: '-3.2h', up: true },
-          { label: 'SLA Compliance', value: '87.7%', icon: '📋', color: 'var(--accent)', bg: 'var(--accent-glow)', change: '+1.4%', up: true },
-          { label: 'Escalation Rate', value: '12.3%', icon: '🚨', color: 'var(--red)', bg: 'var(--red-bg)', change: '+0.8%', up: false },
-          { label: 'Citizen Satisfaction', value: '4.2/5', icon: '⭐', color: 'var(--yellow)', bg: 'var(--yellow-bg)', change: '+0.3', up: true },
+          { label: 'Resolution Rate', value: '83.4%', icon: <CheckCircle2 size={24} color="var(--green)" />, color: 'var(--green)', bg: 'var(--green-bg)', change: '+2.1%', up: true },
+          { label: 'Avg Resolution Time', value: '28.4h', icon: <Clock size={24} color="var(--blue)" />, color: 'var(--blue)', bg: 'var(--blue-bg)', change: '-3.2h', up: true },
+          { label: 'SLA Compliance', value: '87.7%', icon: <ClipboardList size={16} className="icon-inline" />, color: 'var(--accent)', bg: 'var(--accent-glow)', change: '+1.4%', up: true },
+          { label: 'Escalation Rate', value: '12.3%', icon: <AlertTriangle size={16} className="icon-inline" />, color: 'var(--red)', bg: 'var(--red-bg)', change: '+0.8%', up: false },
+          { label: 'Citizen Satisfaction', value: '4.2/5', icon: <Star size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)', change: '+0.3', up: true },
         ].map((s) => (
           <div className="stat-card" key={s.label}>
             <div className="stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
             <div className="stat-value">{s.value}</div>
             <div className="stat-label">{s.label}</div>
             <div className={`stat-change ${s.up ? 'up' : 'down'}`}>
-              {s.up ? '↑' : '↓'} {s.change} vs last month
+              {s.up ? 'â†‘' : 'â†“'} {s.change} vs last month
             </div>
           </div>
         ))}
@@ -220,7 +221,7 @@ export default function AnalyticsPage() {
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                🤖 AI Insights
+                ðŸ¤– AI Insights
                 {aiStatus && (
                   <span style={{
                     fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 12,
@@ -351,3 +352,6 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
+
+

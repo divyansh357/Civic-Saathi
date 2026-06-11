@@ -30,6 +30,7 @@ import WorkerHomeScreen from '@screens/worker/WorkerHomeScreen';
 
 // Shared screens
 import NotificationsScreen from '@screens/NotificationsScreen';
+import { Ionicons } from '@expo/vector-icons';
 
 // ─── Screen types ─────────────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ function AppContent() {
         <StatusBar barStyle="dark-content" backgroundColor="#F3F4F1" />
         <View style={styles.splashContent}>
           <Animated.View style={[styles.splashLogo, { opacity: pulseAnim }]}>
-            <Text style={styles.splashEmoji}>🏙️</Text>
+            <Text style={styles.splashEmoji}><Ionicons name="business" size={20} color="#64748b" /></Text>
           </Animated.View>
           <Text style={styles.splashTitle}>Civic Saathi</Text>
           <ActivityIndicator

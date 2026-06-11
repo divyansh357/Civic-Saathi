@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import { useAuthStore, useComplaintStore } from '@store/index';
 import { apiGet } from '@services/api/client';
 import { Complaint } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 
 const STATUS_COLORS: Record<string, string> = {
   SUBMITTED: '#60a5fa',
@@ -171,7 +172,7 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
           <Text style={styles.greetingSubtext}>Report civic issues in your area</Text>
         </View>
         <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
-          <Text style={styles.notificationIcon}>🔔</Text>
+          <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
         </Pressable>
       </View>
 
@@ -205,7 +206,7 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
           <ActivityIndicator color="#0F766E" style={{ marginTop: 24 }} />
         ) : complaints.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📋</Text>
+            <Text style={styles.emptyIcon}><Ionicons name="clipboard-outline" size={20} color="#64748b" /></Text>
             <Text style={styles.emptyTitle}>No complaints yet</Text>
             <Text style={styles.emptySubtitle}>Tap the button above to report your first issue</Text>
           </View>
@@ -227,7 +228,7 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
           <ActivityIndicator color="#0F766E" style={{ marginTop: 24 }} />
         ) : locationError ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📍</Text>
+            <Text style={styles.emptyIcon}><Ionicons name="location-outline" size={20} color="#64748b" /></Text>
             <Text style={styles.emptyTitle}>Location Required</Text>
             <Text style={styles.emptySubtitle}>{locationError}</Text>
           </View>

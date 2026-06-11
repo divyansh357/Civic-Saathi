@@ -10,6 +10,7 @@ import WorkersPage from './pages/WorkersPage';
 import UsersPage from './pages/UsersPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import { Building2, Sun, Moon, Bell } from 'lucide-react';
 
 const PAGE_TITLES: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -45,7 +46,7 @@ export default function App() {
         flexDirection: 'column',
         gap: 16,
       }}>
-        <div style={{ fontSize: 32 }}>🏙️</div>
+        <div style={{ fontSize: 32 }}><Building2 size={32} /></div>
         <div className="spinner" style={{ width: 28, height: 28 }} />
         <div style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Loading Civic Saathi...</div>
       </div>
@@ -83,13 +84,13 @@ export default function App() {
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               style={{ fontSize: '1rem', padding: '6px 10px' }}
             >
-              {isDark ? '☀️' : '🌙'}
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setPage('notifications')}
             >
-              🔔
+              <Bell size={20} />
             </button>
           </div>
         </div>

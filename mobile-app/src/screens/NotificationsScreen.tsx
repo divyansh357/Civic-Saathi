@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, ActivityIndicator
 } from 'react-native';
 import { notificationService, NotificationData, formatNotificationTime } from '@services/notifications';
+import { Ionicons } from '@expo/vector-icons';
 
-const NOTIFICATION_ICONS: Record<string, string> = {
-  complaint_status: '📋',
-  assignment: '🔧',
-  escalation: '🚨',
-  system: '⚙️',
+const NOTIFICATION_ICONS: Record<string, React.ReactNode> = {
+  complaint_status: <Ionicons name="clipboard-outline" size={24} color="#64748b" />,
+  assignment: <Ionicons name="git-network-outline" size={24} color="#64748b" />,
+  escalation: <Ionicons name="alert-circle-outline" size={24} color="#64748b" />,
+  system: <Ionicons name="notifications-outline" size={24} color="#64748b" />,
 };
 
 const NOTIFICATION_COLORS: Record<string, string> = {
@@ -129,7 +130,7 @@ export default function NotificationsScreen({ onBack }: NotificationsScreenProps
           <ActivityIndicator color="#0F766E" style={{ marginTop: 40 }} />
         ) : notifications.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🔔</Text>
+            <Text style={styles.emptyIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
             <Text style={styles.emptyTitle}>No notifications</Text>
             <Text style={styles.emptySubtitle}>
               You&apos;ll receive updates about your complaints and assignments here

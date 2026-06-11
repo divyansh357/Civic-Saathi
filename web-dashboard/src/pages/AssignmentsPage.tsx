@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+﻿import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet, apiPost } from '../services/api/client';
 import { Assignment, PagedResponse } from '../types';
 import { PriorityBadge, AssignmentStatusBadge } from '../components/StatusBadge';
+import { Zap, AlertTriangle, GitMerge, XCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 function formatDate(iso?: string) {
   if (!iso) return '—';
@@ -27,7 +28,7 @@ function SlaTimer({ deadline }: { deadline?: string }) {
     : `${diffH}h ${diffM}m left`;
   return (
     <span style={{ color: breached ? 'var(--red)' : diffH < 2 ? 'var(--yellow)' : 'var(--text-2)', fontSize: '0.8rem' }}>
-      {breached ? '🔴' : diffH < 2 ? '🟡' : '🟢'} {label}
+      {breached ? <XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /> : diffH < 2 ? <AlertCircle size={16} style={{ color: 'var(--yellow)' }} className="icon-inline" /> : <CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" />} {label}
     </span>
   );
 }
@@ -78,12 +79,12 @@ function AutoAssignModal({ onClose, onSuccess }: AutoAssignModalProps) {
               onChange={(e) => setComplaintId(e.target.value)}
             />
           </div>
-          {error && <div className="auth-error">⚠ {error}</div>}
+          {error && <div className="auth-error">âš  {error}</div>}
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={() => void handleSubmit()} disabled={saving}>
-            {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Assigning...</> : '⚡ Auto-Assign'}
+            {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Assigning...</> : <><Zap size={16} className="icon-inline" /> Auto-Assign</>}
           </button>
         </div>
       </div>
@@ -160,12 +161,12 @@ export default function AssignmentsPage() {
               onClick={() => void handleEscalate()}
               disabled={escalating}
             >
-              {escalating ? <span className="spinner" style={{ width: 14, height: 14 }} /> : '🚨'}
+              {escalating ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <AlertTriangle size={16} className="icon-inline" />}
               Escalate Overdue ({overdue.length})
             </button>
           )}
           <button className="btn btn-primary" onClick={() => setShowAutoAssign(true)}>
-            ⚡ Auto-Assign
+            <Zap size={16} className="icon-inline" /> Auto-Assign
           </button>
         </div>
       </div>
@@ -192,7 +193,7 @@ export default function AssignmentsPage() {
       <div className="card">
         {displayed.length === 0 && !loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon">🔀</div>
+            <div className="empty-state-icon"><GitMerge size={16} className="icon-inline" /></div>
             <h3>{tab === 'overdue' ? 'No overdue assignments' : 'No assignments found'}</h3>
             <p>{tab === 'overdue' ? 'All assignments are within SLA' : 'Use Auto-Assign to route complaints'}</p>
           </div>
@@ -222,7 +223,7 @@ export default function AssignmentsPage() {
                         </div>
                         {a.escalationReason && (
                           <div style={{ fontSize: '0.72rem', color: 'var(--red)', marginTop: 2 }}>
-                            ⚠ {a.escalationReason}
+                            <AlertTriangle size={16} className="icon-inline" /> {a.escalationReason}
                           </div>
                         )}
                       </td>
@@ -263,3 +264,6 @@ export default function AssignmentsPage() {
     </div>
   );
 }
+
+
+

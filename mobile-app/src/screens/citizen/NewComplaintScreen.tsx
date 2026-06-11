@@ -9,21 +9,22 @@ import { Audio } from 'expo-av';
 import { Button } from 'react-native-paper';
 import { useAuthStore } from '@store/index';
 import { apiPost, apiPostWithHeaders } from '@services/api/client';
+import { Ionicons } from '@expo/vector-icons';
 
 const CATEGORIES = [
-  { id: 'ROADS', label: '🛣️ Roads', desc: 'Potholes, damage, cave-ins' },
-  { id: 'WATER', label: '💧 Water', desc: 'Supply, leaks, quality' },
-  { id: 'SANITATION', label: '🗑️ Sanitation', desc: 'Garbage, sewage, drains' },
-  { id: 'ELECTRICITY', label: '⚡ Electricity', desc: 'Street lights, outages' },
-  { id: 'PARKS', label: '🌳 Parks', desc: 'Maintenance, equipment' },
-  { id: 'OTHER', label: '📌 Other', desc: 'Miscellaneous issues' },
+  { id: 'ROADS', icon: <Ionicons name="git-network-outline" size={24} color="#64748b" />, label: 'Roads', desc: 'Potholes, damage, cave-ins' },
+  { id: 'WATER', icon: <Ionicons name="water-outline" size={24} color="#64748b" />, label: 'Water', desc: 'Supply, leaks, quality' },
+  { id: 'SANITATION', icon: <Ionicons name="trash-outline" size={24} color="#64748b" />, label: 'Sanitation', desc: 'Garbage, sewage, drains' },
+  { id: 'ELECTRICITY', icon: <Ionicons name="flash-outline" size={24} color="#64748b" />, label: 'Electricity', desc: 'Street lights, outages' },
+  { id: 'PARKS', icon: <Ionicons name="leaf-outline" size={24} color="#64748b" />, label: 'Parks', desc: 'Maintenance, equipment' },
+  { id: 'OTHER', icon: <Ionicons name="apps-outline" size={24} color="#64748b" />, label: 'Other', desc: 'Miscellaneous issues' },
 ];
 
 const PRIORITIES = [
-  { id: 'CRITICAL', label: '🔴 Critical', color: '#f87171', value: 1 },
-  { id: 'HIGH', label: '🟠 High', color: '#fb923c', value: 2 },
-  { id: 'MEDIUM', label: '🟡 Medium', color: '#fbbf24', value: 3 },
-  { id: 'LOW', label: '🔵 Low', color: '#60a5fa', value: 4 },
+  { id: 'CRITICAL', icon: <Ionicons name="close-circle-outline" size={20} color="#f87171" />, label: 'Critical', color: '#f87171', value: 1 },
+  { id: 'HIGH', icon: <Ionicons name="alert-circle-outline" size={20} color="#fb923c" />, label: 'High', color: '#fb923c', value: 2 },
+  { id: 'MEDIUM', icon: <Ionicons name="alert-circle-outline" size={20} color="#fbbf24" />, label: 'Medium', color: '#fbbf24', value: 3 },
+  { id: 'LOW', icon: <Ionicons name="checkmark-circle-outline" size={20} color="#60a5fa" />, label: 'Low', color: '#60a5fa', value: 4 },
 ];
 
 interface NewComplaintScreenProps {
@@ -380,9 +381,9 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
                 style={[styles.categoryCard, category === cat.id && styles.categoryCardActive]}
                 onPress={() => setCategory(cat.id)}
               >
-                <Text style={styles.categoryEmoji}>{cat.label.split(' ')[0]}</Text>
+                <Text style={styles.categoryEmoji}>{cat.icon}</Text>
                 <Text style={[styles.categoryLabel, category === cat.id && styles.categoryLabelActive]}>
-                  {cat.label.split(' ').slice(1).join(' ')}
+                  {cat.label}
                 </Text>
                 <Text style={styles.categoryDesc}>{cat.desc}</Text>
               </Pressable>
@@ -491,17 +492,17 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
               {locationLoading ? (
                 <ActivityIndicator size="small" color="#0F766E" />
               ) : (
-                <Text style={styles.locationBtnText}>📍</Text>
+                <Text style={styles.locationBtnText}><Ionicons name="location-outline" size={20} color="#64748b" /></Text>
               )}
             </Pressable>
           </View>
           {attemptedSubmit && !isLocationValid && (
-            <Text style={styles.errorText}>📍 Location is required. Tap the pin icon to detect or type an address.</Text>
+            <Text style={styles.errorText}><Ionicons name="location-outline" size={20} color="#64748b" /> Location is required. Tap the pin icon to detect or type an address.</Text>
           )}
           {location && (
             <View style={styles.locationInfo}>
               <Text style={styles.locationText}>
-                📍 {location.address || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`}
+                <Ionicons name="location-outline" size={20} color="#64748b" /> {location.address || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`}
               </Text>
             </View>
           )}
@@ -512,7 +513,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
           <Text style={styles.label}>Photos <Text style={styles.required}>*</Text></Text>
           <View style={[styles.mediaContainer, attemptedSubmit && !isPhotoValid && styles.fieldError]}>
             <Pressable style={styles.addMediaBtn} onPress={showImageOptions}>
-              <Text style={styles.addMediaIcon}>📷</Text>
+              <Text style={styles.addMediaIcon}><Ionicons name="camera-outline" size={20} color="#64748b" /></Text>
               <Text style={styles.addMediaText}>Add Photo</Text>
             </Pressable>
             
@@ -533,7 +534,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
             )}
           </View>
           {attemptedSubmit && !isPhotoValid && (
-            <Text style={styles.errorText}>📷 At least one photo is required as evidence.</Text>
+            <Text style={styles.errorText}><Ionicons name="camera-outline" size={20} color="#64748b" /> At least one photo is required as evidence.</Text>
           )}
         </View>
 

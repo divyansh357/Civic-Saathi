@@ -6,6 +6,7 @@ import {
 import { useAuthStore } from '@store/index';
 import { apiPost } from '@services/api/client';
 import { Complaint } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 
 const STATUS_COLORS: Record<string, string> = {
   SUBMITTED: '#60a5fa', VERIFIED: '#a78bfa', ASSIGNED: '#fbbf24',
@@ -14,12 +15,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const TIMELINE_STEPS = [
-  { status: 'SUBMITTED', label: 'Submitted', icon: '📋' },
+  { status: 'SUBMITTED', label: 'Submitted', icon: <Ionicons name="clipboard-outline" size={20} color="#64748b" /> },
   { status: 'VERIFIED', label: 'Verified', icon: '✓' },
-  { status: 'ASSIGNED', label: 'Assigned', icon: '🔀' },
+  { status: 'ASSIGNED', label: 'Assigned', icon: <Ionicons name="git-network-outline" size={20} color="#64748b" /> },
   { status: 'IN_PROGRESS', label: 'In Progress', icon: '🔧' },
   { status: 'RESOLVED', label: 'Resolved', icon: '✅' },
-  { status: 'CLOSED', label: 'Closed', icon: '🔒' },
+  { status: 'CLOSED', label: 'Closed', icon: <Ionicons name="lock-closed-outline" size={20} color="#64748b" /> },
 ];
 
 const STATUS_ORDER = ['SUBMITTED', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
@@ -159,7 +160,7 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
           )}
           {complaint.address && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>📍 Location</Text>
+              <Text style={styles.detailLabel}><Ionicons name="location-outline" size={20} color="#64748b" /> Location</Text>
               <Text style={styles.detailValue}>{complaint.address}</Text>
             </View>
           )}

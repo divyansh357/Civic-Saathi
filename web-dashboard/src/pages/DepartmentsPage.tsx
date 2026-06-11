@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { Department } from '../types';
+import { Search } from 'lucide-react';
 
 const MOCK: Department[] = [
   { id: 'd1', name: 'Roads & Infrastructure', code: 'ROADS', categoryType: 'ROADS', city: 'Bengaluru', active: true, headName: 'Rajesh Nair', email: 'roads@civic.gov.in', phone: '080-22334455' },
@@ -67,7 +68,7 @@ export default function DepartmentsPage() {
       <div className="card">
         <div className="filters-bar">
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><Search size={16} className="icon-inline" /></span>
             <input
               className="search-input"
               placeholder="Search departments..."

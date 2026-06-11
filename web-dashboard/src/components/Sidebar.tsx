@@ -1,7 +1,19 @@
-import { useAuthStore } from '../store';
+﻿import { useAuthStore } from '../store';
+import { 
+  LayoutDashboard, 
+  ClipboardList, 
+  GitMerge, 
+  Building2, 
+  HardHat, 
+  Users, 
+  LineChart, 
+  Bell, 
+  Building,
+  LogOut
+} from 'lucide-react';
 
 interface NavItem {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   page: string;
   badge?: number;
@@ -9,14 +21,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: '⬡', label: 'Dashboard', page: 'dashboard' },
-  { icon: '📋', label: 'Complaints', page: 'complaints' },
-  { icon: '🔀', label: 'Assignments', page: 'assignments' },
-  { icon: '🏛️', label: 'Departments', page: 'departments', roles: ['ADMIN', 'SUPERADMIN'] },
-  { icon: '👷', label: 'Workers', page: 'workers', roles: ['ADMIN', 'SUPERADMIN', 'OFFICER', 'DEPARTMENT_ADMIN'] },
-  { icon: '👥', label: 'Users', page: 'users', roles: ['ADMIN', 'SUPERADMIN'] },
-  { icon: '📊', label: 'Analytics', page: 'analytics', roles: ['ADMIN', 'SUPERADMIN', 'OFFICER', 'DEPARTMENT_ADMIN'] },
-  { icon: '🔔', label: 'Notifications', page: 'notifications' },
+  { icon: <LayoutDashboard size={18} />, label: 'Dashboard', page: 'dashboard' },
+  { icon: <ClipboardList size={18} />, label: 'Complaints', page: 'complaints' },
+  { icon: <GitMerge size={18} />, label: 'Assignments', page: 'assignments' },
+  { icon: <Building2 size={18} />, label: 'Departments', page: 'departments', roles: ['ADMIN', 'SUPERADMIN'] },
+  { icon: <HardHat size={18} />, label: 'Workers', page: 'workers', roles: ['ADMIN', 'SUPERADMIN', 'OFFICER', 'DEPARTMENT_ADMIN'] },
+  { icon: <Users size={18} />, label: 'Users', page: 'users', roles: ['ADMIN', 'SUPERADMIN'] },
+  { icon: <LineChart size={18} />, label: 'Analytics', page: 'analytics', roles: ['ADMIN', 'SUPERADMIN', 'OFFICER', 'DEPARTMENT_ADMIN'] },
+  { icon: <Bell size={18} />, label: 'Notifications', page: 'notifications' },
 ];
 
 interface SidebarProps {
@@ -41,7 +53,7 @@ export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: S
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">🏙️</div>
+        <div className="sidebar-logo-icon"><Building size={24} /></div>
         <div>
           <div className="sidebar-logo-text">Civic Saathi</div>
           <div className="sidebar-logo-sub">Admin Dashboard</div>
@@ -72,9 +84,11 @@ export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: S
             <div className="sidebar-user-name">{user?.name ?? 'User'}</div>
             <div className="sidebar-user-role">{user?.role ?? 'CITIZEN'}</div>
           </div>
-          <span style={{ color: 'var(--text-3)', fontSize: '0.8rem' }}>↩</span>
+          <span style={{ color: 'var(--text-3)' }}><LogOut size={16} /></span>
         </div>
       </div>
     </aside>
   );
 }
+
+

@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+﻿import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { Worker } from '../types';
+import { XCircle, CheckCircle2, HardHat, Search, BarChart3 } from 'lucide-react';
 
 const MOCK: Worker[] = [
   { id: 'w1', name: 'Suresh Kumar', email: 'suresh@civic.gov.in', designation: 'Field Engineer', departmentName: 'Roads Department', available: true, activeComplaintsCount: 3 },
@@ -59,22 +60,22 @@ export default function WorkersPage() {
 
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 20 }}>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}>👷</div>
+          <div className="stat-icon" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}><HardHat size={16} className="icon-inline" /></div>
           <div className="stat-value">{workers.length}</div>
           <div className="stat-label">Total Workers</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>🟢</div>
+          <div className="stat-icon" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}><CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" /></div>
           <div className="stat-value">{available}</div>
           <div className="stat-label">Available</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}>🔴</div>
+          <div className="stat-icon" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /></div>
           <div className="stat-value">{workers.length - available}</div>
           <div className="stat-label">Unavailable</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--yellow-bg)', color: 'var(--yellow)' }}>📊</div>
+          <div className="stat-icon" style={{ background: 'var(--yellow-bg)', color: 'var(--yellow)' }}><BarChart3 size={16} className="icon-inline" /></div>
           <div className="stat-value">{avgLoad}</div>
           <div className="stat-label">Avg Workload</div>
         </div>
@@ -83,7 +84,7 @@ export default function WorkersPage() {
       <div className="card">
         <div className="filters-bar">
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><Search size={16} className="icon-inline" /></span>
             <input
               className="search-input"
               placeholder="Search workers..."
@@ -105,7 +106,7 @@ export default function WorkersPage() {
 
         {filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">👷</div>
+            <div className="empty-state-icon"><HardHat size={16} className="icon-inline" /></div>
             <h3>No workers found</h3>
           </div>
         ) : (
@@ -144,7 +145,7 @@ export default function WorkersPage() {
                       <td className="text-muted">{w.departmentName ?? '—'}</td>
                       <td>
                         <span className={`badge ${w.available ? 'badge-resolved' : 'badge-closed'}`}>
-                          {w.available ? '🟢 Available' : '🔴 Busy'}
+                          {w.available ? <><CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" /> Available</> : <><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /> Busy</>}
                         </span>
                       </td>
                       <td>
@@ -173,3 +174,5 @@ export default function WorkersPage() {
     </div>
   );
 }
+
+

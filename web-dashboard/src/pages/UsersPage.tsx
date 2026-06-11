@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { User } from '../types';
+import { Search, Users } from 'lucide-react';
 
 const MOCK: User[] = [
   { id: 'u1', name: 'Rahul Sharma', email: 'rahul@example.com', phone: '9876543210', role: 'CITIZEN', city: 'Bengaluru', verified: true, status: 'ACTIVE', createdAt: '2026-01-15T10:00:00' },
@@ -82,7 +83,7 @@ export default function UsersPage() {
       <div className="card">
         <div className="filters-bar">
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><Search size={16} className="icon-inline" /></span>
             <input
               className="search-input"
               placeholder="Search users..."
@@ -106,7 +107,7 @@ export default function UsersPage() {
 
         {filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">👥</div>
+            <div className="empty-state-icon"><Users size={16} className="icon-inline" /></div>
             <h3>No users found</h3>
           </div>
         ) : (

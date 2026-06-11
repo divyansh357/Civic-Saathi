@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useAuthStore, useThemeStore } from '../store';
+import { Building2, Sun, Moon } from 'lucide-react';
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
@@ -77,12 +78,12 @@ export default function LoginPage() {
           color: 'var(--text-2)',
         }}
       >
-        {isDark ? '☀️' : '🌙'}
+        {isDark ? <Sun size={20} /> : <Moon size={20} />}
       </button>
 
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="auth-logo-icon">🏙️</div>
+          <div className="auth-logo-icon"><Building2 size={32} /></div>
           <div className="auth-logo-text">
             <h1>Civic Saathi</h1>
             <p>Government Issue Management Platform</p>
