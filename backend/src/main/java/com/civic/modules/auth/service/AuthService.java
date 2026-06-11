@@ -208,7 +208,9 @@ public class AuthService {
     }
 
     private AuthResponse issueTokenPair(User user) {
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
+        // Derive role directly from the roles Set — avoids the deprecated getRole() which can return null.
+        String primaryRole = authMapper.getPrimaryRole(user);
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), primaryRole);
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
         AuthToken tokenRecord = new AuthToken();

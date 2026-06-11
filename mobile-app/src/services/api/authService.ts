@@ -13,6 +13,7 @@ interface BackendCurrentUserResponse {
   email: string;
   phone?: string;
   role?: string;
+  roles?: string[];
 }
 
 export interface AuthSession {
@@ -20,17 +21,13 @@ export interface AuthSession {
   tokens: AuthTokens;
 }
 
-const normalizeRole = (role?: string): UserRole => {
-  const value = (role ?? '').toUpperCase();
-  if (value === 'WORKER') {
-    return 'WORKER';
-  }
-  if (value === 'OFFICER') {
-    return 'OFFICER';
-  }
-  if (value === 'ADMIN' || value === 'DEPARTMENT_ADMIN' || value === 'SUPERADMIN') {
-    return 'ADMIN';
-  }
+const normalizeRole = (role?: string, roles?: string[]): UserRole => {
+  // Prefer the single `role` field; fall back to first entry in `roles` array.
+  const raw = role ?? (roles && roles.length > 0 ? roles[0] : undefined);
+  const value = (raw ?? '').toUpperCase();
+  if (value === 'WORKER') return 'WORKER';
+  if (value === 'OFFICER') return 'OFFICER';
+  if (value === 'ADMIN' || value === 'DEPARTMENT_ADMIN' || value === 'SUPERADMIN') return 'ADMIN';
   return 'CITIZEN';
 };
 
@@ -39,7 +36,7 @@ const toUser = (payload: BackendCurrentUserResponse): User => ({
   name: payload.name,
   email: payload.email,
   phone: payload.phone,
-  role: normalizeRole(payload.role)
+  role: normalizeRole(payload.role, payload.roles)
 });
 
 const toAccessToken = (payload: BackendAuthResponse): string => {
