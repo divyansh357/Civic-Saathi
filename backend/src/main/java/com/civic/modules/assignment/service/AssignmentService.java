@@ -201,10 +201,14 @@ public class AssignmentService {
             assignment.setAssignedAt(LocalDateTime.now());
         }
 
-        // Set deadline based on request priority or complaint priority
-        String priorityStr = request.getPriority() != null ? request.getPriority().toString() : complaint.getPriority();
-        int priority = priorityStr != null ? Integer.parseInt(priorityStr) : 3;
-        assignment.setDeadlineAt(calculateSlaDeadline(priority));
+        // Set deadline based on request deadlineHours, or calculate from priority
+        if (request.getDeadlineHours() != null) {
+            assignment.setDeadlineAt(LocalDateTime.now().plusHours(request.getDeadlineHours()));
+        } else {
+            String priorityStr = request.getPriority() != null ? request.getPriority().toString() : complaint.getPriority();
+            int priority = priorityStr != null ? Integer.parseInt(priorityStr) : 3;
+            assignment.setDeadlineAt(calculateSlaDeadline(priority));
+        }
 
         Assignment savedAssignment = assignmentRepository.save(assignment);
 

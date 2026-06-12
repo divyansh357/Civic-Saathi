@@ -32,6 +32,7 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [deadlineHours, setDeadlineHours] = useState('');
 
   useEffect(() => {
     if (!accessToken) return;
@@ -57,6 +58,7 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
       await apiPost('/assignments/manual-assign', {
         complaintId: complaint.id,
         workerId: selectedWorkerId,
+        deadlineHours: deadlineHours ? parseInt(deadlineHours, 10) : undefined
       }, accessToken ?? undefined);
       onAssigned();
       onClose();
@@ -83,17 +85,30 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
           ) : workers.length === 0 ? (
             <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> No workers available. Register workers first.</div>
           ) : (
-            <div className="form-group">
-              <label className="form-label">Select Worker</label>
-              <select className="form-input" value={selectedWorkerId} onChange={(e) => setSelectedWorkerId(e.target.value)}>
-                <option value="">— Select —</option>
-                {workers.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name ?? w.email ?? w.id} {w.departmentName ? `(${w.departmentName})` : ''} — {w.complaintsAssigned ?? 0} assigned
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label">Select Worker</label>
+                <select className="form-input" value={selectedWorkerId} onChange={(e) => setSelectedWorkerId(e.target.value)}>
+                  <option value="">— Select —</option>
+                  {workers.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name ?? w.email ?? w.id} {w.departmentName ? `(${w.departmentName})` : ''} — {w.complaintsAssigned ?? 0} assigned
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Time to Complete (Hours) <span style={{color: 'var(--text-3)', fontWeight: 'normal'}}>(Optional)</span></label>
+                <input 
+                  type="number" 
+                  min="1"
+                  className="form-input" 
+                  value={deadlineHours} 
+                  onChange={(e) => setDeadlineHours(e.target.value)}
+                  placeholder="e.g. 48"
+                />
+              </div>
+            </>
           )}
           {error && <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> {error}</div>}
         </div>
@@ -123,6 +138,7 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
   const [escalating, setEscalating] = useState(false);
   const [reopenRequests, setReopenRequests] = useState<ReopenRequest[]>([]);
   const [showAssignWorker, setShowAssignWorker] = useState(false);
+  const [autoAssigning, setAutoAssigning] = useState(false);
   const accessToken = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
@@ -168,6 +184,20 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
       if (action === 'approve') onStatusUpdate(complaint.id, 'REOPENED');
     } catch (e) {
       alert(e instanceof Error ? e.message : `Failed to ${action} reopen request`);
+    }
+  };
+
+  const handleAutoAssign = async () => {
+    setAutoAssigning(true);
+    try {
+      await apiPost('/assignments/auto-assign', { complaintId: complaint.id }, accessToken ?? undefined);
+      onStatusUpdate(complaint.id, 'ASSIGNED');
+      onRefresh();
+      onClose();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Auto-Assignment failed');
+    } finally {
+      setAutoAssigning(false);
     }
   };
 
@@ -220,10 +250,16 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
                 <div style={{ color: 'var(--text)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                   {complaint.assignedWorkerName ?? 'Unassigned'}
                   {!complaint.assignedWorkerName && (
-                    <button className="btn btn-sm" style={{ padding: '2px 8px', fontSize: '0.72rem' }}
-                      onClick={() => setShowAssignWorker(true)}>
-                      <UserPlus size={12} className="icon-inline" /> Assign
-                    </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-sm" style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                        onClick={() => setShowAssignWorker(true)}>
+                        <UserPlus size={12} className="icon-inline" /> Manual Assign
+                      </button>
+                      <button className="btn btn-sm btn-outline" style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                        onClick={() => void handleAutoAssign()} disabled={autoAssigning}>
+                        {autoAssigning ? '...' : 'Auto Assign'}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

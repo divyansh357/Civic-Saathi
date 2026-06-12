@@ -100,28 +100,10 @@ public class ComplaintService {
         if (aiResult.isValid && aiResult.confidenceScore >= 0.7f) {
             complaint.setStatus(Complaint.ComplaintStatus.VERIFIED);
             complaint.setVerificationMethod("AI");
-            logger.info("Complaint auto-verified by AI. Confidence: {}", aiResult.confidenceScore);
+            logger.info("Complaint auto-verified by AI. Confidence: {}. Awaiting admin assignment.", aiResult.confidenceScore);
             
-            // Save the complaint first so we have an ID for the auto-assign service
+            // Save the complaint and wait for manual assignment or admin-triggered auto-assignment
             complaint = complaintRepository.save(complaint);
-            
-            // Trigger Auto-Assignment
-            try {
-                com.civic.modules.assignment.dto.AutoAssignmentRequest assignReq = new com.civic.modules.assignment.dto.AutoAssignmentRequest();
-                assignReq.setComplaintId(complaint.getId().toString());
-                assignReq.setCategory(complaint.getCategory());
-                assignReq.setCity(complaint.getCity() != null ? complaint.getCity().getName() : null);
-                if (complaint.getLocation() != null) {
-                    assignReq.setLatitude(complaint.getLocation().getY());
-                    assignReq.setLongitude(complaint.getLocation().getX());
-                }
-                assignReq.setPriority(priorityVal);
-                assignmentService.autoAssignComplaint(assignReq);
-            } catch (Exception e) {
-                logger.error("Auto-assignment failed for AI-verified complaint {}: {}", complaint.getId(), e.getMessage());
-                // Fallback to manual assignment queue
-                complaint.setStatus(Complaint.ComplaintStatus.VERIFIED);
-            }
         } else {
             complaint.setStatus(Complaint.ComplaintStatus.SUBMITTED);
             complaint.setVerificationMethod("PENDING");

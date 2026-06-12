@@ -7,6 +7,7 @@ import {
   Text,
   View,
   Animated,
+  Platform,
 } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import { civicTheme } from '@theme/index';
@@ -304,8 +305,8 @@ export default function App() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F1' },
-  splash: { flex: 1, backgroundColor: '#F3F4F1' },
+  container: { flex: 1, backgroundColor: '#F3F4F1', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+  splash: { flex: 1, backgroundColor: '#F3F4F1', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   splashContent: {
     flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24,
   },

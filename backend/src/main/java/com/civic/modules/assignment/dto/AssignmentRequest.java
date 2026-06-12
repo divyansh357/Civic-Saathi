@@ -21,6 +21,9 @@ public class AssignmentRequest {
 
     private String notes;
 
+    @Min(value = 1, message = "Deadline hours must be at least 1")
+    private Integer deadlineHours;
+
     // Getters and Setters
     public String getComplaintId() {
         return complaintId;
@@ -52,5 +55,13 @@ public class AssignmentRequest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Integer getDeadlineHours() {
+        return deadlineHours;
+    }
+
+    public void setDeadlineHours(Integer deadlineHours) {
+        this.deadlineHours = deadlineHours;
     }
 }
