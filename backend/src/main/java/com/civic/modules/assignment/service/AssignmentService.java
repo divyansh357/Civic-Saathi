@@ -53,31 +53,77 @@ public class AssignmentService {
      * Auto-assign complaint to appropriate department and worker.
      */
     public AssignmentResponse autoAssignComplaint(AutoAssignmentRequest request) {
-        logger.info("Auto-assigning complaint {} with category {}", request.getComplaintId(), request.getCategory());
+        logger.info("Auto-assigning complaint {}", request.getComplaintId());
 
         Complaint complaint = complaintRepository.findById(UUID.fromString(request.getComplaintId()))
                 .orElseThrow(() -> new RuntimeException("Complaint not found with ID: " + request.getComplaintId()));
 
+        // Derive category from request or complaint
+        String category = request.getCategory();
+        if (category == null || category.isBlank()) {
+            category = complaint.getCategory(); // from first category
+        }
+
+        // Derive city from request or complaint
+        String cityName = request.getCity();
+        if (cityName == null || cityName.isBlank()) {
+            cityName = complaint.getCity() != null ? complaint.getCity().getName() : null;
+        }
+
+        // Derive lat/lng from request or complaint
+        Double lat = request.getLatitude();
+        Double lng = request.getLongitude();
+        if (lat == null && complaint.getLocation() != null) {
+            lat = complaint.getLocation().getY();
+            lng = complaint.getLocation().getX();
+        }
+
+        // Derive priority from request or complaint
+        int priorityVal = 3;
+        if (request.getPriority() != null) {
+            priorityVal = request.getPriority();
+        } else if (complaint.getPriority() != null) {
+            try { priorityVal = Integer.parseInt(complaint.getPriority()); }
+            catch (NumberFormatException ignored) { /* default 3 */ }
+        }
+
         // Find appropriate department based on category
-        Department department = findDepartmentByCategory(request.getCategory(), request.getCity());
+        Department department = findDepartmentByCategory(category, cityName);
         if (department == null) {
-            throw new RuntimeException("No department found for category: " + request.getCategory());
+            // Fallback: use complaint's existing department or first available
+            department = complaint.getDepartment();
+        }
+        if (department == null) {
+            department = departmentRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 1))
+                    .stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("No departments available in the system"));
         }
 
         // Find best available worker in the department
-        Worker assignedWorker = findBestAvailableWorker(department.getUuid(), request.getLatitude(), request.getLongitude());
+        Worker assignedWorker = findBestAvailableWorker(department.getUuid(), lat, lng);
 
-        // Create assignment
+        if (assignedWorker == null) {
+            logger.info("No available workers in department {}. Complaint {} will remain unassigned (ROUTED).", department.getUuid(), complaint.getId());
+            complaint.setStatus(Complaint.ComplaintStatus.ROUTED);
+            complaint.setDepartment(department);
+            complaint.setUpdatedAt(LocalDateTime.now());
+            complaintRepository.save(complaint);
+            
+            AssignmentResponse response = new AssignmentResponse();
+            response.setComplaintId(complaint.getId().toString());
+            response.setDepartmentId(department.getId());
+            response.setDepartmentName(department.getName());
+            return response;
+        }
+
         Assignment assignment = new Assignment();
         assignment.setComplaint(complaint);
         assignment.setWorker(assignedWorker);
-        // Note: assignedBy should be set to the user who triggered auto-assignment
-        // For now, we'll leave it null or set it in the controller
+        assignment.setAssignedBy(complaint.getCreatedBy()); // Use the citizen as the assigner for auto-assignment to satisfy DB constraint
         assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
         assignment.setAssignedAt(LocalDateTime.now());
-
-        // Set deadline based on complaint priority
-        assignment.setDeadlineAt(calculateSlaDeadline(request.getPriority() != null ? request.getPriority() : 3));
+        assignment.setDeadlineAt(calculateSlaDeadline(priorityVal));
+        assignment.setIsAutoAssigned(true);
 
         Assignment savedAssignment = assignmentRepository.save(assignment);
 
@@ -86,6 +132,7 @@ public class AssignmentService {
         complaint.setDepartment(department);
         complaint.setAssignedWorker(assignedWorker);
         complaint.setUpdatedAt(LocalDateTime.now());
+        complaint.setSlaDeadline(assignment.getDeadlineAt());
         complaintRepository.save(complaint);
 
         // Update worker statistics
@@ -196,8 +243,22 @@ public class AssignmentService {
     public AssignmentResponse acknowledgeAssignment(String assignmentId) {
         Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+            
+        Worker worker = assignment.getWorker();
+        if (worker != null && (worker.getAadharNo() == null || worker.getAadharNo().trim().isEmpty())) {
+            throw new RuntimeException("Aadhar number is required before accepting a task");
+        }
+            
         assignment.accept();
         return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+    }
+
+    /**
+     * Check if a worker is currently available (no active assignments).
+     */
+    public boolean isWorkerAvailable(String workerId) {
+        List<Assignment> activeAssignments = assignmentRepository.findActiveByWorkerId(UUID.fromString(workerId));
+        return activeAssignments.isEmpty();
     }
 
     /**
@@ -213,15 +274,18 @@ public class AssignmentService {
     /**
      * Worker completes an assignment.
      */
-    public AssignmentResponse completeAssignment(String assignmentId, String notes) {
+    public AssignmentResponse completeAssignment(String assignmentId, String notes, java.util.List<String> images) {
         Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
         assignment.complete();
+        
+        if (images != null && !images.isEmpty()) {
+            assignment.setCompletionImages(images);
+        }
 
-        // Update complaint to RESOLVED
+        // Update complaint to VERIFIED_FOR_CLOSURE (Pending Admin Approval)
         Complaint complaint = assignment.getComplaint();
-        complaint.setStatus(Complaint.ComplaintStatus.RESOLVED);
-        complaint.setResolvedAt(LocalDateTime.now());
+        complaint.setStatus(Complaint.ComplaintStatus.VERIFIED_FOR_CLOSURE);
         complaint.setUpdatedAt(LocalDateTime.now());
         complaintRepository.save(complaint);
 
@@ -241,6 +305,11 @@ public class AssignmentService {
     public AssignmentResponse rejectAssignment(String assignmentId, String reason) {
         Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+            
+        if (!Boolean.TRUE.equals(assignment.getIsAutoAssigned())) {
+            throw new RuntimeException("Cannot reject tasks that are assigned manually by an Admin or Ward Head");
+        }
+        
         assignment.reject(reason);
         return assignmentMapper.toResponse(assignmentRepository.save(assignment));
     }
@@ -267,9 +336,15 @@ public class AssignmentService {
      * Get assignments by worker.
      */
     public Page<AssignmentResponse> getAssignmentsByWorker(String workerId, Pageable pageable) {
-        // For now, return all assignments and filter in service layer if needed  
-        // This can be optimized later with custom repository methods
-        return assignmentRepository.findAll(pageable)
+        return assignmentRepository.findByWorkerId(UUID.fromString(workerId), pageable)
+                .map(assignmentMapper::toResponse);
+    }
+
+    /**
+     * Get completed assignments by worker.
+     */
+    public Page<AssignmentResponse> getCompletedAssignmentsByWorker(String workerId, Pageable pageable) {
+        return assignmentRepository.findByWorkerIdAndStatus(UUID.fromString(workerId), Assignment.AssignmentStatus.COMPLETED, pageable)
                 .map(assignmentMapper::toResponse);
     }
 

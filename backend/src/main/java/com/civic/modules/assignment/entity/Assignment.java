@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -56,6 +58,14 @@ public class Assignment {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "is_auto_assigned", nullable = false)
+    private Boolean isAutoAssigned = false;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "assignment_completion_images", joinColumns = @JoinColumn(name = "assignment_id"))
+    @Column(name = "image_url")
+    private List<String> completionImages = new ArrayList<>();
 
     // Enum for assignment status
     public enum AssignmentStatus {
@@ -229,6 +239,26 @@ public class Assignment {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Boolean getIsAutoAssigned() {
+        return isAutoAssigned;
+    }
+
+    public void setIsAutoAssigned(Boolean autoAssigned) {
+        isAutoAssigned = autoAssigned;
+    }
+
+    public List<String> getCompletionImages() {
+        return completionImages;
+    }
+
+    public void setCompletionImages(List<String> completionImages) {
+        this.completionImages = completionImages;
+    }
+
+    public void addCompletionImage(String imageUrl) {
+        this.completionImages.add(imageUrl);
     }
 
     // Utility methods

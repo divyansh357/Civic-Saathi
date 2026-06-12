@@ -12,6 +12,29 @@ import java.time.LocalDateTime;
 @Component
 public class AssignmentMapper {
 
+    /** Map numeric priority (1-5) to human-readable label. */
+    private static String priorityIntToLabel(String priorityStr) {
+        if (priorityStr == null || priorityStr.isBlank()) return "MEDIUM";
+        String upper = priorityStr.trim().toUpperCase();
+        if (upper.equals("CRITICAL") || upper.equals("HIGH") || upper.equals("MEDIUM") 
+            || upper.equals("LOW") || upper.equals("VERY_LOW")) {
+            return upper;
+        }
+        try {
+            int p = Integer.parseInt(priorityStr.trim());
+            return switch (p) {
+                case 5 -> "CRITICAL";
+                case 4 -> "HIGH";
+                case 3 -> "MEDIUM";
+                case 2 -> "LOW";
+                case 1 -> "VERY_LOW";
+                default -> "MEDIUM";
+            };
+        } catch (NumberFormatException e) {
+            return "MEDIUM";
+        }
+    }
+
     /**
      * Convert Assignment entity to AssignmentResponse DTO.
      */
@@ -21,26 +44,48 @@ public class AssignmentMapper {
         response.setComplaintId(assignment.getComplaint() != null ? assignment.getComplaint().getId().toString() : null);
         response.setComplaintTitle(assignment.getComplaint() != null ? assignment.getComplaint().getTitle() : null);
         
-        // Department info comes from worker's department
-        response.setDepartmentId(assignment.getWorker() != null && assignment.getWorker().getDepartment() != null 
-                ? assignment.getWorker().getDepartment().getId() : null);
-        response.setDepartmentName(assignment.getWorker() != null && assignment.getWorker().getDepartment() != null 
-                ? assignment.getWorker().getDepartment().getName() : null);
+        if (assignment.getComplaint() != null) {
+            response.setComplaintDescription(assignment.getComplaint().getDescription());
+            response.setComplaintAddress(assignment.getComplaint().getAddressText());
+            if (assignment.getComplaint().getLocation() != null) {
+                response.setComplaintLatitude(assignment.getComplaint().getLocation().getY());
+                response.setComplaintLongitude(assignment.getComplaint().getLocation().getX());
+            }
+        }
+        
+        // Department info comes from worker's department or complaint's department
+        if (assignment.getWorker() != null && assignment.getWorker().getDepartment() != null) {
+            response.setDepartmentId(assignment.getWorker().getDepartment().getId());
+            response.setDepartmentName(assignment.getWorker().getDepartment().getName());
+        } else if (assignment.getComplaint() != null && assignment.getComplaint().getDepartment() != null) {
+            response.setDepartmentId(assignment.getComplaint().getDepartment().getId());
+            response.setDepartmentName(assignment.getComplaint().getDepartment().getName());
+        }
         
         response.setAssignedWorkerId(assignment.getWorker() != null ? assignment.getWorker().getId() : null);
         response.setAssignedWorkerName(assignment.getWorker() != null && assignment.getWorker().getUser() != null 
                 ? assignment.getWorker().getUser().getName() : null);
         
-        // Handle removed fields with defaults
-        response.setAssignmentType("AUTO"); // Default since field removed
+        response.setAssignmentType(Boolean.TRUE.equals(assignment.getIsAutoAssigned()) ? "AUTO" : "MANUAL");
         response.setStatus(assignment.getStatus().name());
-        response.setPriority(3); // Default priority since field removed
+        response.setIsAutoAssigned(assignment.getIsAutoAssigned());
+        
+        // Priority: derive from complaint entity
+        String priorityLabel = "MEDIUM";
+        if (assignment.getComplaint() != null && assignment.getComplaint().getPriority() != null) {
+            priorityLabel = priorityIntToLabel(assignment.getComplaint().getPriority());
+        }
+        response.setPriority(priorityLabel);
+        
         response.setSlaDeadline(assignment.getDeadlineAt());
-        response.setNotes(assignment.getRejectionReason()); // Use rejection reason as notes
+        response.setNotes(assignment.getRejectionReason());
         response.setCreatedAt(assignment.getAssignedAt());
-        response.setUpdatedAt(assignment.getAssignedAt()); // Use assigned time as updated time
+        response.setUpdatedAt(assignment.getAssignedAt());
         response.setAcceptedAt(assignment.getAcceptedAt());
         response.setCompletedAt(assignment.getCompletedAt());
+        
+        // Completion images
+        response.setCompletionImages(assignment.getCompletionImages());
         
         // Check if overdue
         response.setOverdue(assignment.getDeadlineAt() != null && 

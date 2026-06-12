@@ -6,7 +6,10 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import com.civic.modules.geography.entity.Zone;
 
 /**
  * Worker entity representing government field workers.
@@ -55,6 +58,32 @@ public class Worker {
 
     @Column(name = "last_active_at")
     private LocalDateTime lastActiveAt;
+
+    @Column(name = "aadhar_no", length = 12)
+    private String aadharNo;
+
+    @Column(name = "is_aadhar_verified")
+    private Boolean isAadharVerified = false;
+
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
+    @Column(name = "previous_works", columnDefinition = "TEXT")
+    private String previousWorks; // Stored as JSON array string
+
+    @Column(name = "worker_code", length = 50)
+    private String workerCode;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "worker_preferred_zones",
+        joinColumns = @JoinColumn(name = "worker_id"),
+        inverseJoinColumns = @JoinColumn(name = "zone_id")
+    )
+    private Set<Zone> preferredZones = new HashSet<>();
 
     // Constructors
     public Worker() {
@@ -177,6 +206,70 @@ public class Worker {
 
     public void setLastActiveAt(LocalDateTime lastActiveAt) {
         this.lastActiveAt = lastActiveAt;
+    }
+
+    public String getAadharNo() {
+        return aadharNo;
+    }
+
+    public void setAadharNo(String aadharNo) {
+        this.aadharNo = aadharNo;
+    }
+
+    public Boolean getIsAadharVerified() {
+        return isAadharVerified;
+    }
+
+    public void setIsAadharVerified(Boolean isAadharVerified) {
+        this.isAadharVerified = isAadharVerified;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Set<Zone> getPreferredZones() {
+        return preferredZones;
+    }
+
+    public void setPreferredZones(Set<Zone> preferredZones) {
+        this.preferredZones = preferredZones;
+    }
+
+    public String getWorkerCode() {
+        return workerCode;
+    }
+
+    public void setWorkerCode(String workerCode) {
+        this.workerCode = workerCode;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public String getPreviousWorks() {
+        return previousWorks;
+    }
+
+    public void setPreviousWorks(String previousWorks) {
+        this.previousWorks = previousWorks;
+    }
+
+    public void addPreferredZone(Zone zone) {
+        this.preferredZones.add(zone);
+    }
+
+    public void removePreferredZone(Zone zone) {
+        this.preferredZones.remove(zone);
     }
 
     @PrePersist

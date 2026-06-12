@@ -20,11 +20,11 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
 
     /** Find complaints by the user who created them. */
     @Query("SELECT c FROM Complaint c WHERE c.createdBy.id = :userId")
-    Page<Complaint> findByUserId(@Param("userId") String userId, Pageable pageable);
+    Page<Complaint> findByUserId(@Param("userId") java.util.UUID userId, Pageable pageable);
 
     /** Find complaints by department. */
     @Query("SELECT c FROM Complaint c WHERE c.department.id = :departmentId")
-    Page<Complaint> findByDepartmentId(@Param("departmentId") String departmentId, Pageable pageable);
+    Page<Complaint> findByDepartmentId(@Param("departmentId") java.util.UUID departmentId, Pageable pageable);
 
     /** Find complaints by status string (uses enum name). */
     @Query("SELECT c FROM Complaint c WHERE CAST(c.status AS string) = :status")

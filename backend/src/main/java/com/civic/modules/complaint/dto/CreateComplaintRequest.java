@@ -32,6 +32,9 @@ public class CreateComplaintRequest {
     @JsonProperty("priority")
     private Integer priority;
 
+    @JsonProperty("imageUrls")
+    private java.util.List<String> imageUrls;
+
     // Constructors
     public CreateComplaintRequest() {
     }
@@ -106,5 +109,13 @@ public class CreateComplaintRequest {
 
     public void setPriority(Integer priority) {
         this.priority = priority;
+    }
+
+    public java.util.List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(java.util.List<String> imageUrls) {
+        this.imageUrls = imageUrls;
     }
 }

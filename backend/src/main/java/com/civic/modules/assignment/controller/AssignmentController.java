@@ -90,7 +90,7 @@ public class AssignmentController {
             @PathVariable String departmentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "assignedAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
@@ -117,13 +117,40 @@ public class AssignmentController {
             @PathVariable String workerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "assignedAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<AssignmentResponse> assignments = assignmentService.getAssignmentsByWorker(workerId, pageable);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("data", assignments.getContent());
+        response.put("currentPage", assignments.getNumber());
+        response.put("totalItems", assignments.getTotalElements());
+        response.put("totalPages", assignments.getTotalPages());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get completed assignments by worker.
+     */
+    @GetMapping("/worker/{workerId}/completed")
+    @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> getCompletedAssignmentsByWorker(
+            @PathVariable String workerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "assignedAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<AssignmentResponse> assignments = assignmentService.getCompletedAssignmentsByWorker(workerId, pageable);
         
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
@@ -178,9 +205,9 @@ public class AssignmentController {
     @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> completeAssignment(
             @PathVariable String assignmentId,
-            @RequestBody(required = false) Map<String, String> body) {
-        String notes = body != null ? body.get("notes") : null;
-        AssignmentResponse assignment = assignmentService.completeAssignment(assignmentId, notes);
+            @RequestBody @Valid com.civic.modules.assignment.dto.AssignmentCompleteRequest request) {
+        // Here we can use notes if needed, but the interface requires images.
+        AssignmentResponse assignment = assignmentService.completeAssignment(assignmentId, "Completed via App", request.getImages());
         return ResponseEntity.ok(Map.of("status", "success", "data", assignment));
     }
 
@@ -191,9 +218,8 @@ public class AssignmentController {
     @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> rejectAssignment(
             @PathVariable String assignmentId,
-            @RequestBody(required = false) Map<String, String> body) {
-        String reason = body != null ? body.getOrDefault("reason", "Rejected by worker") : "Rejected by worker";
-        AssignmentResponse assignment = assignmentService.rejectAssignment(assignmentId, reason);
+            @RequestBody @Valid com.civic.modules.assignment.dto.AssignmentRejectRequest request) {
+        AssignmentResponse assignment = assignmentService.rejectAssignment(assignmentId, request.getReason());
         return ResponseEntity.ok(Map.of("status", "success", "data", assignment));
     }
 

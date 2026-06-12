@@ -44,6 +44,15 @@ public class AuthController {
     }
 
     /**
+     * Worker signup endpoint.
+     */
+    @PostMapping("/worker-signup")
+    public ResponseEntity<AuthResponse> workerSignup(@Valid @RequestBody com.civic.modules.auth.dto.WorkerSignupRequest request) {
+        AuthResponse response = authService.signupWorker(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
      * Refresh authentication token.
      */
     @PostMapping({"/refresh", "/refresh-token"})

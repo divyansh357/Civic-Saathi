@@ -21,7 +21,7 @@ public class CerebrasClient {
 
     private static final Logger log = LoggerFactory.getLogger(CerebrasClient.class);
     private static final String BASE_URL = "https://api.cerebras.ai/v1/chat/completions";
-    private static final String DEFAULT_MODEL = "llama3.1-8b";
+    private static final String DEFAULT_MODEL = "gpt-oss-120b";
 
     @Value("${ai.cerebras.api-key:}")
     private String apiKey;

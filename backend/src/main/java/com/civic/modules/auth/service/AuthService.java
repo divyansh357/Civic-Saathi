@@ -19,6 +19,14 @@ import com.civic.modules.user.repository.UserRepository;
 import com.civic.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.civic.modules.worker.entity.Worker;
+import com.civic.modules.worker.repository.WorkerRepository;
+import com.civic.modules.department.repository.DepartmentRepository;
+import com.civic.modules.department.entity.Department;
+import com.civic.modules.geography.repository.ZoneRepository;
+import com.civic.modules.geography.entity.Zone;
+import com.civic.modules.auth.dto.WorkerSignupRequest;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +63,14 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private WorkerRepository workerRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private ZoneRepository zoneRepository;
 
     /**
      * Authenticate user and generate token.
@@ -125,6 +141,80 @@ public class AuthService {
     /**
      * Validate authentication token.
      */
+    /**
+     * Register a new worker user and issue auth tokens.
+     */
+    public AuthResponse signupWorker(WorkerSignupRequest request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        String normalizedPhone = normalizePhone(request.getPhone());
+
+        userRepository.findByEmailIgnoreCase(normalizedEmail)
+                .ifPresent(existing -> {
+                    throw new ResourceConflictException("Email is already registered");
+                });
+
+        userRepository.findByPhone(normalizedPhone)
+                .ifPresent(existing -> {
+                    throw new ResourceConflictException("Phone is already registered");
+                });
+
+        User user = new User();
+        user.setName(request.getName().trim());
+        user.setEmail(normalizedEmail);
+        user.setPhone(normalizedPhone);
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setVerified(false);
+        user.setStatus("ACTIVE");
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        user.setLastLoginAt(LocalDateTime.now());
+
+        Role role = roleRepository.findByName("WORKER")
+                .orElseGet(() -> {
+                    Role newRole = new Role("WORKER");
+                    return roleRepository.save(newRole);
+                });
+        user.addRole(role);
+
+        User savedUser = userRepository.save(user);
+
+        Worker worker = new Worker();
+        worker.setUser(savedUser);
+        worker.setDesignation(request.getDesignation());
+        worker.setAddress(request.getAddress());
+        worker.setStatus("ACTIVE");
+        worker.setComplaintsAssigned(0);
+        worker.setComplaintsResolved(0);
+        worker.setCreatedAt(LocalDateTime.now());
+        worker.setUpdatedAt(LocalDateTime.now());
+
+        if (request.getDepartmentCode() != null && !request.getDepartmentCode().isEmpty()) {
+            Department dept = departmentRepository.findById(UUID.fromString(request.getDepartmentCode()))
+                .orElseThrow(() -> new RuntimeException("Department not found"));
+            worker.setDepartment(dept);
+        } else {
+            // Assign a default department if none provided, since DB requires it
+            List<Department> departments = departmentRepository.findAll();
+            if (!departments.isEmpty()) {
+                worker.setDepartment(departments.get(0));
+            } else {
+                throw new RuntimeException("No departments available in the system");
+            }
+        }
+
+        if (request.getPreferredZoneIds() != null && !request.getPreferredZoneIds().isEmpty()) {
+            List<Zone> zones = request.getPreferredZoneIds().stream()
+                .map(id -> zoneRepository.findById(UUID.fromString(id)).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+            worker.setPreferredZones(new java.util.HashSet<>(zones));
+        }
+
+        workerRepository.save(worker);
+
+        return issueTokenPair(savedUser);
+    }
+
     public boolean validateToken(String token) {
         String resolvedToken = resolveToken(token);
         return !resolvedToken.isBlank() && jwtTokenProvider.validateToken(resolvedToken);
@@ -306,3 +396,4 @@ public class AuthService {
         return rawPassword.equals(storedPasswordHash);
     }
 }
+

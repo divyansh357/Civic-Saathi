@@ -16,7 +16,7 @@ public class AssignmentResponse {
     private String assignedWorkerName;
     private String assignmentType;
     private String status;
-    private Integer priority;
+    private String priority;
     private LocalDateTime slaDeadline;
     private String notes;
     private LocalDateTime createdAt;
@@ -24,6 +24,12 @@ public class AssignmentResponse {
     private LocalDateTime acceptedAt;
     private LocalDateTime completedAt;
     private boolean overdue;
+    private Boolean isAutoAssigned;
+    private java.util.List<String> completionImages;
+    private Double complaintLatitude;
+    private Double complaintLongitude;
+    private String complaintAddress;
+    private String complaintDescription;
 
     // Getters and Setters
     public String getId() {
@@ -98,11 +104,11 @@ public class AssignmentResponse {
         this.status = status;
     }
 
-    public Integer getPriority() {
+    public String getPriority() {
         return priority;
     }
 
-    public void setPriority(Integer priority) {
+    public void setPriority(String priority) {
         this.priority = priority;
     }
 
@@ -161,4 +167,32 @@ public class AssignmentResponse {
     public void setOverdue(boolean overdue) {
         this.overdue = overdue;
     }
+
+    public Boolean getIsAutoAssigned() {
+        return isAutoAssigned;
+    }
+
+    public void setIsAutoAssigned(Boolean isAutoAssigned) {
+        this.isAutoAssigned = isAutoAssigned;
+    }
+
+    public java.util.List<String> getCompletionImages() {
+        return completionImages;
+    }
+
+    public void setCompletionImages(java.util.List<String> completionImages) {
+        this.completionImages = completionImages;
+    }
+
+    public Double getComplaintLatitude() { return complaintLatitude; }
+    public void setComplaintLatitude(Double complaintLatitude) { this.complaintLatitude = complaintLatitude; }
+
+    public Double getComplaintLongitude() { return complaintLongitude; }
+    public void setComplaintLongitude(Double complaintLongitude) { this.complaintLongitude = complaintLongitude; }
+
+    public String getComplaintAddress() { return complaintAddress; }
+    public void setComplaintAddress(String complaintAddress) { this.complaintAddress = complaintAddress; }
+
+    public String getComplaintDescription() { return complaintDescription; }
+    public void setComplaintDescription(String complaintDescription) { this.complaintDescription = complaintDescription; }
 }

@@ -26,7 +26,11 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 
     /** Find assignments by worker ID. */
     @Query("SELECT a FROM Assignment a WHERE a.worker.id = :workerId")
-    Page<Assignment> findByWorkerId(@Param("workerId") String workerId, Pageable pageable);
+    Page<Assignment> findByWorkerId(@Param("workerId") UUID workerId, Pageable pageable);
+
+    /** Find assignments by worker ID and status. */
+    @Query("SELECT a FROM Assignment a WHERE a.worker.id = :workerId AND a.status = :status")
+    Page<Assignment> findByWorkerIdAndStatus(@Param("workerId") UUID workerId, @Param("status") Assignment.AssignmentStatus status, Pageable pageable);
 
     /** Find assignments by status enum. */
     Page<Assignment> findByStatus(Assignment.AssignmentStatus status, Pageable pageable);
@@ -43,5 +47,5 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
            "AND a.status NOT IN " +
            "(com.civic.modules.assignment.entity.Assignment.AssignmentStatus.COMPLETED, " +
            "com.civic.modules.assignment.entity.Assignment.AssignmentStatus.CANCELLED)")
-    List<Assignment> findActiveByWorkerId(@Param("workerId") String workerId);
+    List<Assignment> findActiveByWorkerId(@Param("workerId") UUID workerId);
 }

@@ -1,5 +1,6 @@
 package com.civic.modules.worker.controller;
 
+import com.civic.modules.worker.dto.WorkerProfileUpdateRequest;
 import com.civic.modules.worker.dto.WorkerResponse;
 import com.civic.modules.worker.entity.Worker;
 import com.civic.modules.worker.service.WorkerService;
@@ -21,11 +22,29 @@ public class WorkerController {
     private WorkerService workerService;
 
     /**
+     * Get all workers.
+     */
+    @GetMapping
+    public ResponseEntity<Page<WorkerResponse>> getAllWorkers(Pageable pageable) {
+        Page<WorkerResponse> workers = workerService.getAllWorkers(pageable);
+        return ResponseEntity.ok(workers);
+    }
+
+    /**
      * Get worker by ID.
      */
     @GetMapping("/{id}")
     public ResponseEntity<WorkerResponse> getWorkerById(@PathVariable String id) {
         WorkerResponse response = workerService.getWorkerById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get worker by User ID.
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<WorkerResponse> getWorkerByUserId(@PathVariable String userId) {
+        WorkerResponse response = workerService.getWorkerByUserId(userId);
         return ResponseEntity.ok(response);
     }
 
@@ -87,5 +106,27 @@ public class WorkerController {
     public ResponseEntity<Void> deleteWorker(@PathVariable String id) {
         workerService.deleteWorker(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Update worker Aadhar number.
+     */
+    @PutMapping("/{id}/aadhar")
+    public ResponseEntity<WorkerResponse> updateAadhar(
+            @PathVariable String id,
+            @RequestParam String aadharNo) {
+        WorkerResponse response = workerService.updateAadhar(id, aadharNo);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Update worker profile.
+     */
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<WorkerResponse> updateProfile(
+            @PathVariable String id,
+            @RequestBody WorkerProfileUpdateRequest request) {
+        WorkerResponse response = workerService.updateProfile(id, request);
+        return ResponseEntity.ok(response);
     }
 }

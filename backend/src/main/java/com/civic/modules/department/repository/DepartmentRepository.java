@@ -25,12 +25,12 @@ public interface DepartmentRepository extends JpaRepository<Department, UUID> {
     /**
      * Find department by category type and city.
      */
-    @Query("SELECT d FROM Department d WHERE d.categoryType = :categoryType AND d.city = :city AND d.active = true")
+    @Query("SELECT d FROM Department d WHERE d.categoryType = :categoryType AND d.city.name = :city AND d.active = true")
     Optional<Department> findByCategoryTypeAndCity(@Param("categoryType") String categoryType, @Param("city") String city);
     
     /**
      * Find all active departments in a city.
      */
-    @Query("SELECT d FROM Department d WHERE d.active = :active AND d.city = :city")
+    @Query("SELECT d FROM Department d WHERE d.active = :active AND d.city.name = :city")
     List<Department> findByActiveAndCity(@Param("active") boolean active, @Param("city") String city);
 }

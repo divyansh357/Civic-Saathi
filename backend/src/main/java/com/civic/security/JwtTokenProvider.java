@@ -48,6 +48,7 @@ public class JwtTokenProvider {
 
 		return Jwts.builder()
 				.subject(userId)
+				.id(java.util.UUID.randomUUID().toString())
 				.claim("email", email)
 				.claim("role", role)
 				.claim("type", "ACCESS")
@@ -63,6 +64,7 @@ public class JwtTokenProvider {
 
 		return Jwts.builder()
 				.subject(userId)
+				.id(java.util.UUID.randomUUID().toString())
 				.claim("type", "REFRESH")
 				.issuedAt(Date.from(now))
 				.expiration(Date.from(expiry))

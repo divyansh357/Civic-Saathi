@@ -94,6 +94,21 @@ public class Complaint {
     @Column(name = "ai_priority_score")
     private Float aiPriorityScore;
 
+    @Column(name = "verification_method")
+    private String verificationMethod; // "AI", "MANUAL", "PENDING"
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "complaint_images", joinColumns = @JoinColumn(name = "complaint_id"))
+    @Column(name = "image_url")
+    private java.util.List<String> imageUrls = new java.util.ArrayList<>();
+
+    // Standard lat/lng fallback for when PostGIS isn't used or easily parsed
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Column(columnDefinition = "TEXT")
     private String embedding;
 
@@ -308,22 +323,38 @@ public class Complaint {
     // Backward compatibility methods for lat/lng
     @Deprecated
     public Double getLatitude() {
-        return location != null ? location.getY() : null;
+        return latitude != null ? latitude : (location != null ? location.getY() : null);
     }
 
     @Deprecated
     public void setLatitude(Double latitude) {
-        // This would need to be handled with longitude to create a Point
+        this.latitude = latitude;
     }
 
     @Deprecated
     public Double getLongitude() {
-        return location != null ? location.getX() : null;
+        return longitude != null ? longitude : (location != null ? location.getX() : null);
     }
 
     @Deprecated
     public void setLongitude(Double longitude) {
-        // This would need to be handled with latitude to create a Point
+        this.longitude = longitude;
+    }
+
+    public java.util.List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(java.util.List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
+
+    public String getVerificationMethod() {
+        return verificationMethod;
+    }
+
+    public void setVerificationMethod(String verificationMethod) {
+        this.verificationMethod = verificationMethod;
     }
 
     public String getAddressText() {
@@ -474,6 +505,19 @@ public class Complaint {
 
     public boolean hasCategory(String categoryName) {
         return categories.stream().anyMatch(cat -> cat.getName().equals(categoryName));
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
+        }
+        if (this.complaintNumber == null) {
+            this.complaintNumber = "CMP-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
     }
 
     @PreUpdate

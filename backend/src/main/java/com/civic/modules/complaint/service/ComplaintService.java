@@ -43,6 +43,12 @@ public class ComplaintService {
     @Autowired
     private ComplaintWorkflow complaintWorkflow;
 
+    @Autowired
+    private AiVerificationService aiVerificationService;
+
+    @Autowired
+    private com.civic.modules.assignment.service.AssignmentService assignmentService;
+
     /**
      * Get all complaints with optional status/search filters.
      */
@@ -79,8 +85,48 @@ public class ComplaintService {
             default -> 48;  // MEDIUM
         };
         complaint.setSlaDeadline(LocalDateTime.now().plusHours(slaHours));
-        Complaint saved = complaintRepository.save(complaint);
-        return complaintMapper.toResponse(saved);
+
+        // Call AI Layer for Auto-Verification
+        AiVerificationService.AiVerificationResult aiResult = aiVerificationService.verifyComplaint(
+            request.getTitle(), request.getDescription(), request.getCategory()
+        );
+
+        complaint.setAiSummary(aiResult.summary);
+        complaint.setAiPriorityScore(aiResult.confidenceScore);
+
+        if (aiResult.isValid && aiResult.confidenceScore >= 0.7f) {
+            complaint.setStatus(Complaint.ComplaintStatus.VERIFIED);
+            complaint.setVerificationMethod("AI");
+            logger.info("Complaint auto-verified by AI. Confidence: {}", aiResult.confidenceScore);
+            
+            // Save the complaint first so we have an ID for the auto-assign service
+            complaint = complaintRepository.save(complaint);
+            
+            // Trigger Auto-Assignment
+            try {
+                com.civic.modules.assignment.dto.AutoAssignmentRequest assignReq = new com.civic.modules.assignment.dto.AutoAssignmentRequest();
+                assignReq.setComplaintId(complaint.getId().toString());
+                assignReq.setCategory(complaint.getCategory());
+                assignReq.setCity(complaint.getCity() != null ? complaint.getCity().getName() : null);
+                if (complaint.getLocation() != null) {
+                    assignReq.setLatitude(complaint.getLocation().getY());
+                    assignReq.setLongitude(complaint.getLocation().getX());
+                }
+                assignReq.setPriority(priorityVal);
+                assignmentService.autoAssignComplaint(assignReq);
+            } catch (Exception e) {
+                logger.error("Auto-assignment failed for AI-verified complaint {}: {}", complaint.getId(), e.getMessage());
+                // Fallback to manual assignment queue
+                complaint.setStatus(Complaint.ComplaintStatus.VERIFIED);
+            }
+        } else {
+            complaint.setStatus(Complaint.ComplaintStatus.SUBMITTED);
+            complaint.setVerificationMethod("PENDING");
+            logger.info("Complaint requires manual verification. AI Confidence: {}", aiResult.confidenceScore);
+            complaint = complaintRepository.save(complaint);
+        }
+
+        return complaintMapper.toResponse(complaint);
     }
 
     /** Get complaint by ID. */
@@ -94,13 +140,13 @@ public class ComplaintService {
     /** Get all complaints for a user. */
     @Transactional(readOnly = true)
     public Page<ComplaintResponse> getComplaintsByUserId(String userId, Pageable pageable) {
-        return complaintRepository.findByUserId(userId, pageable).map(complaintMapper::toResponse);
+        return complaintRepository.findByUserId(java.util.UUID.fromString(userId), pageable).map(complaintMapper::toResponse);
     }
 
     /** Get all complaints for a department. */
     @Transactional(readOnly = true)
     public Page<ComplaintResponse> getComplaintsByDepartmentId(String departmentId, Pageable pageable) {
-        return complaintRepository.findByDepartmentId(departmentId, pageable).map(complaintMapper::toResponse);
+        return complaintRepository.findByDepartmentId(java.util.UUID.fromString(departmentId), pageable).map(complaintMapper::toResponse);
     }
 
     /** Get all complaints with a specific status. */

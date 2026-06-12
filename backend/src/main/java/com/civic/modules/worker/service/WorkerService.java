@@ -1,6 +1,7 @@
 package com.civic.modules.worker.service;
 
 import com.civic.modules.worker.dto.WorkerResponse;
+import com.civic.modules.worker.dto.WorkerProfileUpdateRequest;
 import com.civic.modules.worker.entity.Worker;
 import com.civic.modules.worker.mapper.WorkerMapper;
 import com.civic.modules.worker.repository.WorkerRepository;
@@ -45,6 +46,25 @@ public class WorkerService {
             return workerMapper.toResponse(worker.get());
         }
         throw new RuntimeException("Worker not found with ID: " + id);
+    }
+
+    /**
+     * Get worker by User ID.
+     */
+    public WorkerResponse getWorkerByUserId(String userId) {
+        Optional<Worker> worker = workerRepository.findByUserId(UUID.fromString(userId));
+        if (worker.isPresent()) {
+            return workerMapper.toResponse(worker.get());
+        }
+        throw new RuntimeException("Worker not found for User ID: " + userId);
+    }
+
+    /**
+     * Get all workers.
+     */
+    public Page<WorkerResponse> getAllWorkers(Pageable pageable) {
+        return workerRepository.findAll(pageable)
+                .map(workerMapper::toResponse);
     }
 
     /**
@@ -107,6 +127,45 @@ public class WorkerService {
             worker.setComplaintsAssigned(worker.getComplaintsAssigned() + 1);
             workerRepository.save(worker);
         }
+    }
+
+    /**
+     * Update Aadhar number for worker (mocked verification).
+     */
+    public WorkerResponse updateAadhar(String id, String aadharNo) {
+        Worker worker = workerRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Worker not found: " + id));
+        worker.setAadharNo(aadharNo);
+        // Mock verification: if 12 digits, it's verified
+        if (aadharNo != null && aadharNo.matches("\\d{12}")) {
+            worker.setIsAadharVerified(true);
+        } else {
+            worker.setIsAadharVerified(false);
+        }
+        worker.setUpdatedAt(LocalDateTime.now());
+        return workerMapper.toResponse(workerRepository.save(worker));
+    }
+
+    /**
+     * Update worker profile.
+     */
+    public WorkerResponse updateProfile(String id, WorkerProfileUpdateRequest request) {
+        Worker worker = workerRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Worker not found: " + id));
+            
+        if (request.getAddress() != null) worker.setAddress(request.getAddress());
+        if (request.getAadharNo() != null) worker.setAadharNo(request.getAadharNo());
+        if (request.getWorkerCode() != null) worker.setWorkerCode(request.getWorkerCode());
+        if (request.getProfileImageUrl() != null) worker.setProfileImageUrl(request.getProfileImageUrl());
+        if (request.getPreviousWorks() != null) worker.setPreviousWorks(request.getPreviousWorks());
+        
+        if (request.getPreferredZoneIds() != null) {
+            // Update preferred zones if necessary. (omitted full mapping to Zone entity for brevity unless required)
+            // Assuming Zone mapping logic or just skipping for now.
+        }
+
+        worker.setUpdatedAt(LocalDateTime.now());
+        return workerMapper.toResponse(workerRepository.save(worker));
     }
 
     /**

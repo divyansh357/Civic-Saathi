@@ -5,11 +5,15 @@ import java.time.LocalDateTime;
 
 /**
  * Response DTO for complaint details.
+ * Contains all fields the web dashboard and mobile app need.
  */
 public class ComplaintResponse {
 
     @JsonProperty("id")
     private String id;
+
+    @JsonProperty("complaintNumber")
+    private String complaintNumber;
 
     @JsonProperty("title")
     private String title;
@@ -23,14 +27,26 @@ public class ComplaintResponse {
     @JsonProperty("status")
     private String status;
 
+    @JsonProperty("priority")
+    private String priority;
+
     @JsonProperty("userId")
     private String userId;
+
+    @JsonProperty("userName")
+    private String userName;
 
     @JsonProperty("departmentId")
     private String departmentId;
 
+    @JsonProperty("departmentName")
+    private String departmentName;
+
     @JsonProperty("assignedWorkerId")
     private String assignedWorkerId;
+
+    @JsonProperty("assignedWorkerName")
+    private String assignedWorkerName;
 
     @JsonProperty("latitude")
     private Double latitude;
@@ -40,6 +56,18 @@ public class ComplaintResponse {
 
     @JsonProperty("location")
     private String location;
+
+    @JsonProperty("address")
+    private String address;
+
+    @JsonProperty("imageUrls")
+    private java.util.List<String> imageUrls;
+
+    @JsonProperty("verificationMethod")
+    private String verificationMethod;
+
+    @JsonProperty("aiSummary")
+    private String aiSummary;
 
     @JsonProperty("resolution")
     private String resolution;
@@ -53,8 +81,8 @@ public class ComplaintResponse {
     @JsonProperty("resolvedAt")
     private LocalDateTime resolvedAt;
 
-    @JsonProperty("priority")
-    private Integer priority;
+    @JsonProperty("slaDeadline")
+    private LocalDateTime slaDeadline;
 
     @JsonProperty("rating")
     private Integer rating;
@@ -67,147 +95,84 @@ public class ComplaintResponse {
     }
 
     // Getters and Setters
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getComplaintNumber() { return complaintNumber; }
+    public void setComplaintNumber(String complaintNumber) { this.complaintNumber = complaintNumber; }
 
-    public String getTitle() {
-        return title;
-    }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public String getDescription() {
-        return description;
-    }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public String getCategory() {
-        return category;
-    }
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
 
-    public void setCategory(String category) {
-        this.category = category;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public String getStatus() {
-        return status;
-    }
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public String getDepartmentId() { return departmentId; }
+    public void setDepartmentId(String departmentId) { this.departmentId = departmentId; }
 
-    public String getUserId() {
-        return userId;
-    }
+    public String getDepartmentName() { return departmentName; }
+    public void setDepartmentName(String departmentName) { this.departmentName = departmentName; }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    public String getAssignedWorkerId() { return assignedWorkerId; }
+    public void setAssignedWorkerId(String assignedWorkerId) { this.assignedWorkerId = assignedWorkerId; }
 
-    public String getDepartmentId() {
-        return departmentId;
-    }
+    public String getAssignedWorkerName() { return assignedWorkerName; }
+    public void setAssignedWorkerName(String assignedWorkerName) { this.assignedWorkerName = assignedWorkerName; }
 
-    public void setDepartmentId(String departmentId) {
-        this.departmentId = departmentId;
-    }
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
 
-    public String getAssignedWorkerId() {
-        return assignedWorkerId;
-    }
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 
-    public void setAssignedWorkerId(String assignedWorkerId) {
-        this.assignedWorkerId = assignedWorkerId;
-    }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
-    public Double getLatitude() {
-        return latitude;
-    }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
-    public void setLatitude(Double latitude) {
-        this.latitude = latitude;
-    }
+    public java.util.List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(java.util.List<String> imageUrls) { this.imageUrls = imageUrls; }
 
-    public Double getLongitude() {
-        return longitude;
-    }
+    public String getVerificationMethod() { return verificationMethod; }
+    public void setVerificationMethod(String verificationMethod) { this.verificationMethod = verificationMethod; }
 
-    public void setLongitude(Double longitude) {
-        this.longitude = longitude;
-    }
+    public String getAiSummary() { return aiSummary; }
+    public void setAiSummary(String aiSummary) { this.aiSummary = aiSummary; }
 
-    public String getLocation() {
-        return location;
-    }
+    public String getResolution() { return resolution; }
+    public void setResolution(String resolution) { this.resolution = resolution; }
 
-    public void setLocation(String location) {
-        this.location = location;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public String getResolution() {
-        return resolution;
-    }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public void setResolution(String resolution) {
-        this.resolution = resolution;
-    }
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public LocalDateTime getSlaDeadline() { return slaDeadline; }
+    public void setSlaDeadline(LocalDateTime slaDeadline) { this.slaDeadline = slaDeadline; }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Integer getRating() { return rating; }
+    public void setRating(Integer rating) { this.rating = rating; }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getResolvedAt() {
-        return resolvedAt;
-    }
-
-    public void setResolvedAt(LocalDateTime resolvedAt) {
-        this.resolvedAt = resolvedAt;
-    }
-
-    public Integer getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Integer priority) {
-        this.priority = priority;
-    }
-
-    public Integer getRating() {
-        return rating;
-    }
-
-    public void setRating(Integer rating) {
-        this.rating = rating;
-    }
-
-    public String getFeedback() {
-        return feedback;
-    }
-
-    public void setFeedback(String feedback) {
-        this.feedback = feedback;
-    }
+    public String getFeedback() { return feedback; }
+    public void setFeedback(String feedback) { this.feedback = feedback; }
 }
