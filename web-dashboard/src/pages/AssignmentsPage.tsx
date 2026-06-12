@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
-import { apiGet, apiPost } from '../services/api/client';
-import { Assignment, Complaint, PagedResponse } from '../types';
+import { apiGet, apiPost, apiPut } from '../services/api/client';
+import { Assignment, Complaint, PagedResponse, ComplaintStatus } from '../types';
 import { PriorityBadge, AssignmentStatusBadge } from '../components/StatusBadge';
-import { Zap, AlertTriangle, GitMerge, XCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Zap, AlertTriangle, GitMerge, XCircle, AlertCircle, CheckCircle2, Clock, X, Check } from 'lucide-react';
 
 function formatDate(iso?: string) {
   if (!iso) return '—';
@@ -102,6 +102,186 @@ function AutoAssignModal({ complaints, onClose, onSuccess }: AutoAssignModalProp
   );
 }
 
+/* ── Task Review Modal ────────────────────────────────────────────── */
+
+interface TaskReviewModalProps {
+  assignment: Assignment;
+  onClose: () => void;
+  onRefresh: () => void;
+  onUpdate: (id: string, updates: Partial<Assignment>) => void;
+}
+
+function TaskReviewModal({ assignment, onClose, onRefresh, onUpdate }: TaskReviewModalProps) {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const [saving, setSaving] = useState(false);
+  
+  const [editingSla, setEditingSla] = useState(false);
+  const [newSla, setNewSla] = useState(assignment.slaDeadline ? assignment.slaDeadline.slice(0, 16) : '');
+  const [savingSla, setSavingSla] = useState(false);
+
+  const handleSlaUpdate = async () => {
+    if (!newSla) return;
+    setSavingSla(true);
+    try {
+      // Append :00 if needed to match ISO_DATE_TIME
+      const formattedSla = newSla.length === 16 ? `${newSla}:00` : newSla;
+      await apiPut(`/assignments/${assignment.id}/sla?newDeadline=${formattedSla}`, {}, accessToken ?? undefined);
+      onUpdate(assignment.id, { slaDeadline: formattedSla });
+      setEditingSla(false);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'SLA update failed');
+    } finally {
+      setSavingSla(false);
+    }
+  };
+
+  const handleStatusChange = async (status: ComplaintStatus) => {
+    setSaving(true);
+    try {
+      await apiPut(`/complaints/${assignment.complaintId}/status`, { status }, accessToken ?? undefined);
+      
+      // Update local assignment status if changing to CLOSED
+      if (status === 'CLOSED') {
+        onUpdate(assignment.id, { status: 'CLOSED' as any });
+      } else if (status === 'IN_PROGRESS') {
+        onUpdate(assignment.id, { status: 'IN_PROGRESS' as any });
+      }
+      
+      onRefresh();
+      onClose();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const timeTaken = () => {
+    if (!assignment.assignedAt || !assignment.completedAt) return null;
+    const start = new Date(assignment.assignedAt).getTime();
+    const end = new Date(assignment.completedAt).getTime();
+    const hrs = Math.floor((end - start) / 3600000);
+    const mins = Math.floor(((end - start) % 3600000) / 60000);
+    return `${hrs}h ${mins}m`;
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
+        <div className="modal-header">
+          <span className="modal-title">Assignment Review</span>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={16} /></button>
+        </div>
+        <div className="modal-body">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+            <AssignmentStatusBadge status={assignment.status} />
+            {assignment.priority && <PriorityBadge priority={assignment.priority} />}
+          </div>
+
+          <div className="grid-2">
+            <div>
+              <div className="form-label">Assignment ID</div>
+              <div className="mono text-accent" style={{ marginTop: 4, fontSize: '0.8rem' }}>{assignment.id.substring(0, 8)}</div>
+            </div>
+            <div>
+              <div className="form-label">Worker</div>
+              <div style={{ color: 'var(--text)', marginTop: 4 }}>{assignment.assignedWorkerName ?? assignment.workerName ?? 'Unassigned'}</div>
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div className="form-label">Complaint Title</div>
+              <div style={{ color: 'var(--text)', marginTop: 4, fontWeight: 500 }}>{assignment.complaintTitle ?? assignment.complaintId}</div>
+            </div>
+          </div>
+
+          <div className="divider" />
+
+          <h4 style={{ marginBottom: 12, fontSize: '0.9rem', color: 'var(--text)' }}>Time Management & SLA</h4>
+          <div className="grid-2" style={{ background: 'var(--bg-2)', padding: 12, borderRadius: 8 }}>
+            <div>
+              <div className="form-label" style={{ fontSize: '0.75rem' }}>Assigned At</div>
+              <div style={{ fontSize: '0.85rem', marginTop: 4 }}>{formatDate(assignment.assignedAt)}</div>
+            </div>
+            <div>
+              <div className="form-label" style={{ fontSize: '0.75rem' }}>Accepted At</div>
+              <div style={{ fontSize: '0.85rem', marginTop: 4 }}>{formatDate(assignment.acceptedAt) || '—'}</div>
+            </div>
+            <div>
+              <div className="form-label" style={{ fontSize: '0.75rem' }}>Completed At</div>
+              <div style={{ fontSize: '0.85rem', marginTop: 4 }}>{formatDate(assignment.completedAt) || '—'}</div>
+            </div>
+            <div>
+              <div className="form-label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                SLA Deadline
+                <button className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '0.7rem' }} onClick={() => setEditingSla(!editingSla)}>
+                  {editingSla ? 'Cancel' : 'Edit'}
+                </button>
+              </div>
+              {editingSla ? (
+                <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                  <input type="datetime-local" className="form-input" style={{ padding: 4, fontSize: '0.75rem' }} value={newSla} onChange={e => setNewSla(e.target.value)} />
+                  <button className="btn btn-primary btn-sm" style={{ padding: '0 8px', fontSize: '0.75rem' }} onClick={() => void handleSlaUpdate()} disabled={savingSla}>
+                    {savingSla ? '...' : 'Save'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.85rem', marginTop: 4, color: isSlaBreached(assignment.slaDeadline) && assignment.status !== 'COMPLETED' ? 'var(--red)' : 'var(--text)' }}>
+                  {formatDate(assignment.slaDeadline) || '—'}
+                </div>
+              )}
+            </div>
+            {assignment.completedAt && (
+              <div style={{ gridColumn: '1 / -1', marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border)' }}>
+                <div className="form-label" style={{ fontSize: '0.75rem' }}>Time Taken</div>
+                <div style={{ fontSize: '0.85rem', marginTop: 4, fontWeight: 600 }}>{timeTaken()}</div>
+              </div>
+            )}
+          </div>
+
+          {assignment.status === 'COMPLETED' && (
+            <div style={{ marginTop: 20 }}>
+              <h4 style={{ marginBottom: 12, fontSize: '0.9rem', color: 'var(--text)' }}>Worker Proofs ({assignment.completionImages?.length || 0})</h4>
+              {assignment.completionImages && assignment.completionImages.length > 0 ? (
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+                  {assignment.completionImages.map((url, i) => {
+                    const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov') || url.toLowerCase().includes('/video/');
+                    return (
+                      <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', position: 'relative' }}>
+                        {isVideo ? (
+                          <div style={{ width: 120, height: 120, background: '#000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ color: '#fff', fontSize: '0.8rem' }}>▶ Play Video</span>
+                          </div>
+                        ) : (
+                          <img src={url} alt={`Proof ${i+1}`} style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+                        )}
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-muted" style={{ fontSize: '0.85rem' }}>No proofs provided.</div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          {assignment.status === 'COMPLETED' && (
+            <>
+              <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
+                onClick={() => void handleStatusChange('IN_PROGRESS')} disabled={saving}>
+                {saving ? '...' : <><X size={16} className="icon-inline" /> Reject Work</>}
+              </button>
+              <button className="btn btn-primary" onClick={() => void handleStatusChange('CLOSED')} disabled={saving}>
+                {saving ? '...' : <><Check size={16} className="icon-inline" /> Approve & Close</>}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main Assignments Page ──────────────────────────────────────────── */
 
 export default function AssignmentsPage() {
@@ -114,6 +294,7 @@ export default function AssignmentsPage() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<'all' | 'overdue'>('all');
   const [showAutoAssign, setShowAutoAssign] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [escalating, setEscalating] = useState(false);
   const [error, setError] = useState('');
   const PAGE_SIZE = 15;
@@ -130,14 +311,10 @@ export default function AssignmentsPage() {
         apiGet<PagedResponse<Complaint>>('/complaints?page=0&size=50&sort=createdAt,desc', accessToken).catch(() => null),
       ]);
 
-      // Parse assignments — backend returns { data: [...], totalItems, totalPages }
-      if (assignRes?.data) {
-        setAssignments(assignRes.data);
-        setTotal(assignRes.totalItems ?? assignRes.data.length);
-      } else {
-        setAssignments([]);
-        setTotal(0);
-      }
+      // Parse assignments
+      const list = assignRes?.data ?? assignRes?.content ?? (Array.isArray(assignRes) ? assignRes : []);
+      setAssignments(list);
+      setTotal(assignRes?.totalItems ?? assignRes?.totalElements ?? list.length);
 
       // Parse overdue
       if (overdueRes?.data) {
@@ -243,6 +420,7 @@ export default function AssignmentsPage() {
                     <th>Priority</th>
                     <th>SLA Deadline</th>
                     <th>Assigned</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -265,6 +443,9 @@ export default function AssignmentsPage() {
                       <td>{a.priority ? <PriorityBadge priority={a.priority} /> : '—'}</td>
                       <td><SlaTimer deadline={a.slaDeadline} /></td>
                       <td className="text-muted" style={{ fontSize: '0.78rem' }}>{formatDate(a.assignedAt)}</td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedAssignment(a)}>Review</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -292,6 +473,20 @@ export default function AssignmentsPage() {
           complaints={unassignedComplaints}
           onClose={() => setShowAutoAssign(false)}
           onSuccess={() => void fetchData()}
+        />
+      )}
+
+      {selectedAssignment && (
+        <TaskReviewModal
+          assignment={selectedAssignment}
+          onClose={() => setSelectedAssignment(null)}
+          onRefresh={() => void fetchData()}
+          onUpdate={(id, updates) => {
+            setAssignments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+            if (selectedAssignment.id === id) {
+              setSelectedAssignment({ ...selectedAssignment, ...updates });
+            }
+          }}
         />
       )}
     </div>

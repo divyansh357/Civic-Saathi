@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
-import { apiGet } from '../services/api/client';
+import { apiGet, apiPost } from '../services/api/client';
 import { Department } from '../types';
 import { Search } from 'lucide-react';
 
@@ -17,13 +17,18 @@ export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const defaultDept = { name: '', code: '', categoryType: 'GENERAL', headName: '', email: '', phone: '' };
+  const [newDept, setNewDept] = useState(defaultDept);
 
   const fetchDepartments = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true);
     try {
-      const res = await apiGet<{ data: Department[] }>('/departments', accessToken);
-      setDepartments(res.data ?? []);
+      const res = await apiGet<{ content: Department[] }>('/departments', accessToken);
+      setDepartments(res.content ?? []);
     } catch {
       setDepartments(MOCK);
     } finally {
@@ -44,7 +49,11 @@ export default function DepartmentsPage() {
           <h1>Departments</h1>
           <p>{departments.length} government departments configured</p>
         </div>
-        <button className="btn btn-primary">+ Add Department</button>
+        <button className="btn btn-primary" onClick={() => {
+          setEditingDept(null);
+          setNewDept(defaultDept);
+          setShowModal(true);
+        }}>+ Add Department</button>
       </div>
 
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 20 }}>
@@ -118,7 +127,18 @@ export default function DepartmentsPage() {
                       </span>
                     </td>
                     <td>
-                      <button className="btn btn-ghost btn-sm">Edit</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => {
+                        setEditingDept(d);
+                        setNewDept({
+                          name: d.name || '',
+                          code: d.code || '',
+                          categoryType: d.categoryType || 'GENERAL',
+                          headName: d.headName || '',
+                          email: d.email || '',
+                          phone: d.phone || ''
+                        });
+                        setShowModal(true);
+                      }}>Edit</button>
                     </td>
                   </tr>
                 ))}
@@ -127,6 +147,68 @@ export default function DepartmentsPage() {
           </div>
         )}
       </div>
+
+      {/* Add Department Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">{editingDept ? 'Edit Department' : 'Add Department'}</span>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Department Name</label>
+                <input className="form-input" value={newDept.name} onChange={e => setNewDept({...newDept, name: e.target.value})} placeholder="e.g., Roads & Infrastructure" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Code</label>
+                <input className="form-input" value={newDept.code} onChange={e => setNewDept({...newDept, code: e.target.value.toUpperCase()})} placeholder="e.g., ROADS" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Category</label>
+                <input className="form-input" value={newDept.categoryType} onChange={e => setNewDept({...newDept, categoryType: e.target.value})} placeholder="e.g., ROADS" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Head of Department</label>
+                <input className="form-input" value={newDept.headName} onChange={e => setNewDept({...newDept, headName: e.target.value})} placeholder="Name of Head" />
+              </div>
+              <div className="form-group" style={{ display: 'flex', gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Email</label>
+                  <input className="form-input" value={newDept.email} onChange={e => setNewDept({...newDept, email: e.target.value})} placeholder="Email" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Phone</label>
+                  <input className="form-input" value={newDept.phone} onChange={e => setNewDept({...newDept, phone: e.target.value})} placeholder="Phone" />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn btn-primary" disabled={saving} onClick={async () => {
+                setSaving(true);
+                try {
+                  const { apiPut } = await import('../services/api/client');
+                  if (editingDept) {
+                    await apiPut(`/departments/${editingDept.id}`, newDept, accessToken);
+                  } else {
+                    await apiPost('/departments', newDept, accessToken);
+                  }
+                  setShowModal(false);
+                  fetchDepartments();
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : 'Failed to save department');
+                } finally {
+                  setSaving(false);
+                }
+              }}>
+                {saving ? 'Saving...' : (editingDept ? 'Save Changes' : 'Add Department')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -35,7 +35,7 @@ export default function DashboardPage() {
     setLoading(true);
     setError('');
     Promise.all([
-      apiGet<AnalyticsDashboard>('/complaints/stats/overview', accessToken).catch(() => null),
+      apiGet<AnalyticsDashboard>('/analytics/dashboard', accessToken).catch(() => null),
       apiGet<PagedResponse<Complaint>>('/complaints?page=0&size=5&sort=createdAt,desc', accessToken).catch(() => null),
     ]).then(([analyticsRes, complaintsRes]) => {
       if (analyticsRes) setAnalytics(analyticsRes);

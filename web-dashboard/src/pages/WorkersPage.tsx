@@ -151,11 +151,6 @@ export default function WorkersPage() {
                             <div>
                               <div style={{ fontWeight: 600, color: 'var(--text)' }}>{w.name ?? 'Unknown Worker'}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{w.email ?? 'No email'}</div>
-                              {w.previousWorks && (
-                                <div style={{ fontSize: '0.7rem', color: 'var(--accent)', marginTop: 2, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={w.previousWorks}>
-                                  Works: {w.previousWorks}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </td>

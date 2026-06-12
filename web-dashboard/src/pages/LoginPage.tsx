@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState('');
   const [signupSuccess, setSignupSuccess] = useState('');
+  const [role, setRole] = useState('ADMIN');
 
   const canLogin = email.trim().length > 0 && password.trim().length > 0;
   const canSignup =
@@ -51,7 +52,7 @@ export default function LoginPage() {
         email: email.trim(),
         phone: phone.trim(),
         password,
-        role: 'citizen',
+        role: role,
       });
       setSignupSuccess('Account created! You can now sign in.');
       setTab('login');
@@ -216,6 +217,19 @@ export default function LoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="9876543210"
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="signup-role">Role</label>
+              <select
+                id="signup-role"
+                className="form-input"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                <option value="ADMIN">Admin</option>
+                <option value="OFFICER">Officer</option>
+              </select>
             </div>
 
             <div className="form-group">

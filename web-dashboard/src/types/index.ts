@@ -20,6 +20,7 @@ export interface AuthTokens {
 }
 
 export type ComplaintStatus =
+  | 'OPEN'
   | 'SUBMITTED'
   | 'DUPLICATE_CHECKED'
   | 'VERIFIED'

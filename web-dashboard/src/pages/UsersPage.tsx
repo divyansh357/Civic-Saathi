@@ -38,8 +38,8 @@ export default function UsersPage() {
     if (!accessToken) return;
     setLoading(true);
     try {
-      const res = await apiGet<{ data: User[] }>('/users', accessToken);
-      setUsers(res.data ?? []);
+      const res = await apiGet<{ content: User[] }>('/users', accessToken);
+      setUsers(res.content ?? []);
     } catch {
       setUsers(MOCK);
     } finally {

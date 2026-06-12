@@ -6,8 +6,10 @@ import { StatusBadge, PriorityBadge } from '../components/StatusBadge';
 import { AlertTriangle, Search, ClipboardList, MapPin, RefreshCw, X, Check, UserPlus } from 'lucide-react';
 
 const STATUS_OPTIONS: ComplaintStatus[] = [
-  'SUBMITTED', 'VERIFIED', 'ROUTED', 'ASSIGNED', 'IN_PROGRESS',
-  'RESOLVED', 'CLOSED', 'REOPENED', 'REJECTED', 'ESCALATED'
+  'OPEN', 'SUBMITTED', 'DUPLICATE_CHECKED', 'VERIFIED', 'ROUTED', 
+  'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED', 
+  'VERIFIED_FOR_CLOSURE', 'CLOSED', 'REOPENED', 'REJECTED', 
+  'CANCELLED', 'ESCALATED'
 ];
 
 function formatDate(iso?: string) {
@@ -286,6 +288,48 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
               </div>
             )}
 
+
+            {/* Resolution Images */}
+            {complaint.resolutionImages && complaint.resolutionImages.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div className="form-label" style={{ marginBottom: 8 }}>Proof of Work ({complaint.resolutionImages.length})</div>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+                  {complaint.resolutionImages.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer">
+                      {url.toLowerCase().endsWith('.mp4') || url.toLowerCase().includes('video') ? (
+                        <div style={{ width: 100, height: 100, background: '#000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ color: '#fff', fontSize: '0.7rem' }}>▶ Play Video</span>
+                        </div>
+                      ) : (
+                        <img 
+                          src={url} 
+                          alt={`Proof of work ${i+1}`} 
+                          style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} 
+                        />
+                      )}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Citizen Feedback */}
+            {complaint.rating !== undefined && complaint.rating !== null && complaint.rating > 0 && (
+              <div style={{ marginTop: 16, background: 'var(--bg-2)', padding: 12, borderRadius: 8 }}>
+                <div className="form-label" style={{ marginBottom: 4 }}>Citizen Feedback</div>
+                <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <span key={star} style={{ fontSize: 16, color: star <= complaint.rating! ? '#F59E0B' : '#CBD5E1' }}>★</span>
+                  ))}
+                </div>
+                {complaint.feedback && (
+                  <div style={{ color: 'var(--text-2)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                    "{complaint.feedback}"
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="divider" />
 
             <div className="form-group">
@@ -371,33 +415,43 @@ export default function ComplaintsPage() {
   const [error, setError] = useState('');
   const PAGE_SIZE = 15;
 
+  const [viewMode, setViewMode] = useState<'all' | 'reopens'>('all');
+  const [pendingReopens, setPendingReopens] = useState<ReopenRequest[]>([]);
+
   const fetchComplaints = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        size: String(PAGE_SIZE),
-        sort: 'createdAt,desc',
-      });
-      if (statusFilter) params.set('status', statusFilter);
-      if (search.trim()) params.set('search', search.trim());
+      if (viewMode === 'all') {
+        const params = new URLSearchParams({
+          page: String(page),
+          size: String(PAGE_SIZE),
+          sort: 'createdAt,desc',
+        });
+        if (statusFilter) params.set('status', statusFilter);
+        if (search.trim()) params.set('search', search.trim());
 
-      const res = await apiGet<PagedResponse<Complaint>>(
-        `/complaints?${params.toString()}`,
-        accessToken
-      );
-      setComplaints(res.content ?? []);
-      setTotal(res.totalElements ?? 0);
+        const res = await apiGet<PagedResponse<Complaint>>(
+          `/complaints?${params.toString()}`,
+          accessToken
+        );
+        setComplaints(res.content ?? []);
+        setTotal(res.totalElements ?? 0);
+      } else {
+        const res = await apiGet<ReopenRequest[]>('/reopen-requests/pending', accessToken);
+        setPendingReopens(res ?? []);
+        setTotal(res?.length ?? 0);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load complaints');
-      setComplaints([]);
+      setError(e instanceof Error ? e.message : 'Failed to load data');
+      if (viewMode === 'all') setComplaints([]);
+      else setPendingReopens([]);
       setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [accessToken, page, statusFilter, search]);
+  }, [accessToken, page, statusFilter, search, viewMode]);
 
   useEffect(() => { void fetchComplaints(); }, [fetchComplaints]);
 
@@ -411,34 +465,52 @@ export default function ComplaintsPage() {
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Complaints</h1>
-          <p>{total.toLocaleString()} total complaints in the system</p>
+          <h1>Complaints & Requests</h1>
+          <p>{total.toLocaleString()} {viewMode === 'all' ? 'total complaints' : 'pending reopen requests'} in the system</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, background: 'var(--bg-2)', padding: 4, borderRadius: 8 }}>
+          <button 
+            className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-ghost'}`} 
+            onClick={() => { setViewMode('all'); setPage(0); }}
+          >
+            All Complaints
+          </button>
+          <button 
+            className={`btn ${viewMode === 'reopens' ? 'btn-primary' : 'btn-ghost'}`} 
+            onClick={() => { setViewMode('reopens'); setPage(0); }}
+          >
+            Pending Reopens
+          </button>
         </div>
       </div>
 
       <div className="card">
         <div className="filters-bar">
-          <div className="search-wrap">
-            <span className="search-icon"><Search size={16} className="icon-inline" /></span>
-            <input
-              className="search-input"
-              placeholder="Search complaints..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            />
-          </div>
+          {viewMode === 'all' && (
+            <>
+              <div className="search-wrap">
+                <span className="search-icon"><Search size={16} className="icon-inline" /></span>
+                <input
+                  className="search-input"
+                  placeholder="Search complaints..."
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                />
+              </div>
 
-          <select
-            className="form-input"
-            style={{ width: 160 }}
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-          >
-            <option value="">All Statuses</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-            ))}
-          </select>
+              <select
+                className="form-input"
+                style={{ width: 160 }}
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+              >
+                <option value="">All Statuses</option>
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+            </>
+          )}
 
           <button className="btn btn-ghost btn-sm" onClick={() => void fetchComplaints()}>
             <RefreshCw size={16} className="icon-inline" /> Refresh
@@ -453,31 +525,48 @@ export default function ComplaintsPage() {
           </div>
         )}
 
-        {complaints.length === 0 && !loading ? (
+        {viewMode === 'all' && complaints.length === 0 && !loading ? (
           <div className="empty-state">
             <div className="empty-state-icon"><ClipboardList size={32} /></div>
             <h3>{error ? 'Connection error' : 'No complaints found'}</h3>
             <p>{error ? 'Check if the backend is running' : 'Try adjusting your filters or search query'}</p>
+          </div>
+        ) : viewMode === 'reopens' && pendingReopens.length === 0 && !loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon"><Check size={32} /></div>
+            <h3>No Pending Reopen Requests</h3>
+            <p>All reopen requests have been addressed.</p>
           </div>
         ) : (
           <>
             <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
               <table>
                 <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Department</th>
-                    <th>Citizen</th>
-                    <th>Created</th>
-                    <th></th>
-                  </tr>
+                  {viewMode === 'all' ? (
+                    <tr>
+                      <th>ID</th>
+                      <th>Title</th>
+                      <th>Category</th>
+                      <th>Status</th>
+                      <th>Priority</th>
+                      <th>Department</th>
+                      <th>Citizen</th>
+                      <th>Created</th>
+                      <th></th>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <th>Reopen ID</th>
+                      <th>Complaint ID</th>
+                      <th>Reason</th>
+                      <th>Count</th>
+                      <th>Requested At</th>
+                      <th></th>
+                    </tr>
+                  )}
                 </thead>
                 <tbody>
-                  {complaints.map((c) => (
+                  {viewMode === 'all' ? complaints.map((c) => (
                     <tr key={c.id}>
                       <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{c.complaintNumber ?? c.id.substring(0, 8)}</span></td>
                       <td>
@@ -501,28 +590,52 @@ export default function ComplaintsPage() {
                         </button>
                       </td>
                     </tr>
+                  )) : pendingReopens.map((r) => (
+                    <tr key={r.id}>
+                      <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{r.id.substring(0, 8)}</span></td>
+                      <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{r.complaintId?.substring(0, 8)}</span></td>
+                      <td>{r.reason}</td>
+                      <td>#{r.reopenCount}</td>
+                      <td className="text-muted" style={{ fontSize: '0.78rem' }}>{formatDate(r.createdAt)}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn btn-sm" style={{ background: 'var(--green-bg)', color: 'var(--green)', border: 'none' }}
+                            onClick={async () => {
+                              await apiPost(`/reopen-requests/${r.id}/approve`, {}, accessToken ?? undefined);
+                              fetchComplaints();
+                            }}><Check size={16} className="icon-inline" /> Approve</button>
+                          <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
+                            onClick={async () => {
+                              await apiPost(`/reopen-requests/${r.id}/reject`, {}, accessToken ?? undefined);
+                              fetchComplaints();
+                            }}><X size={16} className="icon-inline" /> Reject</button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="pagination">
-              <span>Showing {Math.min(page * PAGE_SIZE + 1, total)}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}</span>
-              <div className="pagination-controls">
-                <button className="page-btn" disabled={page === 0} onClick={() => setPage(0)}>«</button>
-                <button className="page-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>‹</button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const p = Math.max(0, Math.min(page - 2, totalPages - 5)) + i;
-                  return (
-                    <button key={p} className={`page-btn${p === page ? ' active' : ''}`} onClick={() => setPage(p)}>
-                      {p + 1}
-                    </button>
-                  );
-                })}
-                <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>›</button>
-                <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>»</button>
+            {viewMode === 'all' && (
+              <div className="pagination">
+                <span>Showing {Math.min(page * PAGE_SIZE + 1, total)}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}</span>
+                <div className="pagination-controls">
+                  <button className="page-btn" disabled={page === 0} onClick={() => setPage(0)}>«</button>
+                  <button className="page-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>‹</button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const p = Math.max(0, Math.min(page - 2, totalPages - 5)) + i;
+                    return (
+                      <button key={p} className={`page-btn${p === page ? ' active' : ''}`} onClick={() => setPage(p)}>
+                        {p + 1}
+                      </button>
+                    );
+                  })}
+                  <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>›</button>
+                  <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>»</button>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

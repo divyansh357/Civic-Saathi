@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
-import { AlertTriangle, ClipboardList , CheckCircle2, Clock, Star} from 'lucide-react';
+import { AlertTriangle, ClipboardList , CheckCircle2, Clock, Star, TrendingUp, TrendingDown, Bot } from 'lucide-react';
 
 const TOOLTIP_STYLE = {
   contentStyle: { background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 },
@@ -91,7 +91,7 @@ export default function AnalyticsPage() {
             <div className="stat-value">{s.value}</div>
             <div className="stat-label">{s.label}</div>
             <div className={`stat-change ${s.up ? 'up' : 'down'}`}>
-              {s.up ? 'â†‘' : 'â†“'} {s.change} vs last month
+              {s.up ? <TrendingUp size={14} className="icon-inline" /> : <TrendingDown size={14} className="icon-inline" />} {s.change} vs last month
             </div>
           </div>
         ))}
@@ -221,7 +221,7 @@ export default function AnalyticsPage() {
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                ðŸ¤– AI Insights
+                <Bot size={20} className="text-accent" /> AI Insights
                 {aiStatus && (
                   <span style={{
                     fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 12,
