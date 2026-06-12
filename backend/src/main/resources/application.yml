@@ -44,6 +44,7 @@ logging:
     org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
     org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_SQL_BINDER:WARN}
+    com.zaxxer.hikari: DEBUG
 
 app:
   jwt:
