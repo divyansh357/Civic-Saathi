@@ -88,11 +88,11 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
     if (!accessToken) return;
     if (!silent) setLoading(true);
     try {
-      const res = await apiGet<{ data: Complaint[] }>(
+      const res = await apiGet<{ content: Complaint[] }>(
         '/complaints?page=0&size=20&sortBy=createdAt&sortDir=DESC',
         accessToken
       );
-      setComplaints(res.data ?? []);
+      setComplaints(res.content ?? []);
     } catch {
       // keep existing data
     } finally {

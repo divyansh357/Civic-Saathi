@@ -133,3 +133,12 @@ export function apiDelete<TResponse>(
 ): Promise<TResponse> {
   return request<TResponse>(path, { method: 'DELETE', accessToken });
 }
+
+export function apiPutWithHeaders<TResponse, TBody = unknown>(
+  path: string,
+  body?: TBody,
+  accessToken?: string,
+  extraHeaders?: Record<string, string>
+): Promise<TResponse> {
+  return request<TResponse>(path, { method: 'PUT', body, accessToken, extraHeaders });
+}

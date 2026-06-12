@@ -47,8 +47,11 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
   const [reopenReason, setReopenReason] = useState('');
   const [showReopenForm, setShowReopenForm] = useState(false);
 
-  const canRequestFeedback = complaint.status === 'RESOLVED' || complaint.status === 'CLOSED';
-  const canReopen = complaint.status === 'RESOLVED' || complaint.status === 'CLOSED';
+  const userRole = useAuthStore((s) => s.user?.role);
+  const isCitizen = userRole === 'CITIZEN';
+
+  const canRequestFeedback = isCitizen && (complaint.status === 'RESOLVED' || complaint.status === 'CLOSED');
+  const canReopen = isCitizen && (complaint.status === 'RESOLVED' || complaint.status === 'CLOSED');
 
   const handleReopenRequest = async () => {
     if (!reopenReason.trim()) {

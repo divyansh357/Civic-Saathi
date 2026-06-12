@@ -187,6 +187,11 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   };
 
   const pickImage = async () => {
+    if (images.length >= 5) {
+      Alert.alert('Limit Reached', 'You can only upload up to 5 photos.');
+      return;
+    }
+    
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -196,14 +201,16 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false, // Disabling to allow multiple selection
         aspect: [4, 3],
         quality: 0.8,
-        allowsMultipleSelection: false,
+        allowsMultipleSelection: true,
+        selectionLimit: 5 - images.length,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        setImages(prev => [...prev, result.assets[0].uri]);
+      if (!result.canceled && result.assets) {
+        const newUris = result.assets.map(a => a.uri);
+        setImages(prev => [...prev, ...newUris].slice(0, 5));
       }
     } catch (error) {
       console.error('Image picker error:', error);
@@ -212,6 +219,11 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   };
 
   const takePhoto = async () => {
+    if (images.length >= 5) {
+      Alert.alert('Limit Reached', 'You can only upload up to 5 photos.');
+      return;
+    }
+    
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -283,6 +295,11 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
   };
 
   const showImageOptions = () => {
+    if (images.length >= 5) {
+      Alert.alert('Limit Reached', 'You can only upload up to 5 photos.');
+      return;
+    }
+    
     Alert.alert(
       'Add Photo',
       'Choose how you want to add a photo',
@@ -292,6 +309,40 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
         { text: 'Cancel', style: 'cancel' },
       ]
     );
+  };
+
+  const uploadImageToCloudinary = async (uri: string): Promise<string> => {
+    const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    
+    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name')) {
+      throw new Error("Cloudinary configuration is missing. Please check your .env file.");
+    }
+
+    const formData = new FormData();
+    formData.append('file', {
+      uri,
+      type: 'image/jpeg',
+      name: `upload_${Date.now()}.jpg`,
+    } as any);
+    formData.append('upload_preset', uploadPreset);
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Cloudinary upload failed", errText);
+      throw new Error(`Image upload failed: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data.secure_url;
   };
 
   const handleSubmit = async () => {
@@ -315,10 +366,20 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
       Alert.alert('Error', 'User session not found. Please log in again.');
       return;
     }
+    
+    if (submitting) return; // Prevent concurrent submissions
+    
     setSubmitting(true);
     try {
       // Map priority string to integer: 1=CRITICAL, 2=HIGH, 3=MEDIUM, 4=LOW
       const priorityInt = PRIORITIES.find(p => p.id === priority)?.value ?? 3;
+
+      // Upload all images to Cloudinary
+      const imageUrls: string[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const url = await uploadImageToCloudinary(images[i]);
+        imageUrls.push(url);
+      }
 
       const complaintData = {
         title: title.trim(),
@@ -328,7 +389,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
         location: address.trim(),
         latitude: location?.latitude,
         longitude: location?.longitude,
-        // TODO: Upload images and voice note to storage service
+        imageUrls,
       };
 
       await apiPostWithHeaders('/complaints', complaintData, accessToken, {
@@ -437,7 +498,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
             {!aiSuggesting && aiSuggestion && (
               <View>
                 <View style={styles.aiRow}>
-                  <Text style={styles.aiIcon}>🤖</Text>
+                  <Ionicons name="color-wand" size={16} color="#8b5cf6" style={{marginRight: 4}} />
                   <Text style={styles.aiLabel}>AI Suggestion</Text>
                   <Text style={styles.aiConfidence}>
                     {Math.round(aiSuggestion.confidence * 100)}% confident
@@ -510,9 +571,13 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
 
         {/* Images Section */}
         <View style={styles.field}>
-          <Text style={styles.label}>Photos <Text style={styles.required}>*</Text></Text>
+          <Text style={styles.label}>Photos ({images.length}/5) <Text style={styles.required}>*</Text></Text>
           <View style={[styles.mediaContainer, attemptedSubmit && !isPhotoValid && styles.fieldError]}>
-            <Pressable style={styles.addMediaBtn} onPress={showImageOptions}>
+            <Pressable 
+              style={[styles.addMediaBtn, images.length >= 5 && { opacity: 0.5 }]} 
+              onPress={showImageOptions}
+              disabled={images.length >= 5}
+            >
               <Text style={styles.addMediaIcon}><Ionicons name="camera-outline" size={20} color="#64748b" /></Text>
               <Text style={styles.addMediaText}>Add Photo</Text>
             </Pressable>
@@ -526,7 +591,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
                       style={styles.removeImageBtn} 
                       onPress={() => removeImage(index)}
                     >
-                      <Text style={styles.removeImageText}>✕</Text>
+                      <Ionicons name="close" size={14} color="#fff" />
                     </Pressable>
                   </View>
                 ))}
@@ -563,11 +628,11 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
             ) : (
               <View style={styles.voiceNoteContainer}>
                 <View style={styles.voiceNoteInfo}>
-                  <Text style={styles.voiceNoteIcon}>🎵</Text>
+                  <Ionicons name="musical-notes" size={20} color="#1e293b" />
                   <Text style={styles.voiceNoteText}>Voice note recorded</Text>
                 </View>
                 <Pressable style={styles.removeVoiceBtn} onPress={removeVoiceNote}>
-                  <Text style={styles.removeVoiceText}>✕</Text>
+                  <Ionicons name="close" size={14} color="#fff" />
                 </Pressable>
               </View>
             )}

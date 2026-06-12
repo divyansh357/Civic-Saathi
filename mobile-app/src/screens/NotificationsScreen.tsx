@@ -26,14 +26,14 @@ interface NotificationCardProps {
 }
 
 function NotificationCard({ notification, onPress }: NotificationCardProps) {
-  const icon = NOTIFICATION_ICONS[notification.type] || '📢';
+  const icon = NOTIFICATION_ICONS[notification.type] || <Ionicons name="notifications-outline" size={24} color="#64748b" />;
   const color = NOTIFICATION_COLORS[notification.type] || '#64748b';
 
   return (
     <Pressable style={styles.card} onPress={onPress} android_ripple={{ color: '#e2e8f0' }}>
       <View style={styles.cardLeft}>
         <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
-          <Text style={styles.icon}>{icon}</Text>
+          {icon}
         </View>
       </View>
       

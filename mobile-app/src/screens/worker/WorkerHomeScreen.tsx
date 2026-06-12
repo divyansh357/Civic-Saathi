@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  RefreshControl, ActivityIndicator, Alert, Platform
+  RefreshControl, ActivityIndicator, Alert, Platform, Modal
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
 import { apiGet, apiPost } from '@services/api/client';
-import { Assignment } from '@/types';
+import { Assignment, Complaint } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
+import ComplaintDetailScreen from '../citizen/ComplaintDetailScreen';
 
 // Extend Assignment type for mobile
 interface WorkerAssignment extends Assignment {
@@ -43,8 +44,8 @@ function openMaps(latitude: number, longitude: number, address?: string) {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: '#60a5fa',
-  ACKNOWLEDGED: '#a78bfa',
+  ASSIGNED: '#60a5fa',
+  ACCEPTED: '#a78bfa',
   IN_PROGRESS: '#fb923c',
   COMPLETED: '#34d399',
   ESCALATED: '#f87171',
@@ -69,16 +70,19 @@ function getSlaLabel(deadline?: string) {
 interface AssignmentCardProps {
   assignment: WorkerAssignment;
   onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+  onComplete: (id: string) => void;
   onComplete: (id: string) => void;
   onNavigate: (assignment: WorkerAssignment) => void;
+  onViewDetails: (assignment: WorkerAssignment) => void;
 }
 
-function AssignmentCard({ assignment, onAccept, onComplete, onNavigate }: AssignmentCardProps) {
+function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate, onViewDetails }: AssignmentCardProps) {
   const color = STATUS_COLORS[assignment.status] ?? '#64748b';
   const sla = getSlaLabel(assignment.slaDeadline);
 
   return (
-    <View style={[styles.card, assignment.status === 'ESCALATED' && styles.cardEscalated]}>
+    <Pressable style={[styles.card, assignment.status === 'ESCALATED' && styles.cardEscalated]} onPress={() => onViewDetails(assignment)}>
       <View style={styles.cardTop}>
         <View style={[styles.statusPill, { backgroundColor: `${color}20` }]}>
           <Text style={[styles.statusPillText, { color }]}>{assignment.status.replace(/_/g, ' ')}</Text>
@@ -122,27 +126,36 @@ function AssignmentCard({ assignment, onAccept, onComplete, onNavigate }: Assign
           </Pressable>
         )}
         
-        {assignment.status === 'PENDING' && (
-          <Pressable style={styles.actionBtn} onPress={() => onAccept(assignment.id)}>
-            <Text style={styles.actionBtnText}>✓ Accept</Text>
-          </Pressable>
+        {assignment.status === 'ASSIGNED' && (
+          <>
+            <Pressable style={styles.actionBtn} onPress={() => onAccept(assignment.id)}>
+              <Text style={styles.actionBtnText}><Ionicons name="checkmark" size={16} color="#fff" /> Accept</Text>
+            </Pressable>
+            <Pressable style={[styles.actionBtn, styles.actionBtnRed]} onPress={() => onReject(assignment.id)}>
+              <Text style={[styles.actionBtnText, { color: "#b91c1c" }]}><Ionicons name="close" size={16} color="#b91c1c" /> Reject</Text>
+            </Pressable>
+          </>
         )}
         {assignment.status === 'IN_PROGRESS' && (
           <Pressable style={[styles.actionBtn, styles.actionBtnGreen]} onPress={() => onComplete(assignment.id)}>
-            <Text style={[styles.actionBtnText, { color: '#065f46' }]}>✅ Mark Complete</Text>
+            <Text style={[styles.actionBtnText, { color: "#065f46" }]}><Ionicons name="checkmark-circle" size={16} color="#065f46" /> Mark Complete</Text>
           </Pressable>
         )}
-        {assignment.status === 'ACKNOWLEDGED' && (
+        {assignment.status === 'ACCEPTED' && (
           <Pressable style={[styles.actionBtn, styles.actionBtnYellow]} onPress={() => onAccept(assignment.id)}>
-            <Text style={[styles.actionBtnText, { color: '#92400e' }]}>🔧 Start Work</Text>
+            <Text style={[styles.actionBtnText, { color: "#92400e" }]}><Ionicons name="build" size={16} color="#92400e" /> Start Work</Text>
           </Pressable>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
+import * as ImagePicker from 'expo-image-picker';
+import WorkerProfileScreen from './WorkerProfileScreen';
+
 export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavigateToNotifications?: () => void }) {
+  const [showProfile, setShowProfile] = useState(false);
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
@@ -151,6 +164,13 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [refreshing, setRefreshing] = useState(false);
   const [workerLocation, setWorkerLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [workerId, setWorkerId] = useState<string | null>(null);
+  
+  // Modal state
+  const [selectedAssignment, setSelectedAssignment] = useState<WorkerAssignment | null>(null);
+  const [complaintDetails, setComplaintDetails] = useState<Complaint | null>(null);
+  const [fetchingComplaint, setFetchingComplaint] = useState(false);
 
   // Enhanced mock data with location
   const MOCK: WorkerAssignment[] = [
@@ -227,15 +247,29 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     if (!accessToken || !user) return;
     if (!silent) setLoading(true);
     try {
-      const res = await apiGet<{ data: WorkerAssignment[] }>(
-        `/assignments/worker/${user.id}?page=0&size=20`,
-        accessToken
-      );
-      const assignmentsWithDistance = calculateAssignmentDistances(res.data ?? []);
-      setAssignments(assignmentsWithDistance);
-    } catch {
-      const mockWithDistance = calculateAssignmentDistances(MOCK);
-      setAssignments(mockWithDistance);
+      let currentWorkerId = workerId;
+      if (!currentWorkerId) {
+        const workerRes = await apiGet<any>(`/workers/user/${user.id}`, accessToken);
+        currentWorkerId = workerRes.id;
+        setWorkerId(currentWorkerId);
+      }
+      if (!currentWorkerId) return;
+
+      const endpoint = activeTab === 'active' 
+        ? `/assignments/worker/${currentWorkerId}?page=0&size=20`
+        : `/assignments/worker/${currentWorkerId}/completed?page=0&size=20`;
+
+      const res = await apiGet<{ data: WorkerAssignment[] }>(endpoint, accessToken);
+      
+      if (activeTab === 'active') {
+        const assignmentsWithDistance = calculateAssignmentDistances(res.data ?? []);
+        setAssignments(assignmentsWithDistance);
+      } else {
+        setAssignments(res.data ?? []);
+      }
+    } catch (err) {
+      console.error(err);
+      setAssignments([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -245,11 +279,11 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   useEffect(() => { 
     void getCurrentLocation();
     void fetchAssignments(); 
-  }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accessToken, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recalculate distances when worker location changes
   useEffect(() => {
-    if (workerLocation && assignments.length > 0) {
+    if (workerLocation && assignments.length > 0 && activeTab === 'active') {
       const assignmentsWithDistance = calculateAssignmentDistances(assignments);
       setAssignments(assignmentsWithDistance);
     }
@@ -270,28 +304,109 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const handleAccept = async (id: string) => {
     if (!accessToken) return;
     try {
-      await apiPost(`/assignments/${id}/acknowledge`, {}, accessToken);
-      setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'ACKNOWLEDGED' as const } : a));
+      const assignment = assignments.find(a => a.id === id);
+      if (assignment?.status === 'ASSIGNED') {
+        await apiPost(`/assignments/${id}/acknowledge`, {}, accessToken);
+        setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'ACCEPTED' as const } : a));
+      } else if (assignment?.status === 'ACCEPTED') {
+        await apiPost(`/assignments/${id}/start`, {}, accessToken);
+        setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'IN_PROGRESS' as const } : a));
+      }
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to accept');
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to process request');
     }
+  };
+
+  const handleReject = async (id: string) => {
+    if (!accessToken) return;
+    Alert.prompt(
+      'Reject Task',
+      'Please enter a reason for rejection (e.g. Too far, Not my scope):',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Reject', 
+          style: 'destructive',
+          onPress: async (reason) => {
+            if (!reason) {
+              Alert.alert('Error', 'A reason is required to reject a task.');
+              return;
+            }
+            try {
+              await apiPost(`/assignments/${id}/reject`, { reason }, accessToken);
+              // Assuming backend sets it to REJECTED or removes it from worker
+              fetchAssignments(); 
+            } catch (e) {
+              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to reject (Admins assigned tasks cannot be rejected)');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const uploadImageToCloudinary = async (uri: string): Promise<string> => {
+    const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name')) {
+      throw new Error("Cloudinary configuration is missing. Please check your .env file.");
+    }
+    const formData = new FormData();
+    formData.append('file', { uri, type: 'image/jpeg', name: `proof_${Date.now()}.jpg` } as any);
+    formData.append('upload_preset', uploadPreset);
+    
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST', body: formData, headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Image upload failed');
+    const data = await res.json();
+    return data.secure_url;
   };
 
   const handleComplete = async (id: string) => {
     if (!accessToken) return;
-    Alert.alert('Complete Task', 'Mark this assignment as completed?', [
+    Alert.alert('Complete Task', 'You must provide a photo as proof of resolution.', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Complete', onPress: async () => {
+        text: 'Take Photo', onPress: async () => {
           try {
-            await apiPost(`/assignments/${id}/complete`, {}, accessToken);
-            setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'COMPLETED' as const } : a));
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission Required', 'Camera access is needed for proof.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+            if (!result.canceled && result.assets[0]) {
+              setLoading(true);
+              const imgUrl = await uploadImageToCloudinary(result.assets[0].uri);
+              await apiPost(`/assignments/${id}/complete`, { images: [imgUrl] }, accessToken);
+              setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'COMPLETED' as const } : a));
+              Alert.alert('Success', 'Task completed successfully and sent for admin verification!');
+            }
           } catch (e) {
             Alert.alert('Error', e instanceof Error ? e.message : 'Failed to complete');
+          } finally {
+            setLoading(false);
           }
         }
       }
     ]);
+  };
+
+  const handleViewDetails = async (assignment: WorkerAssignment) => {
+    if (!accessToken) return;
+    setSelectedAssignment(assignment);
+    setFetchingComplaint(true);
+    try {
+      const data = await apiGet<{ data: Complaint }>(`/complaints/${assignment.complaintId}`, accessToken);
+      setComplaintDetails(data.data);
+    } catch (err) {
+      console.error('Failed to fetch complaint details', err);
+      Alert.alert('Error', 'Could not load complaint details');
+      setSelectedAssignment(null);
+    } finally {
+      setFetchingComplaint(false);
+    }
   };
 
   const active = assignments.filter((a) => !['COMPLETED'].includes(a.status));
@@ -301,6 +416,10 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const sortedActive = workerLocation 
     ? active.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
     : active;
+
+  if (showProfile) {
+    return <WorkerProfileScreen onBack={() => setShowProfile(false)} />;
+  }
 
   return (
     <ScrollView
@@ -326,6 +445,9 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
               <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
             </Pressable>
           )}
+          <Pressable style={styles.notificationBtn} onPress={() => setShowProfile(true)}>
+            <Text style={styles.notificationIcon}><Ionicons name="person-outline" size={20} color="#64748b" /></Text>
+          </Pressable>
           <Pressable style={styles.logoutBtn} onPress={() => void logout()}>
             <Text style={styles.logoutText}>Logout</Text>
           </Pressable>
@@ -346,49 +468,72 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         ))}
       </View>
 
-      {/* Active Assignments */}
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <Pressable 
+          style={[styles.tabBtn, activeTab === 'active' && styles.tabBtnActive]} 
+          onPress={() => setActiveTab('active')}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'active' && styles.tabBtnTextActive]}>Active</Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.tabBtn, activeTab === 'completed' && styles.tabBtnActive]} 
+          onPress={() => setActiveTab('completed')}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'completed' && styles.tabBtnTextActive]}>Work History</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Active Assignments ({active.length})</Text>
-        {workerLocation && active.length > 0 && (
+        <Text style={styles.sectionTitle}>{activeTab === 'active' ? 'Active Assignments' : 'Completed Works'} ({activeTab === 'active' ? active.length : completed.length})</Text>
+        {workerLocation && active.length > 0 && activeTab === 'active' && (
           <Text style={styles.sortNote}>Sorted by distance</Text>
         )}
       </View>
 
       {loading ? (
         <ActivityIndicator color="#0F766E" style={{ marginTop: 24 }} />
-      ) : active.length === 0 ? (
+      ) : (activeTab === 'active' ? active.length : completed.length) === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>✅</Text>
-          <Text style={styles.emptyTitle}>All caught up!</Text>
-          <Text style={styles.emptySubtitle}>No active assignments right now</Text>
+          <Text style={styles.emptyTitle}>{activeTab === 'active' ? 'All caught up!' : 'No history yet'}</Text>
+          <Text style={styles.emptySubtitle}>{activeTab === 'active' ? 'No active assignments right now' : 'Complete assignments to build your history'}</Text>
         </View>
       ) : (
-        sortedActive.map((a) => (
+        (activeTab === 'active' ? sortedActive : completed).map((a) => (
           <AssignmentCard 
             key={a.id} 
             assignment={a} 
-            onAccept={handleAccept} 
+            onAccept={handleAccept}
+            onReject={handleReject} 
             onComplete={handleComplete} 
             onNavigate={handleNavigate}
+            onViewDetails={handleViewDetails}
           />
         ))
       )}
 
-      {/* Completed */}
-      {completed.length > 0 && (
-        <>
-          <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Completed ({completed.length})</Text>
-          {completed.map((a) => (
-            <AssignmentCard 
-              key={a.id} 
-              assignment={a} 
-              onAccept={handleAccept} 
-              onComplete={handleComplete} 
-              onNavigate={handleNavigate}
-            />
-          ))}
-        </>
-      )}
+      {/* Complaint Details Modal */}
+      <Modal visible={!!selectedAssignment} animationType="slide" onRequestClose={() => setSelectedAssignment(null)}>
+        {fetchingComplaint || !complaintDetails ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#0F766E" />
+            <Text style={{ marginTop: 16, color: '#64748b' }}>Loading details...</Text>
+            <Pressable style={{ marginTop: 30, padding: 10 }} onPress={() => setSelectedAssignment(null)}>
+              <Text style={{ color: '#0F766E', fontWeight: 'bold' }}>Close</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <ComplaintDetailScreen 
+            complaint={complaintDetails} 
+            onBack={() => {
+              setSelectedAssignment(null);
+              setComplaintDetails(null);
+            }} 
+          />
+        )}
+      </Modal>
+
     </ScrollView>
   );
 }
@@ -418,6 +563,11 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 22, fontWeight: '700' },
   statLabel: { fontSize: 11, color: '#64748B', marginTop: 2, fontWeight: '500' },
+  tabsContainer: { flexDirection: 'row', backgroundColor: '#E2E8F0', borderRadius: 10, padding: 4, marginBottom: 16 },
+  tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
+  tabBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  tabBtnText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  tabBtnTextActive: { color: '#0F766E' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
   sortNote: { fontSize: 11, color: '#64748B', fontStyle: 'italic' },
@@ -451,6 +601,7 @@ const styles = StyleSheet.create({
   },
   actionBtnGreen: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
   actionBtnYellow: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
+  actionBtnRed: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
   actionBtnText: { fontSize: 13, fontWeight: '600', color: '#1D4ED8' },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
   emptyIcon: { fontSize: 40, marginBottom: 12 },

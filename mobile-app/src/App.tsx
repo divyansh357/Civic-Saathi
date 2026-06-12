@@ -70,22 +70,7 @@ function AppContent() {
       notificationService.initialize().then((success) => {
         if (success) {
           notificationService.requestPermissions();
-          
-          // Simulate some initial notifications for Level A demo
-          setTimeout(() => {
-            if (user?.role === 'CITIZEN') {
-              notificationService.notifyComplaintStatusUpdate(
-                'C-1001', 
-                'ASSIGNED', 
-                'Pothole on MG Road'
-              );
-            } else if (user?.role === 'WORKER') {
-              notificationService.notifyNewAssignment(
-                'A-001',
-                'Water supply disruption in Koramangala'
-              );
-            }
-          }, 3000);
+          // Mock popups removed
         }
       });
     }

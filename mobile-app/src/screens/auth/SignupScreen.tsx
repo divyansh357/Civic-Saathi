@@ -179,7 +179,11 @@ export default function SignupScreen({ onGoToLogin }: Props) {
     }
 
     try {
-      await apiPost('/auth/signup', payload);
+      if (selectedRole === 'worker') {
+        await apiPost('/auth/worker-signup', payload);
+      } else {
+        await apiPost('/auth/signup', payload);
+      }
       onGoToLogin(`Account created! Sign in as ${name.trim().split(' ')[0]}.`);
     } catch (err) {
       setApiError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
