@@ -3,10 +3,29 @@
 This document tracks all past database schema changes and planned future changes for the Civic Saathi project.
 
 ## Current DB Status
-- The database is currently hosted on Supabase.
+- The database is currently running on **local PostgreSQL** (as configured in `.env`). Supabase is not currently being used.
 - Main entities: User, Worker, Department, Complaint, Assignment, Location (City, Zone, Ward), Category.
 - Assignment statuses: `ASSIGNED`, `ACCEPTED`, `REJECTED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`.
 - Complaint statuses: `SUBMITTED`, `ACKNOWLEDGED`, `ROUTED`, `ASSIGNED`, `IN_PROGRESS`, `RESOLVED`, `VERIFIED_FOR_CLOSURE`, `CLOSED`, `REJECTED`.
+
+## Local Contributor Instructions
+Because we are using local PostgreSQL, any schema changes must be applied by each contributor manually to their local database.
+
+**IMPORTANT: Apply the following SQL to your local `Civic` database to resolve the Notification Schema Error:**
+```sql
+-- 1. Drop the incomplete notification_type_id constraint
+ALTER TABLE notifications DROP COLUMN IF EXISTS notification_type_id CASCADE;
+
+-- 2. Drop the unused notification_types table
+DROP TABLE IF EXISTS notification_types CASCADE;
+
+-- 3. Ensure the notifications table has the correct fields
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'SYSTEM';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS sent_at TIMESTAMP;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS channel TEXT DEFAULT 'IN_APP';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'PENDING';
+```
+*(Note: A Spring Boot `@PostConstruct` hook in `CivicApplication.java` currently automatically drops `notification_type_id` on startup to prevent crashes, but running this SQL ensures your schema is perfectly aligned).*
 
 ## Past Changes
 - Added Worker entity linked to User.

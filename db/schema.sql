@@ -322,21 +322,20 @@ CREATE TABLE complaint_support_votes (
 -- NOTIFICATIONS
 -- =========================
 
-CREATE TABLE notification_types (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL UNIQUE
-);
 
 CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type_id UUID REFERENCES notification_types(id),
+    type TEXT NOT NULL,
     title TEXT NOT NULL,
     message TEXT NOT NULL,
     related_entity_id UUID,
     related_entity_type TEXT,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     read_at TIMESTAMP,
+    sent_at TIMESTAMP,
+    channel TEXT NOT NULL DEFAULT 'IN_APP',
+    status TEXT NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
