@@ -1,18 +1,9 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore, useNotificationStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { Notification } from '../types';
-import { AlertTriangle, GitMerge, ClipboardList, Settings, CheckCircle2, AlertCircle , Bell, Check} from 'lucide-react';
+import { AlertTriangle, GitMerge, ClipboardList, Settings, CheckCircle2, AlertCircle, Bell, Check } from 'lucide-react';
 import React from 'react';
-
-const MOCK: Notification[] = [
-  { id: 'n1', message: 'Complaint C-1002 has been escalated due to SLA breach', type: 'ESCALATION', read: false, createdAt: '2026-05-10T11:30:00' },
-  { id: 'n2', message: 'New complaint C-1007 submitted: Road cave-in near school', type: 'NEW_COMPLAINT', read: false, createdAt: '2026-05-10T11:00:00' },
-  { id: 'n3', message: 'Worker Suresh Kumar accepted assignment A-001', type: 'ASSIGNMENT', read: false, createdAt: '2026-05-10T10:45:00' },
-  { id: 'n4', message: 'Complaint C-1005 resolved by Kavitha Rao', type: 'RESOLVED', read: true, createdAt: '2026-05-10T10:30:00' },
-  { id: 'n5', message: 'Department Roads has 3 overdue assignments', type: 'OVERDUE', read: true, createdAt: '2026-05-10T09:00:00' },
-  { id: 'n6', message: 'New worker Deepak Joshi registered in Electricity dept', type: 'SYSTEM', read: true, createdAt: '2026-05-09T18:00:00' },
-];
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   ESCALATION: <AlertTriangle size={16} className="icon-inline" />,
@@ -47,16 +38,27 @@ function formatDate(iso?: string) {
 
 export default function NotificationsPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
-  const { notifications, setNotifications, markRead } = useNotificationStore();
+  const user = useAuthStore((s) => s.user);
+  const { notifications, setNotifications, markRead, markAllRead } = useNotificationStore();
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!accessToken) return;
     setLoading(true);
-    apiGet<{ data: Notification[] }>('/notifications', accessToken)
-      .then((res) => setNotifications(res.data ?? []))
-      .catch(() => setNotifications(MOCK))
+    setError('');
+    apiGet<{ data?: Notification[]; content?: Notification[] }>('/notifications', accessToken, {
+      'User-Id': user?.id ?? '',
+    })
+      .then((res) => {
+        const list = res.data ?? res.content ?? (Array.isArray(res) ? res : []);
+        setNotifications(list as Notification[]);
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : 'Failed to load notifications');
+        setNotifications([]);
+      })
       .finally(() => setLoading(false));
   }, [accessToken, setNotifications]);
 
@@ -65,10 +67,6 @@ export default function NotificationsPage() {
     : notifications;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAllRead = () => {
-    notifications.filter((n) => !n.read).forEach((n) => markRead(n.id));
-  };
 
   return (
     <div className="page-content">
@@ -100,10 +98,16 @@ export default function NotificationsPage() {
         {loading && <span className="spinner" style={{ marginLeft: 8 }} />}
       </div>
 
+      {error && (
+        <div className="auth-error" style={{ marginBottom: 16 }}>
+          <AlertTriangle size={16} className="icon-inline" /> {error}
+        </div>
+      )}
+
       <div className="card" style={{ padding: 0 }}>
-        {displayed.length === 0 ? (
+        {displayed.length === 0 && !loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon"><Bell size={16} className="icon-inline" /></div>
+            <div className="empty-state-icon"><Bell size={32} /></div>
             <h3>No notifications</h3>
             <p>{filter === 'unread' ? 'All notifications have been read' : 'No notifications yet'}</p>
           </div>
@@ -133,7 +137,7 @@ export default function NotificationsPage() {
                   fontSize: '1rem', flexShrink: 0,
                   color: TYPE_COLORS[n.type ?? ''] ?? 'var(--text-3)',
                 }}>
-                  {TYPE_ICONS[n.type ?? ''] ?? '<Bell size={16} className="icon-inline" />'}
+                  {TYPE_ICONS[n.type ?? ''] ?? <Bell size={16} className="icon-inline" />}
                 </div>
 
                 {/* Content */}
@@ -180,10 +184,3 @@ export default function NotificationsPage() {
     </div>
   );
 }
-
-
-
-
-
-
-

@@ -21,6 +21,7 @@ interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   accessToken?: string;
+  customHeaders?: Record<string, string>;
 }
 
 async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
@@ -36,6 +37,10 @@ async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Pro
 
     if (options.accessToken) {
       headers.Authorization = `Bearer ${options.accessToken}`;
+    }
+
+    if (options.customHeaders) {
+      Object.assign(headers, options.customHeaders);
     }
 
     const response = await fetch(`${apiBaseUrl}${withLeadingSlash(path)}`, {
@@ -74,18 +79,18 @@ async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Pro
   }
 }
 
-export function apiGet<T>(path: string, accessToken?: string): Promise<T> {
-  return apiRequest<T>(path, { method: 'GET', accessToken });
+export function apiGet<T>(path: string, accessToken?: string, customHeaders?: Record<string, string>): Promise<T> {
+  return apiRequest<T>(path, { method: 'GET', accessToken, customHeaders });
 }
 
-export function apiPost<TResponse, TBody = unknown>(path: string, body?: TBody, accessToken?: string): Promise<TResponse> {
-  return apiRequest<TResponse>(path, { method: 'POST', body, accessToken });
+export function apiPost<TResponse, TBody = unknown>(path: string, body?: TBody, accessToken?: string, customHeaders?: Record<string, string>): Promise<TResponse> {
+  return apiRequest<TResponse>(path, { method: 'POST', body, accessToken, customHeaders });
 }
 
-export function apiPut<TResponse, TBody = unknown>(path: string, body?: TBody, accessToken?: string): Promise<TResponse> {
-  return apiRequest<TResponse>(path, { method: 'PUT', body, accessToken });
+export function apiPut<TResponse, TBody = unknown>(path: string, body?: TBody, accessToken?: string, customHeaders?: Record<string, string>): Promise<TResponse> {
+  return apiRequest<TResponse>(path, { method: 'PUT', body, accessToken, customHeaders });
 }
 
-export function apiDelete<TResponse>(path: string, accessToken?: string): Promise<TResponse> {
-  return apiRequest<TResponse>(path, { method: 'DELETE', accessToken });
+export function apiDelete<TResponse>(path: string, accessToken?: string, customHeaders?: Record<string, string>): Promise<TResponse> {
+  return apiRequest<TResponse>(path, { method: 'DELETE', accessToken, customHeaders });
 }

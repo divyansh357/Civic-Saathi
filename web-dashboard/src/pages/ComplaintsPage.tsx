@@ -1,9 +1,9 @@
-﻿import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet, apiPut, apiPost } from '../services/api/client';
-import { Complaint, ComplaintStatus, PagedResponse, ReopenRequest } from '../types';
+import { Complaint, ComplaintStatus, PagedResponse, ReopenRequest, Worker } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/StatusBadge';
-import { AlertTriangle, Search, ClipboardList, MapPin , RefreshCw, X, Check} from 'lucide-react';
+import { AlertTriangle, Search, ClipboardList, MapPin, RefreshCw, X, Check, UserPlus } from 'lucide-react';
 
 const STATUS_OPTIONS: ComplaintStatus[] = [
   'SUBMITTED', 'VERIFIED', 'ROUTED', 'ASSIGNED', 'IN_PROGRESS',
@@ -15,17 +15,108 @@ function formatDate(iso?: string) {
   return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+/* ── Assign Worker Modal ────────────────────────────────────────────── */
+
+interface AssignWorkerModalProps {
+  complaint: Complaint;
+  onClose: () => void;
+  onAssigned: () => void;
+}
+
+function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModalProps) {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [selectedWorkerId, setSelectedWorkerId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!accessToken) return;
+    setLoading(true);
+    apiGet<{ content?: Worker[]; data?: Worker[] }>('/workers?page=0&size=100', accessToken)
+      .then((res) => {
+        const list = res.content ?? res.data ?? (Array.isArray(res) ? res : []);
+        setWorkers(list as Worker[]);
+      })
+      .catch(() => setWorkers([]))
+      .finally(() => setLoading(false));
+  }, [accessToken]);
+
+  const handleAssign = async () => {
+    if (!selectedWorkerId) { setError('Select a worker'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await apiPost('/assignments/manual-assign', {
+        complaintId: complaint.id,
+        workerId: selectedWorkerId,
+      }, accessToken ?? undefined);
+      onAssigned();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Assignment failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Assign Worker</span>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={16} /></button>
+        </div>
+        <div className="modal-body">
+          <p style={{ color: 'var(--text-2)', fontSize: '0.875rem', marginBottom: 12 }}>
+            Assign a worker to complaint: <strong>{complaint.title}</strong>
+          </p>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 20 }}><span className="spinner" /></div>
+          ) : workers.length === 0 ? (
+            <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> No workers available. Register workers first.</div>
+          ) : (
+            <div className="form-group">
+              <label className="form-label">Select Worker</label>
+              <select className="form-input" value={selectedWorkerId} onChange={(e) => setSelectedWorkerId(e.target.value)}>
+                <option value="">— Select —</option>
+                {workers.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name ?? w.email ?? w.id} {w.departmentName ? `(${w.departmentName})` : ''} — {w.complaintsAssigned ?? 0} assigned
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {error && <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> {error}</div>}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => void handleAssign()} disabled={saving || !selectedWorkerId}>
+            {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Assigning...</> : <><UserPlus size={16} className="icon-inline" /> Assign</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Detail Modal ───────────────────────────────────────────────────── */
+
 interface DetailModalProps {
   complaint: Complaint;
   onClose: () => void;
   onStatusUpdate: (id: string, status: ComplaintStatus) => void;
+  onRefresh: () => void;
 }
 
-function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
+function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailModalProps) {
   const [newStatus, setNewStatus] = useState<ComplaintStatus>(complaint.status);
   const [saving, setSaving] = useState(false);
   const [escalating, setEscalating] = useState(false);
   const [reopenRequests, setReopenRequests] = useState<ReopenRequest[]>([]);
+  const [showAssignWorker, setShowAssignWorker] = useState(false);
   const accessToken = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
@@ -75,127 +166,198 @@ function DetailModal({ complaint, onClose, onStatusUpdate }: DetailModalProps) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">Complaint Details</span>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <StatusBadge status={complaint.status} />
-            {complaint.priority && <PriorityBadge priority={complaint.priority} />}
-            {complaint.category && (
-              <span className="badge" style={{ background: 'var(--bg-3)', color: 'var(--text-2)' }}>
-                {complaint.category}
-              </span>
-            )}
+    <>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <span className="modal-title">Complaint Details</span>
+            <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={16} /></button>
           </div>
+          <div className="modal-body">
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <StatusBadge status={complaint.status} />
+              {complaint.priority && <PriorityBadge priority={complaint.priority} />}
+              {complaint.category && (
+                <span className="badge" style={{ background: 'var(--bg-3)', color: 'var(--text-2)' }}>
+                  {complaint.category}
+                </span>
+              )}
+            </div>
 
-          <div>
-            <div className="form-label" style={{ marginBottom: 4 }}>Title</div>
-            <div style={{ color: 'var(--text)', fontWeight: 600 }}>{complaint.title}</div>
-          </div>
+            <div>
+              <div className="form-label" style={{ marginBottom: 4 }}>Title</div>
+              <div style={{ color: 'var(--text)', fontWeight: 600 }}>{complaint.title}</div>
+            </div>
 
-          {complaint.description && (
-            <div>
-              <div className="form-label" style={{ marginBottom: 4 }}>Description</div>
-              <div style={{ color: 'var(--text-2)', fontSize: '0.875rem', lineHeight: 1.6 }}>{complaint.description}</div>
-            </div>
-          )}
-
-          <div className="grid-2">
-            <div>
-              <div className="form-label">Complaint ID</div>
-              <div className="mono text-accent" style={{ marginTop: 4 }}>{complaint.id}</div>
-            </div>
-            <div>
-              <div className="form-label">Submitted By</div>
-              <div style={{ color: 'var(--text)', marginTop: 4 }}>{complaint.userName ?? '—'}</div>
-            </div>
-            <div>
-              <div className="form-label">Department</div>
-              <div style={{ color: 'var(--text)', marginTop: 4 }}>{complaint.departmentName ?? 'Unassigned'}</div>
-            </div>
-            <div>
-              <div className="form-label">Worker</div>
-              <div style={{ color: 'var(--text)', marginTop: 4 }}>{complaint.assignedWorkerName ?? 'Unassigned'}</div>
-            </div>
-            {complaint.address && (
-              <div style={{ gridColumn: '1 / -1' }}>
-                <div className="form-label">Location</div>
-                <div style={{ color: 'var(--text-2)', marginTop: 4 }}><MapPin size={16} className="icon-inline" /> {complaint.address}</div>
+            {complaint.description && (
+              <div>
+                <div className="form-label" style={{ marginBottom: 4 }}>Description</div>
+                <div style={{ color: 'var(--text-2)', fontSize: '0.875rem', lineHeight: 1.6 }}>{complaint.description}</div>
               </div>
             )}
-            <div>
-              <div className="form-label">Created</div>
-              <div style={{ color: 'var(--text-2)', marginTop: 4 }}>{formatDate(complaint.createdAt)}</div>
-            </div>
-            <div>
-              <div className="form-label">Updated</div>
-              <div style={{ color: 'var(--text-2)', marginTop: 4 }}>{formatDate(complaint.updatedAt)}</div>
-            </div>
-          </div>
 
-          <div className="divider" />
-
-          <div className="form-group">
-            <label className="form-label">Update Status</label>
-            <select
-              className="form-input"
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value as ComplaintStatus)}
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Reopen Requests */}
-          {reopenRequests.length > 0 && (
-            <div>
-              <div className="form-label" style={{ marginBottom: 8 }}>Reopen Requests ({reopenRequests.length})</div>
-              {reopenRequests.map((r) => (
-                <div key={r.id} style={{
-                  background: 'var(--bg-2)', borderRadius: 8, padding: '10px 12px',
-                  marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
-                }}>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>{r.reason ?? 'No reason provided'}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 2 }}>
-                      Reopen #{r.reopenCount} · {r.status}
-                    </div>
+            <div className="grid-2">
+              <div>
+                <div className="form-label">Complaint ID</div>
+                <div className="mono text-accent" style={{ marginTop: 4, fontSize: '0.8rem' }}>{complaint.complaintNumber ?? complaint.id}</div>
+              </div>
+              <div>
+                <div className="form-label">Submitted By</div>
+                <div style={{ color: 'var(--text)', marginTop: 4 }}>{complaint.userName ?? '—'}</div>
+              </div>
+              <div>
+                <div className="form-label">Department</div>
+                <div style={{ color: 'var(--text)', marginTop: 4 }}>{complaint.departmentName ?? 'Unassigned'}</div>
+              </div>
+              <div>
+                <div className="form-label">Worker</div>
+                <div style={{ color: 'var(--text)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {complaint.assignedWorkerName ?? 'Unassigned'}
+                  {!complaint.assignedWorkerName && (
+                    <button className="btn btn-sm" style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                      onClick={() => setShowAssignWorker(true)}>
+                      <UserPlus size={12} className="icon-inline" /> Assign
+                    </button>
+                  )}
+                </div>
+              </div>
+              {(complaint.address || complaint.location) && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div className="form-label">Location</div>
+                  <div style={{ color: 'var(--text-2)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <MapPin size={16} className="icon-inline" /> {complaint.address ?? complaint.location}
+                    {complaint.latitude && complaint.longitude && (
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${complaint.latitude},${complaint.longitude}`} 
+                        target="_blank" rel="noreferrer"
+                        style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: '0.8rem', marginLeft: 8 }}
+                      >
+                        [View on Map]
+                      </a>
+                    )}
                   </div>
-                  {r.status === 'REQUESTED' && (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-sm" style={{ background: 'var(--green-bg)', color: 'var(--green)', border: 'none' }}
-                        onClick={() => void handleReopenAction(r.id, 'approve')}><><Check size={16} className="icon-inline" /> Approve</></button>
-                      <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
-                        onClick={() => void handleReopenAction(r.id, 'reject')}><><X size={16} className="icon-inline" /> Reject</></button>
+                </div>
+              )}
+              
+              {/* AI Reasoning & Methods */}
+              {(complaint.verificationMethod || complaint.aiSummary) && (
+                <div style={{ gridColumn: '1 / -1', background: 'var(--bg-2)', padding: 12, borderRadius: 8, marginTop: 8 }}>
+                  <div className="form-label" style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 16 }}>✨</span> AI Verification
+                  </div>
+                  {complaint.verificationMethod && (
+                    <div style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                      Method: <strong>{complaint.verificationMethod}</strong>
+                    </div>
+                  )}
+                  {complaint.aiSummary && (
+                    <div style={{ color: 'var(--text-2)', fontSize: '0.85rem', marginTop: 6, fontStyle: 'italic' }}>
+                      "{complaint.aiSummary}"
                     </div>
                   )}
                 </div>
-              ))}
+              )}
+
+              <div>
+                <div className="form-label">Created</div>
+                <div style={{ color: 'var(--text-2)', marginTop: 4 }}>{formatDate(complaint.createdAt)}</div>
+              </div>
+              <div>
+                <div className="form-label">Updated</div>
+                <div style={{ color: 'var(--text-2)', marginTop: 4 }}>{formatDate(complaint.updatedAt)}</div>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          {!['RESOLVED', 'CLOSED', 'ESCALATED'].includes(complaint.status) && (
-            <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
-              onClick={() => void handleEscalate()} disabled={escalating}>
-              {escalating ? '...' : <><AlertTriangle size={16} className="icon-inline" /> Escalate</>}
+
+            {/* Images Grid */}
+            {complaint.imageUrls && complaint.imageUrls.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div className="form-label" style={{ marginBottom: 8 }}>Attached Images ({complaint.imageUrls.length})</div>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+                  {complaint.imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer">
+                      <img 
+                        src={url} 
+                        alt={`Complaint attachment ${i+1}`} 
+                        style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} 
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="divider" />
+
+            <div className="form-group">
+              <label className="form-label">Update Status</label>
+              <select className="form-input" value={newStatus} onChange={(e) => setNewStatus(e.target.value as ComplaintStatus)}>
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Reopen Requests */}
+            {reopenRequests.length > 0 && (
+              <div>
+                <div className="form-label" style={{ marginBottom: 8 }}>Reopen Requests ({reopenRequests.length})</div>
+                {reopenRequests.map((r) => (
+                  <div key={r.id} style={{
+                    background: 'var(--bg-2)', borderRadius: 8, padding: '10px 12px',
+                    marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>{r.reason ?? 'No reason provided'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 2 }}>
+                        Reopen #{r.reopenCount} · {r.status}
+                      </div>
+                    </div>
+                    {r.status === 'REQUESTED' && (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-sm" style={{ background: 'var(--green-bg)', color: 'var(--green)', border: 'none' }}
+                          onClick={() => void handleReopenAction(r.id, 'approve')}><Check size={16} className="icon-inline" /> Approve</button>
+                        <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
+                          onClick={() => void handleReopenAction(r.id, 'reject')}><X size={16} className="icon-inline" /> Reject</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            {!complaint.assignedWorkerName && (
+              <button className="btn btn-sm" style={{ background: 'var(--blue-bg)', color: 'var(--blue)', border: 'none' }}
+                onClick={() => setShowAssignWorker(true)}>
+                <UserPlus size={16} className="icon-inline" /> Assign Worker
+              </button>
+            )}
+            {!['RESOLVED', 'CLOSED', 'ESCALATED'].includes(complaint.status) && (
+              <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
+                onClick={() => void handleEscalate()} disabled={escalating}>
+                {escalating ? '...' : <><AlertTriangle size={16} className="icon-inline" /> Escalate</>}
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={saving}>
+              {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Saving...</> : 'Update Status'}
             </button>
-          )}
-          <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={saving}>
-            {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Saving...</> : 'Update Status'}
-          </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {showAssignWorker && (
+        <AssignWorkerModal
+          complaint={complaint}
+          onClose={() => setShowAssignWorker(false)}
+          onAssigned={() => { onRefresh(); setShowAssignWorker(false); }}
+        />
+      )}
+    </>
   );
 }
+
+/* ── Main Complaints Page ───────────────────────────────────────────── */
 
 export default function ComplaintsPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -206,17 +368,18 @@ export default function ComplaintsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selected, setSelected] = useState<Complaint | null>(null);
+  const [error, setError] = useState('');
   const PAGE_SIZE = 15;
 
   const fetchComplaints = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true);
+    setError('');
     try {
       const params = new URLSearchParams({
         page: String(page),
         size: String(PAGE_SIZE),
-        sortBy: 'createdAt',
-        sortDir: 'DESC',
+        sort: 'createdAt,desc',
       });
       if (statusFilter) params.set('status', statusFilter);
       if (search.trim()) params.set('search', search.trim());
@@ -225,20 +388,12 @@ export default function ComplaintsPage() {
         `/complaints?${params.toString()}`,
         accessToken
       );
-      setComplaints(res.data ?? []);
-      setTotal(res.totalItems ?? 0);
-    } catch {
-      // Use mock data if API not ready
-      setComplaints([
-        { id: 'C-1001', title: 'Pothole on MG Road near bus stop', status: 'ASSIGNED', priority: 'HIGH', category: 'Roads', userName: 'Rahul Sharma', departmentName: 'Roads Dept', createdAt: '2026-05-10T08:30:00', updatedAt: '2026-05-10T10:00:00', address: 'MG Road, Bengaluru' },
-        { id: 'C-1002', title: 'Water supply disruption in sector 4', status: 'IN_PROGRESS', priority: 'CRITICAL', category: 'Water', userName: 'Priya Patel', departmentName: 'Water Works', createdAt: '2026-05-10T07:15:00', updatedAt: '2026-05-10T09:30:00' },
-        { id: 'C-1003', title: 'Broken street light on Park Avenue', status: 'SUBMITTED', priority: 'MEDIUM', category: 'Electricity', userName: 'Amit Kumar', createdAt: '2026-05-10T06:45:00', updatedAt: '2026-05-10T06:45:00' },
-        { id: 'C-1004', title: 'Garbage not collected for 3 days', status: 'ESCALATED', priority: 'HIGH', category: 'Sanitation', userName: 'Sunita Devi', departmentName: 'Sanitation', createdAt: '2026-05-09T22:00:00', updatedAt: '2026-05-10T08:00:00' },
-        { id: 'C-1005', title: 'Park bench damaged near children area', status: 'RESOLVED', priority: 'LOW', category: 'Parks', userName: 'Vikram Singh', departmentName: 'Parks & Gardens', createdAt: '2026-05-09T18:30:00', updatedAt: '2026-05-10T11:00:00' },
-        { id: 'C-1006', title: 'Sewage overflow on main street', status: 'VERIFIED', priority: 'CRITICAL', category: 'Sanitation', userName: 'Meena Iyer', createdAt: '2026-05-09T15:00:00', updatedAt: '2026-05-09T16:00:00' },
-        { id: 'C-1007', title: 'Road cave-in near school', status: 'ASSIGNED', priority: 'CRITICAL', category: 'Roads', userName: 'Ravi Nair', departmentName: 'Roads Dept', createdAt: '2026-05-09T12:00:00', updatedAt: '2026-05-09T14:00:00' },
-      ]);
-      setTotal(7);
+      setComplaints(res.content ?? []);
+      setTotal(res.totalElements ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load complaints');
+      setComplaints([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -286,17 +441,23 @@ export default function ComplaintsPage() {
           </select>
 
           <button className="btn btn-ghost btn-sm" onClick={() => void fetchComplaints()}>
-            <><RefreshCw size={16} className="icon-inline" /> Refresh</>
+            <RefreshCw size={16} className="icon-inline" /> Refresh
           </button>
 
           {loading && <span className="spinner" />}
         </div>
 
+        {error && (
+          <div className="auth-error" style={{ margin: 16 }}>
+            <AlertTriangle size={16} className="icon-inline" /> {error}
+          </div>
+        )}
+
         {complaints.length === 0 && !loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon"><ClipboardList size={16} className="icon-inline" /></div>
-            <h3>No complaints found</h3>
-            <p>Try adjusting your filters or search query</p>
+            <div className="empty-state-icon"><ClipboardList size={32} /></div>
+            <h3>{error ? 'Connection error' : 'No complaints found'}</h3>
+            <p>{error ? 'Check if the backend is running' : 'Try adjusting your filters or search query'}</p>
           </div>
         ) : (
           <>
@@ -318,7 +479,7 @@ export default function ComplaintsPage() {
                 <tbody>
                   {complaints.map((c) => (
                     <tr key={c.id}>
-                      <td><span className="mono text-accent">{c.id}</span></td>
+                      <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{c.complaintNumber ?? c.id.substring(0, 8)}</span></td>
                       <td>
                         <div style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {c.title}
@@ -335,10 +496,7 @@ export default function ComplaintsPage() {
                       <td className="text-muted">{c.userName ?? '—'}</td>
                       <td className="text-muted" style={{ fontSize: '0.78rem' }}>{formatDate(c.createdAt)}</td>
                       <td>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => setSelected(c)}
-                        >
+                        <button className="btn btn-ghost btn-sm" onClick={() => setSelected(c)}>
                           View
                         </button>
                       </td>
@@ -374,10 +532,9 @@ export default function ComplaintsPage() {
           complaint={selected}
           onClose={() => setSelected(null)}
           onStatusUpdate={handleStatusUpdate}
+          onRefresh={() => void fetchComplaints()}
         />
       )}
     </div>
   );
 }
-
-

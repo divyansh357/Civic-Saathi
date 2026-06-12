@@ -1,37 +1,36 @@
-﻿import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
-import { Worker } from '../types';
-import { XCircle, CheckCircle2, HardHat, Search, BarChart3 } from 'lucide-react';
-
-const MOCK: Worker[] = [
-  { id: 'w1', name: 'Suresh Kumar', email: 'suresh@civic.gov.in', designation: 'Field Engineer', departmentName: 'Roads Department', available: true, activeComplaintsCount: 3 },
-  { id: 'w2', name: 'Ramesh Babu', email: 'ramesh@civic.gov.in', designation: 'Plumber', departmentName: 'Water Works', available: true, activeComplaintsCount: 5 },
-  { id: 'w3', name: 'Mohan Das', email: 'mohan@civic.gov.in', designation: 'Sanitation Worker', departmentName: 'Sanitation', available: false, activeComplaintsCount: 0 },
-  { id: 'w4', name: 'Anil Verma', email: 'anil@civic.gov.in', designation: 'Civil Engineer', departmentName: 'Roads Department', available: true, activeComplaintsCount: 2 },
-  { id: 'w5', name: 'Kavitha Rao', email: 'kavitha@civic.gov.in', designation: 'Horticulturist', departmentName: 'Parks & Gardens', available: true, activeComplaintsCount: 1 },
-  { id: 'w6', name: 'Deepak Joshi', email: 'deepak@civic.gov.in', designation: 'Electrician', departmentName: 'Electricity', available: false, activeComplaintsCount: 4 },
-];
+import { PagedResponse, Worker } from '../types';
+import { XCircle, CheckCircle2, HardHat, Search, BarChart3, AlertTriangle } from 'lucide-react';
 
 export default function WorkersPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const PAGE_SIZE = 20;
 
   const fetchWorkers = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true);
+    setError('');
     try {
-      const res = await apiGet<{ data: Worker[] }>('/workers', accessToken);
-      setWorkers(res.data ?? []);
-    } catch {
-      setWorkers(MOCK);
+      const res = await apiGet<PagedResponse<Worker>>(`/workers?page=${page}&size=${PAGE_SIZE}`, accessToken);
+      setWorkers(res.content ?? []);
+      setTotal(res.totalElements ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load workers');
+      setWorkers([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, page]);
 
   useEffect(() => { void fetchWorkers(); }, [fetchWorkers]);
 
@@ -43,10 +42,12 @@ export default function WorkersPage() {
     return matchSearch && matchDept;
   });
 
-  const available = workers.filter((w) => w.available).length;
+  const available = workers.filter((w) => w.status === 'ACTIVE' || w.available).length;
   const avgLoad = workers.length > 0
-    ? (workers.reduce((sum, w) => sum + (w.activeComplaintsCount ?? 0), 0) / workers.length).toFixed(1)
+    ? (workers.reduce((sum, w) => sum + (w.complaintsAssigned ?? 0), 0) / workers.length).toFixed(1)
     : '0';
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="page-content">
@@ -55,13 +56,12 @@ export default function WorkersPage() {
           <h1>Workers</h1>
           <p>Field workers and their current workload</p>
         </div>
-        <button className="btn btn-primary">+ Add Worker</button>
       </div>
 
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 20 }}>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}><HardHat size={16} className="icon-inline" /></div>
-          <div className="stat-value">{workers.length}</div>
+          <div className="stat-value">{total}</div>
           <div className="stat-label">Total Workers</div>
         </div>
         <div className="stat-card">
@@ -71,7 +71,7 @@ export default function WorkersPage() {
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /></div>
-          <div className="stat-value">{workers.length - available}</div>
+          <div className="stat-value">{total - available}</div>
           <div className="stat-label">Unavailable</div>
         </div>
         <div className="stat-card">
@@ -104,75 +104,102 @@ export default function WorkersPage() {
           {loading && <span className="spinner" />}
         </div>
 
-        {filtered.length === 0 ? (
+        {error && (
+          <div className="auth-error" style={{ margin: 16 }}>
+            <AlertTriangle size={16} className="icon-inline" /> {error}
+          </div>
+        )}
+
+        {filtered.length === 0 && !loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon"><HardHat size={16} className="icon-inline" /></div>
+            <div className="empty-state-icon"><HardHat size={32} /></div>
             <h3>No workers found</h3>
+            <p>{error ? 'Check backend connection' : 'No workers match your filters'}</p>
           </div>
         ) : (
-          <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Worker</th>
-                  <th>Designation</th>
-                  <th>Department</th>
-                  <th>Availability</th>
-                  <th>Active Tasks</th>
-                  <th>Workload</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((w) => {
-                  const load = w.activeComplaintsCount ?? 0;
-                  const loadPct = Math.min(100, (load / 10) * 100);
-                  const loadColor = load >= 8 ? 'var(--red)' : load >= 5 ? 'var(--yellow)' : 'var(--green)';
-                  return (
-                    <tr key={w.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div className="avatar" style={{ width: 28, height: 28, fontSize: '0.7rem' }}>
-                            {w.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+          <>
+            <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Worker</th>
+                    <th>Designation</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Assigned Tasks</th>
+                    <th>Workload</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((w) => {
+                    const load = w.complaintsAssigned ?? 0;
+                    const loadPct = Math.min(100, (load / 10) * 100);
+                    const loadColor = load >= 8 ? 'var(--red)' : load >= 5 ? 'var(--yellow)' : 'var(--green)';
+                    const isAvailable = w.status === 'ACTIVE' || w.available;
+                    
+                    return (
+                      <tr key={w.id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.8rem', padding: 0, overflow: 'hidden' }}>
+                              {w.profileImageUrl ? (
+                                <img src={w.profileImageUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                w.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? 'W'
+                              )}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{w.name ?? 'Unknown Worker'}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{w.email ?? 'No email'}</div>
+                              {w.previousWorks && (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--accent)', marginTop: 2, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={w.previousWorks}>
+                                  Works: {w.previousWorks}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{w.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{w.email}</div>
+                        </td>
+                        <td className="text-muted">{w.designation ?? '—'}</td>
+                        <td className="text-muted">{w.departmentName ?? '—'}</td>
+                        <td>
+                          <span className={`badge ${isAvailable ? 'badge-resolved' : 'badge-closed'}`}>
+                            {isAvailable ? <><CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" /> Active</> : <><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /> Inactive</>}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 600, color: loadColor }}>{load}</span>
+                          <span className="text-muted"> tasks</span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ flex: 1, height: 6, background: 'var(--bg-3)', borderRadius: 3, overflow: 'hidden', minWidth: 80 }}>
+                              <div style={{ width: `${loadPct}%`, height: '100%', background: loadColor, borderRadius: 3, transition: 'width 0.3s' }} />
+                            </div>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', minWidth: 28 }}>{load}/10</span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="text-muted">{w.designation ?? '—'}</td>
-                      <td className="text-muted">{w.departmentName ?? '—'}</td>
-                      <td>
-                        <span className={`badge ${w.available ? 'badge-resolved' : 'badge-closed'}`}>
-                          {w.available ? <><CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" /> Available</> : <><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /> Busy</>}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 600, color: loadColor }}>{load}</span>
-                        <span className="text-muted"> tasks</span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1, height: 6, background: 'var(--bg-3)', borderRadius: 3, overflow: 'hidden', minWidth: 80 }}>
-                            <div style={{ width: `${loadPct}%`, height: '100%', background: loadColor, borderRadius: 3, transition: 'width 0.3s' }} />
-                          </div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', minWidth: 28 }}>{load}/10</span>
-                        </div>
-                      </td>
-                      <td>
-                        <button className="btn btn-ghost btn-sm">View</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="pagination">
+                <span>Page {page + 1} of {totalPages}</span>
+                <div className="pagination-controls">
+                  <button className="page-btn" disabled={page === 0} onClick={() => setPage(0)}>«</button>
+                  <button className="page-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>‹</button>
+                  <button className="page-btn active">{page + 1}</button>
+                  <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>›</button>
+                  <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>»</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
-
-

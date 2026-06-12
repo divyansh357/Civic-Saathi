@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useAuthStore, useThemeStore } from '../store';
-import { Building2, Sun, Moon } from 'lucide-react';
+import { Building2, Sun, Moon, AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
@@ -157,7 +157,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && <div className="auth-error">⚠ {error}</div>}
+            {error && <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> {error}</div>}
 
             <button
               type="submit"
@@ -256,7 +256,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            {signupError && <div className="auth-error">⚠ {signupError}</div>}
+            {signupError && <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> {signupError}</div>}
 
             <button
               type="submit"

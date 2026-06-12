@@ -1,7 +1,7 @@
-﻿import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet, apiPost } from '../services/api/client';
-import { Assignment, PagedResponse } from '../types';
+import { Assignment, Complaint, PagedResponse } from '../types';
 import { PriorityBadge, AssignmentStatusBadge } from '../components/StatusBadge';
 import { Zap, AlertTriangle, GitMerge, XCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -33,19 +33,22 @@ function SlaTimer({ deadline }: { deadline?: string }) {
   );
 }
 
+/* ── Auto-Assign Modal ──────────────────────────────────────────────── */
+
 interface AutoAssignModalProps {
+  complaints: Complaint[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
-function AutoAssignModal({ onClose, onSuccess }: AutoAssignModalProps) {
+function AutoAssignModal({ complaints, onClose, onSuccess }: AutoAssignModalProps) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [complaintId, setComplaintId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if (!complaintId.trim()) { setError('Complaint ID is required'); return; }
+    if (!complaintId.trim()) { setError('Select a complaint'); return; }
     setSaving(true);
     setError('');
     try {
@@ -71,15 +74,22 @@ function AutoAssignModal({ onClose, onSuccess }: AutoAssignModalProps) {
             The system will automatically route this complaint to the best available department and worker based on category and workload.
           </p>
           <div className="form-group">
-            <label className="form-label">Complaint ID</label>
-            <input
-              className="form-input"
-              placeholder="e.g. C-1001"
-              value={complaintId}
-              onChange={(e) => setComplaintId(e.target.value)}
-            />
+            <label className="form-label">Select Complaint</label>
+            {complaints.length > 0 ? (
+              <select className="form-input" value={complaintId} onChange={(e) => setComplaintId(e.target.value)}>
+                <option value="">— Select a complaint —</option>
+                {complaints.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.complaintNumber ?? c.id.substring(0, 8)} — {c.title}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input className="form-input" placeholder="Enter complaint UUID" value={complaintId}
+                onChange={(e) => setComplaintId(e.target.value)} />
+            )}
           </div>
-          {error && <div className="auth-error">âš  {error}</div>}
+          {error && <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> {error}</div>}
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
@@ -92,42 +102,66 @@ function AutoAssignModal({ onClose, onSuccess }: AutoAssignModalProps) {
   );
 }
 
+/* ── Main Assignments Page ──────────────────────────────────────────── */
+
 export default function AssignmentsPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [overdue, setOverdue] = useState<Assignment[]>([]);
+  const [unassignedComplaints, setUnassignedComplaints] = useState<Complaint[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<'all' | 'overdue'>('all');
   const [showAutoAssign, setShowAutoAssign] = useState(false);
   const [escalating, setEscalating] = useState(false);
+  const [error, setError] = useState('');
   const PAGE_SIZE = 15;
-
-  const MOCK_ASSIGNMENTS: Assignment[] = [
-    { id: 'A-001', complaintId: 'C-1001', complaintTitle: 'Pothole on MG Road', departmentId: 'd1', departmentName: 'Roads Department', workerId: 'w1', workerName: 'Suresh Kumar', status: 'IN_PROGRESS', priority: 'HIGH', slaDeadline: new Date(Date.now() + 3600000 * 5).toISOString(), assignedAt: '2026-05-10T09:00:00' },
-    { id: 'A-002', complaintId: 'C-1002', complaintTitle: 'Water supply disruption', departmentId: 'd2', departmentName: 'Water Works', workerId: 'w2', workerName: 'Ramesh Babu', status: 'ACKNOWLEDGED', priority: 'CRITICAL', slaDeadline: new Date(Date.now() - 3600000 * 2).toISOString(), assignedAt: '2026-05-10T07:30:00' },
-    { id: 'A-003', complaintId: 'C-1004', complaintTitle: 'Garbage not collected', departmentId: 'd3', departmentName: 'Sanitation', workerId: 'w3', workerName: 'Mohan Das', status: 'ESCALATED', priority: 'HIGH', slaDeadline: new Date(Date.now() - 3600000 * 8).toISOString(), assignedAt: '2026-05-09T22:30:00', escalationReason: 'SLA breached - no response from worker' },
-    { id: 'A-004', complaintId: 'C-1007', complaintTitle: 'Road cave-in near school', departmentId: 'd1', departmentName: 'Roads Department', workerId: 'w4', workerName: 'Anil Verma', status: 'PENDING', priority: 'CRITICAL', slaDeadline: new Date(Date.now() + 3600000 * 1).toISOString(), assignedAt: '2026-05-10T11:00:00' },
-    { id: 'A-005', complaintId: 'C-1005', complaintTitle: 'Park bench damaged', departmentId: 'd4', departmentName: 'Parks & Gardens', workerId: 'w5', workerName: 'Kavitha Rao', status: 'COMPLETED', priority: 'LOW', slaDeadline: new Date(Date.now() + 3600000 * 48).toISOString(), assignedAt: '2026-05-09T19:00:00', completedAt: '2026-05-10T10:30:00' },
-  ];
 
   const fetchData = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true);
+    setError('');
     try {
-      const [assignRes, overdueRes] = await Promise.all([
-        apiGet<PagedResponse<Assignment>>(`/assignments/department/all?page=${page}&size=${PAGE_SIZE}`, accessToken).catch(() => null),
-        apiGet<{ data: Assignment[]; count: number }>('/assignments/overdue', accessToken).catch(() => null),
+      // Fetch all assignments from correct endpoint
+      const [assignRes, overdueRes, complaintsRes] = await Promise.all([
+        apiGet<{ data?: Assignment[]; totalItems?: number; status?: string }>(`/assignments?page=${page}&size=${PAGE_SIZE}`, accessToken).catch(() => null),
+        apiGet<{ data?: Assignment[]; count?: number }>('/assignments/overdue', accessToken).catch(() => null),
+        apiGet<PagedResponse<Complaint>>('/complaints?page=0&size=50&sort=createdAt,desc', accessToken).catch(() => null),
       ]);
-      if (assignRes?.data) { setAssignments(assignRes.data); setTotal(assignRes.totalItems ?? 0); }
-      else { setAssignments(MOCK_ASSIGNMENTS); setTotal(MOCK_ASSIGNMENTS.length); }
-      if (overdueRes?.data) setOverdue(overdueRes.data);
-      else setOverdue(MOCK_ASSIGNMENTS.filter((a) => isSlaBreached(a.slaDeadline) && a.status !== 'COMPLETED'));
+
+      // Parse assignments — backend returns { data: [...], totalItems, totalPages }
+      if (assignRes?.data) {
+        setAssignments(assignRes.data);
+        setTotal(assignRes.totalItems ?? assignRes.data.length);
+      } else {
+        setAssignments([]);
+        setTotal(0);
+      }
+
+      // Parse overdue
+      if (overdueRes?.data) {
+        setOverdue(overdueRes.data);
+      } else {
+        setOverdue([]);
+      }
+
+      // Unassigned complaints for auto-assign modal
+      if (complaintsRes?.content) {
+        setUnassignedComplaints(
+          complaintsRes.content.filter((c) => 
+            !c.assignedWorkerId && 
+            !c.assignedWorkerName &&
+            !['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(c.status)
+          )
+        );
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load assignments');
     } finally {
       setLoading(false);
     }
-  }, [accessToken, page]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accessToken, page]);
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
@@ -156,11 +190,7 @@ export default function AssignmentsPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {overdue.length > 0 && (
-            <button
-              className="btn btn-danger"
-              onClick={() => void handleEscalate()}
-              disabled={escalating}
-            >
+            <button className="btn btn-danger" onClick={() => void handleEscalate()} disabled={escalating}>
               {escalating ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <AlertTriangle size={16} className="icon-inline" />}
               Escalate Overdue ({overdue.length})
             </button>
@@ -174,11 +204,7 @@ export default function AssignmentsPage() {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
         {(['all', 'overdue'] as const).map((t) => (
-          <button
-            key={t}
-            className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-            onClick={() => setTab(t)}
-          >
+          <button key={t} className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'} btn-sm`} onClick={() => setTab(t)}>
             {t === 'all' ? `All Assignments (${total})` : `Overdue (${overdue.length})`}
             {t === 'overdue' && overdue.length > 0 && (
               <span style={{ background: 'var(--red)', color: '#fff', borderRadius: 10, padding: '0 5px', fontSize: '0.65rem', marginLeft: 4 }}>
@@ -190,12 +216,18 @@ export default function AssignmentsPage() {
         {loading && <span className="spinner" style={{ marginLeft: 8 }} />}
       </div>
 
+      {error && (
+        <div className="auth-error" style={{ marginBottom: 16 }}>
+          <AlertTriangle size={16} className="icon-inline" /> {error}
+        </div>
+      )}
+
       <div className="card">
         {displayed.length === 0 && !loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon"><GitMerge size={16} className="icon-inline" /></div>
+            <div className="empty-state-icon"><GitMerge size={32} /></div>
             <h3>{tab === 'overdue' ? 'No overdue assignments' : 'No assignments found'}</h3>
-            <p>{tab === 'overdue' ? 'All assignments are within SLA' : 'Use Auto-Assign to route complaints'}</p>
+            <p>{tab === 'overdue' ? 'All assignments are within SLA' : 'Use Auto-Assign to route complaints to workers'}</p>
           </div>
         ) : (
           <>
@@ -216,19 +248,19 @@ export default function AssignmentsPage() {
                 <tbody>
                   {displayed.map((a) => (
                     <tr key={a.id} style={isSlaBreached(a.slaDeadline) && a.status !== 'COMPLETED' ? { background: 'rgba(248,113,113,0.04)' } : {}}>
-                      <td><span className="mono text-accent">{a.id}</span></td>
+                      <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{a.id.substring(0, 8)}</span></td>
                       <td>
                         <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {a.complaintTitle ?? a.complaintId}
+                          {a.complaintTitle ?? a.complaintId?.substring(0, 8)}
                         </div>
                         {a.escalationReason && (
                           <div style={{ fontSize: '0.72rem', color: 'var(--red)', marginTop: 2 }}>
-                            <AlertTriangle size={16} className="icon-inline" /> {a.escalationReason}
+                            <AlertTriangle size={12} className="icon-inline" /> {a.escalationReason}
                           </div>
                         )}
                       </td>
                       <td className="text-muted">{a.departmentName ?? '—'}</td>
-                      <td className="text-muted">{a.workerName ?? 'Unassigned'}</td>
+                      <td className="text-muted">{a.assignedWorkerName ?? a.workerName ?? 'Unassigned'}</td>
                       <td><AssignmentStatusBadge status={a.status} /></td>
                       <td>{a.priority ? <PriorityBadge priority={a.priority} /> : '—'}</td>
                       <td><SlaTimer deadline={a.slaDeadline} /></td>
@@ -257,6 +289,7 @@ export default function AssignmentsPage() {
 
       {showAutoAssign && (
         <AutoAssignModal
+          complaints={unassignedComplaints}
           onClose={() => setShowAutoAssign(false)}
           onSuccess={() => void fetchData()}
         />
@@ -264,6 +297,3 @@ export default function AssignmentsPage() {
     </div>
   );
 }
-
-
-

@@ -1,8 +1,9 @@
-﻿import { ComplaintStatus, ComplaintPriority } from '../types';
+import { ComplaintStatus } from '../types';
 import { Circle } from 'lucide-react';
 
 export function StatusBadge({ status }: { status: ComplaintStatus | string }) {
-  const cls = "badge badge-" + status.toLowerCase().replace(/_/g, '_');
+  const str = String(status ?? '');
+  const cls = 'badge badge-' + str.toLowerCase().replace(/_/g, '_');
   const labels: Record<string, string> = {
     SUBMITTED: 'Submitted',
     VERIFIED: 'Verified',
@@ -15,11 +16,12 @@ export function StatusBadge({ status }: { status: ComplaintStatus | string }) {
     REJECTED: 'Rejected',
     ESCALATED: 'Escalated',
   };
-  return <span className={cls}>{labels[status] ?? status}</span>;
+  return <span className={cls}>{labels[str] ?? str}</span>;
 }
 
-export function PriorityBadge({ priority }: { priority: ComplaintPriority | string }) {
-  const cls = "badge badge-" + priority.toLowerCase();
+export function PriorityBadge({ priority }: { priority: string }) {
+  const str = String(priority ?? 'MEDIUM').toUpperCase();
+  const cls = 'badge badge-' + str.toLowerCase();
   
   const iconColors: Record<string, string> = {
     CRITICAL: '#DC2626',
@@ -37,23 +39,28 @@ export function PriorityBadge({ priority }: { priority: ComplaintPriority | stri
     VERY_LOW: 'Very Low',
   };
 
-  const color = iconColors[priority] ?? '#94A3B8';
+  const color = iconColors[str] ?? '#94A3B8';
 
   return (
     <span className={cls} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
       <Circle size={10} fill={color} color={color} />
-      {labels[priority] ?? priority}
+      {labels[str] ?? str}
     </span>
   );
 }
 
 export function AssignmentStatusBadge({ status }: { status: string }) {
+  const str = String(status ?? '');
   const map: Record<string, string> = {
     PENDING: 'badge-submitted',
+    ASSIGNED: 'badge-assigned',
     ACKNOWLEDGED: 'badge-verified',
+    ACCEPTED: 'badge-verified',
     IN_PROGRESS: 'badge-in_progress',
     COMPLETED: 'badge-resolved',
     ESCALATED: 'badge-escalated',
+    CANCELLED: 'badge-rejected',
+    REJECTED: 'badge-rejected',
   };
-  return <span className={"badge " + (map[status] ?? 'badge-submitted')}>{status.replace(/_/g, ' ')}</span>;
+  return <span className={'badge ' + (map[str] ?? 'badge-submitted')}>{str.replace(/_/g, ' ')}</span>;
 }

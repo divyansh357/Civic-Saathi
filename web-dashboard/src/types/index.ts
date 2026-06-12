@@ -39,10 +39,11 @@ export type ComplaintPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'VERY_L
 
 export interface Complaint {
   id: string;
+  complaintNumber?: string;
   title: string;
   description?: string;
   status: ComplaintStatus;
-  priority?: ComplaintPriority;
+  priority?: string;
   category?: string;
   userId?: string;
   userName?: string;
@@ -52,9 +53,12 @@ export interface Complaint {
   assignedWorkerName?: string;
   latitude?: number;
   longitude?: number;
+  location?: string;
   address?: string;
   city?: string;
   imageUrls?: string[];
+  verificationMethod?: string;
+  aiSummary?: string;
   slaDeadline?: string;
   escalatedAt?: string;
   resolvedAt?: string;
@@ -88,24 +92,30 @@ export interface Worker {
   activeComplaintsCount?: number;
   complaintsAssigned?: number;
   complaintsResolved?: number;
+  profileImageUrl?: string;
+  previousWorks?: string;
 }
 
 export interface Assignment {
   id: string;
   complaintId: string;
   complaintTitle?: string;
-  departmentId: string;
+  departmentId?: string;
   departmentName?: string;
   workerId?: string;
   workerName?: string;
+  assignedWorkerId?: string;
+  assignedWorkerName?: string;
   status: 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'ACKNOWLEDGED' | 'ESCALATED';
-  priority?: ComplaintPriority;
+  priority?: string;
   slaDeadline?: string;
   assignedAt?: string;
   completedAt?: string;
   rejectionReason?: string;
   escalationReason?: string;
   notes?: string;
+  isAutoAssigned?: boolean;
+  completionImages?: string[];
 }
 
 export interface Notification {
@@ -156,9 +166,15 @@ export interface ReopenRequest {
 }
 
 export interface PagedResponse<T> {
-  data: T[];
-  currentPage: number;
-  totalItems: number;
+  content: T[];
+  pageable: any;
+  totalElements: number;
   totalPages: number;
-  status: string;
+  last: boolean;
+  size: number;
+  number: number;
+  sort: any;
+  numberOfElements: number;
+  first: boolean;
+  empty: boolean;
 }
