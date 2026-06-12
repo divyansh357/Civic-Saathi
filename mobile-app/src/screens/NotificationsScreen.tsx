@@ -1,10 +1,12 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, ActivityIndicator
 } from 'react-native';
-import { notificationService, NotificationData, formatNotificationTime } from '@services/notifications';
+import { notificationService, formatNotificationTime } from '@services/notifications';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '@store/index';
+import { apiGetWithHeaders, apiPutWithHeaders } from '@services/api/client';
 
 const NOTIFICATION_ICONS: Record<string, React.ReactNode> = {
   complaint_status: <Ionicons name="clipboard-outline" size={24} color="#64748b" />,
@@ -21,16 +23,17 @@ const NOTIFICATION_COLORS: Record<string, string> = {
 };
 
 interface NotificationCardProps {
-  notification: NotificationData;
+  notification: any;
   onPress: () => void;
 }
 
 function NotificationCard({ notification, onPress }: NotificationCardProps) {
-  const icon = NOTIFICATION_ICONS[notification.type] || <Ionicons name="notifications-outline" size={24} color="#64748b" />;
-  const color = NOTIFICATION_COLORS[notification.type] || '#64748b';
+  const typeKey = notification.type?.toLowerCase() || 'system';
+  const icon = NOTIFICATION_ICONS[typeKey] || <Ionicons name="notifications-outline" size={24} color="#64748b" />;
+  const color = NOTIFICATION_COLORS[typeKey] || '#64748b';
 
   return (
-    <Pressable style={styles.card} onPress={onPress} android_ripple={{ color: '#e2e8f0' }}>
+    <Pressable style={[styles.card, notification.read ? { opacity: 0.7 } : {}]} onPress={onPress} android_ripple={{ color: '#e2e8f0' }}>
       <View style={styles.cardLeft}>
         <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
           {icon}
@@ -38,10 +41,13 @@ function NotificationCard({ notification, onPress }: NotificationCardProps) {
       </View>
       
       <View style={styles.cardContent}>
-        <Text style={styles.title} numberOfLines={1}>{notification.title}</Text>
-        <Text style={styles.body} numberOfLines={2}>{notification.body}</Text>
-        <Text style={styles.time}>{formatNotificationTime(notification.timestamp)}</Text>
+        <Text style={[styles.title, !notification.read && { fontWeight: '700' }]} numberOfLines={1}>{notification.title}</Text>
+        <Text style={styles.body} numberOfLines={2}>{notification.message}</Text>
+        <Text style={styles.time}>{formatNotificationTime(notification.createdAt)}</Text>
       </View>
+      {!notification.read && (
+        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#0F766E', alignSelf: 'center', marginLeft: 8 }} />
+      )}
     </Pressable>
   );
 }
@@ -51,59 +57,58 @@ interface NotificationsScreenProps {
 }
 
 export default function NotificationsScreen({ onBack }: NotificationsScreenProps) {
-  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const user = useAuthStore((s) => s.user);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Initialize notifications and subscribe to updates
-    setLoading(true);
-    
-    const unsubscribe = notificationService.subscribe((updatedNotifications) => {
-      setNotifications(updatedNotifications);
+  const fetchNotifications = async (isRefresh = false) => {
+    if (!accessToken || !user) return;
+    if (!isRefresh) setLoading(true);
+    try {
+      const res: any = await apiGetWithHeaders('/notifications', accessToken, { 'User-Id': user.id });
+      const list = res.data ?? res.content ?? (Array.isArray(res) ? res : []);
+      setNotifications(list);
+    } catch (e) {
+      console.error('Failed to fetch notifications:', e);
+    } finally {
       setLoading(false);
       setRefreshing(false);
-    });
+    }
+  };
 
-    // Get initial notifications
-    setNotifications(notificationService.getNotifications());
-    setLoading(false);
-
-    return unsubscribe;
-  }, []);
+  useEffect(() => {
+    void fetchNotifications();
+  }, [accessToken, user]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    // In a real app, this would fetch notifications from the server
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    void fetchNotifications(true);
   };
 
-  const handleNotificationPress = (notification: NotificationData) => {
-    // Mark as read
-    notificationService.markAsRead(notification.id);
+  const handleNotificationPress = async (notification: any) => {
+    // Mark as read in UI optimistically
+    setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+    
+    // Update backend
+    if (!notification.read && user) {
+      try {
+        await apiPutWithHeaders(`/notifications/${notification.id}/read`, {}, accessToken, { 'User-Id': user.id });
+      } catch (e) {
+        console.error('Failed to mark read', e);
+      }
+    }
     
     // Handle navigation based on notification type
-    switch (notification.type) {
-      case 'complaint_status':
-        // Navigate to complaint detail
-        // eslint-disable-next-line no-console
-        console.log('Navigate to complaint:', notification.data?.complaintId);
-        break;
-      case 'assignment':
-        // Navigate to assignment detail
-        // eslint-disable-next-line no-console
-        console.log('Navigate to assignment:', notification.data?.assignmentId);
-        break;
-      default:
-        // eslint-disable-next-line no-console
-        console.log('Notification pressed:', notification.id);
+    const type = notification.type?.toUpperCase() || 'SYSTEM';
+    if (type === 'NEW_COMPLAINT' || type === 'ASSIGNMENT') {
+      // e.g. navigate to complaint
     }
   };
 
   const handleClearAll = () => {
-    notificationService.clearAll();
+    // backend doesn't have clear all endpoint yet
   };
 
   return (

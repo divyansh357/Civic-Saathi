@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  Alert, ActivityIndicator, TextInput
+  Alert, ActivityIndicator, TextInput, Image
 } from 'react-native';
 import { useAuthStore } from '@store/index';
-import { apiPost } from '@services/api/client';
+import { apiPostWithHeaders } from '@services/api/client';
 import { Complaint } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -47,10 +47,11 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
   const [reopenReason, setReopenReason] = useState('');
   const [showReopenForm, setShowReopenForm] = useState(false);
 
-  const userRole = useAuthStore((s) => s.user?.role);
+  const user = useAuthStore((s) => s.user);
+  const userRole = user?.role;
   const isCitizen = userRole === 'CITIZEN';
 
-  const canRequestFeedback = isCitizen && (complaint.status === 'RESOLVED' || complaint.status === 'CLOSED');
+  const canRequestFeedback = isCitizen && !complaint.rating && (complaint.status === 'RESOLVED' || complaint.status === 'CLOSED');
   const canReopen = isCitizen && (complaint.status === 'RESOLVED' || complaint.status === 'CLOSED');
 
   const handleReopenRequest = async () => {
@@ -61,10 +62,11 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
     if (!accessToken) return;
     setReopening(true);
     try {
-      await apiPost(
+      await apiPostWithHeaders(
         '/reopen-requests',
         { complaintId: complaint.id, reason: reopenReason.trim() },
-        accessToken
+        accessToken,
+        { 'User-Id': user?.id || '' }
       );
       Alert.alert('Request Submitted', 'Your reopen request has been submitted for review.');
       setShowReopenForm(false);
@@ -185,9 +187,18 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
             <Text style={styles.detailLabel}>Last Updated</Text>
             <Text style={styles.detailValue}>{formatDate(complaint.updatedAt)}</Text>
           </View>
+          {complaint.resolutionImages && complaint.resolutionImages.length > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Proof of Work (Resolution)</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                {complaint.resolutionImages.map((uri, idx) => (
+                  <Image key={idx} source={{ uri }} style={styles.proofImage} />
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
-        {/* Resolved — feedback CTA */}
         {canRequestFeedback && (
           <View style={[styles.card, styles.resolvedCard]}>
             <Text style={styles.resolvedEmoji}>🎉</Text>
@@ -199,6 +210,21 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
               <Pressable style={styles.feedbackBtn} onPress={() => onFeedback(complaint)}>
                 <Text style={styles.feedbackBtnText}>⭐ Rate Resolution</Text>
               </Pressable>
+            )}
+          </View>
+        )}
+
+        {/* Existing Feedback */}
+        {complaint.rating !== undefined && complaint.rating > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Your Feedback</Text>
+            <View style={{ flexDirection: 'row', gap: 4, marginBottom: 8 }}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <Text key={star} style={{ fontSize: 20, color: star <= complaint.rating! ? '#F59E0B' : '#CBD5E1' }}>★</Text>
+              ))}
+            </View>
+            {complaint.feedback && (
+              <Text style={{ fontSize: 14, color: '#475569', lineHeight: 20 }}>"{complaint.feedback}"</Text>
             )}
           </View>
         )}
@@ -314,6 +340,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F766E', borderRadius: 10, paddingVertical: 12, alignItems: 'center',
   },
   feedbackBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  proofImage: { width: 120, height: 120, borderRadius: 8, marginRight: 12, backgroundColor: '#E2E8F0' },
   // Reopen
   reopenSubtitle: { fontSize: 13, color: '#64748B', marginBottom: 12, lineHeight: 18 },
   reopenBtn: {

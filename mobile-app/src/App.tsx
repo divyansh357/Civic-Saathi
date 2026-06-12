@@ -221,7 +221,20 @@ function AppContent() {
         <FeedbackScreen
           complaint={selectedComplaint}
           onBack={() => setCitizenScreen('complaint-detail')}
-          onSuccess={() => setCitizenScreen('home')}
+          onSuccess={(rating, comment) => {
+            // Optimistically update the selected complaint
+            setSelectedComplaint({
+              ...selectedComplaint,
+              rating,
+              feedback: comment
+            });
+            // Update the store as well
+            const { complaints, setComplaints } = useComplaintStore.getState();
+            setComplaints(complaints.map(c => c.id === selectedComplaint.id ? { ...c, rating, feedback: comment } : c));
+            
+            // Go back to details to show the feedback immediately
+            setCitizenScreen('complaint-detail');
+          }}
         />
       )}
 

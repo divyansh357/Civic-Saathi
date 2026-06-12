@@ -4,13 +4,13 @@ import {
   Pressable, ActivityIndicator, Alert
 } from 'react-native';
 import { useAuthStore } from '@store/index';
-import { apiPost } from '@services/api/client';
+import { apiPostWithHeaders } from '@services/api/client';
 import { Complaint } from '@/types';
 
 interface FeedbackScreenProps {
   complaint: Complaint;
   onBack: () => void;
-  onSuccess: () => void;
+  onSuccess: (rating: number, comment?: string) => void;
 }
 
 export default function FeedbackScreen({ complaint, onBack, onSuccess }: FeedbackScreenProps) {
@@ -29,7 +29,7 @@ export default function FeedbackScreen({ complaint, onBack, onSuccess }: Feedbac
 
     setSubmitting(true);
     try {
-      await apiPost(
+      await apiPostWithHeaders(
         '/feedback',
         {
           complaintId: complaint.id,
@@ -37,10 +37,11 @@ export default function FeedbackScreen({ complaint, onBack, onSuccess }: Feedbac
           comment: comment.trim() || undefined,
           isSatisfied: rating >= 3,
         },
-        accessToken
+        accessToken,
+        { 'User-Id': user.id }
       );
       Alert.alert('Thank You!', 'Your feedback has been submitted.', [
-        { text: 'OK', onPress: onSuccess }
+        { text: 'OK', onPress: () => onSuccess(rating, comment.trim() || undefined) }
       ]);
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Failed to submit feedback.');

@@ -102,6 +102,14 @@ export function apiGet<T>(path: string, accessToken?: string): Promise<T> {
   return request<T>(path, { method: 'GET', accessToken });
 }
 
+export function apiGetWithHeaders<T>(
+  path: string,
+  accessToken?: string,
+  extraHeaders?: Record<string, string>
+): Promise<T> {
+  return request<T>(path, { method: 'GET', accessToken, extraHeaders });
+}
+
 export function apiPost<TResponse, TBody = unknown>(
   path: string,
   body?: TBody,

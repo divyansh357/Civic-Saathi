@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import WorkerProfileScreen from './WorkerProfileScreen';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  RefreshControl, ActivityIndicator, Alert, Platform, Modal
+  RefreshControl, ActivityIndicator, Alert, Platform, Modal, TextInput, Switch
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
-import { apiGet, apiPost } from '@services/api/client';
+import { apiGet, apiPost, apiPut } from '@services/api/client';
 import { Assignment, Complaint } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import ComplaintDetailScreen from '../citizen/ComplaintDetailScreen';
@@ -71,7 +73,6 @@ interface AssignmentCardProps {
   assignment: WorkerAssignment;
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
-  onComplete: (id: string) => void;
   onComplete: (id: string) => void;
   onNavigate: (assignment: WorkerAssignment) => void;
   onViewDetails: (assignment: WorkerAssignment) => void;
@@ -151,8 +152,7 @@ function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate
   );
 }
 
-import * as ImagePicker from 'expo-image-picker';
-import WorkerProfileScreen from './WorkerProfileScreen';
+
 
 export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavigateToNotifications?: () => void }) {
   const [showProfile, setShowProfile] = useState(false);
@@ -171,6 +171,11 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [selectedAssignment, setSelectedAssignment] = useState<WorkerAssignment | null>(null);
   const [complaintDetails, setComplaintDetails] = useState<Complaint | null>(null);
   const [fetchingComplaint, setFetchingComplaint] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [showAadharModal, setShowAadharModal] = useState(false);
+  const [aadharInput, setAadharInput] = useState('');
+  const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null);
+  const [savingAadhar, setSavingAadhar] = useState(false);
 
   // Enhanced mock data with location
   const MOCK: WorkerAssignment[] = [
@@ -252,6 +257,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         const workerRes = await apiGet<any>(`/workers/user/${user.id}`, accessToken);
         currentWorkerId = workerRes.id;
         setWorkerId(currentWorkerId);
+        setIsAvailable(workerRes.status === 'ACTIVE');
       }
       if (!currentWorkerId) return;
 
@@ -295,6 +301,19 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     void fetchAssignments(true); 
   };
 
+  const handleToggleAvailability = async () => {
+    if (!workerId || !accessToken) return;
+    try {
+      const prev = isAvailable;
+      setIsAvailable(!prev); // optimistic UI
+      await apiPost(`/workers/${workerId}/availability`, {}, accessToken);
+    } catch (err) {
+      console.error('Failed to toggle availability', err);
+      setIsAvailable(isAvailable); // revert on failure
+      Alert.alert('Error', 'Failed to update availability status.');
+    }
+  };
+
   const handleNavigate = (assignment: WorkerAssignment) => {
     if (assignment.complaintLatitude && assignment.complaintLongitude) {
       openMaps(assignment.complaintLatitude, assignment.complaintLongitude, assignment.complaintAddress);
@@ -313,7 +332,34 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'IN_PROGRESS' as const } : a));
       }
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to process request');
+      const msg = e instanceof Error ? e.message : 'Failed to process request';
+      if (msg.toLowerCase().includes('aadhar')) {
+        setPendingAssignmentId(id);
+        setShowAadharModal(true);
+      } else {
+        Alert.alert('Error', msg);
+      }
+    }
+  };
+
+  const handleSaveAadhar = async () => {
+    if (aadharInput.length !== 12) {
+      Alert.alert('Error', 'Aadhar number must be exactly 12 digits.');
+      return;
+    }
+    setSavingAadhar(true);
+    try {
+      await apiPut('/workers/me/profile', { aadharNumber: aadharInput }, accessToken);
+      setShowAadharModal(false);
+      Alert.alert('Success', 'Aadhar saved successfully. You can now accept tasks.');
+      if (pendingAssignmentId) {
+        await handleAccept(pendingAssignmentId);
+        setPendingAssignmentId(null);
+      }
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to save Aadhar');
+    } finally {
+      setSavingAadhar(false);
     }
   };
 
@@ -352,34 +398,55 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
       throw new Error("Cloudinary configuration is missing. Please check your .env file.");
     }
     const formData = new FormData();
-    formData.append('file', { uri, type: 'image/jpeg', name: `proof_${Date.now()}.jpg` } as any);
+    const isVideo = uri.toLowerCase().endsWith('.mp4') || uri.toLowerCase().endsWith('.mov');
+    const mimeType = isVideo ? 'video/mp4' : 'image/jpeg';
+    const ext = isVideo ? 'mp4' : 'jpg';
+    
+    formData.append('file', { uri, type: mimeType, name: `proof_${Date.now()}.${ext}` } as any);
     formData.append('upload_preset', uploadPreset);
     
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    // using /auto/upload instead of /image/upload to support both image and video
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
       method: 'POST', body: formData, headers: { 'Accept': 'application/json' },
     });
-    if (!res.ok) throw new Error('Image upload failed');
+    if (!res.ok) throw new Error('Media upload failed');
     const data = await res.json();
     return data.secure_url;
   };
 
   const handleComplete = async (id: string) => {
     if (!accessToken) return;
-    Alert.alert('Complete Task', 'You must provide a photo as proof of resolution.', [
+    Alert.alert('Complete Task', 'You must provide 2 to 4 photos or videos as proof of resolution.', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Take Photo', onPress: async () => {
+        text: 'Select Proofs', onPress: async () => {
           try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
-              Alert.alert('Permission Required', 'Camera access is needed for proof.');
+              Alert.alert('Permission Required', 'Gallery access is needed for proof.');
               return;
             }
-            const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-            if (!result.canceled && result.assets[0]) {
+            const result = await ImagePicker.launchImageLibraryAsync({ 
+              mediaTypes: ImagePicker.MediaTypeOptions.All,
+              allowsMultipleSelection: true,
+              selectionLimit: 4,
+              quality: 0.8 
+            });
+            
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              if (result.assets.length < 2) {
+                Alert.alert('Insufficient Proofs', 'Please select at least 2 photos or videos.');
+                return;
+              }
+              if (result.assets.length > 4) {
+                Alert.alert('Too Many Proofs', 'You can select a maximum of 4 photos or videos.');
+                return;
+              }
               setLoading(true);
-              const imgUrl = await uploadImageToCloudinary(result.assets[0].uri);
-              await apiPost(`/assignments/${id}/complete`, { images: [imgUrl] }, accessToken);
+              const uploadPromises = result.assets.map(asset => uploadImageToCloudinary(asset.uri));
+              const uploadedUrls = await Promise.all(uploadPromises);
+              
+              await apiPost(`/assignments/${id}/complete`, { images: uploadedUrls }, accessToken);
               setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'COMPLETED' as const } : a));
               Alert.alert('Success', 'Task completed successfully and sent for admin verification!');
             }
@@ -398,8 +465,8 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     setSelectedAssignment(assignment);
     setFetchingComplaint(true);
     try {
-      const data = await apiGet<{ data: Complaint }>(`/complaints/${assignment.complaintId}`, accessToken);
-      setComplaintDetails(data.data);
+      const data = await apiGet<Complaint>(`/complaints/${assignment.complaintId}`, accessToken);
+      setComplaintDetails(data);
     } catch (err) {
       console.error('Failed to fetch complaint details', err);
       Alert.alert('Error', 'Could not load complaint details');
@@ -427,17 +494,48 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0F766E" />}
     >
+      <Modal visible={showAadharModal} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#fff', padding: 24, borderRadius: 12 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12 }}>Aadhar Required</Text>
+            <Text style={{ color: '#64748b', marginBottom: 20 }}>Please provide your 12-digit Aadhar number to accept tasks. This is a one-time requirement.</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 20 }}
+              placeholder="1234 5678 9012"
+              keyboardType="number-pad"
+              maxLength={12}
+              value={aadharInput}
+              onChangeText={setAadharInput}
+            />
+            <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'flex-end' }}>
+              <Pressable style={{ padding: 12 }} onPress={() => { setShowAadharModal(false); setPendingAssignmentId(null); }}>
+                <Text style={{ color: '#64748b', fontWeight: '600' }}>Cancel</Text>
+              </Pressable>
+              <Pressable style={{ backgroundColor: '#0F766E', padding: 12, borderRadius: 8, opacity: savingAadhar ? 0.7 : 1 }} onPress={() => void handleSaveAadhar()} disabled={savingAadhar}>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{savingAadhar ? 'Saving...' : 'Submit & Accept'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Header */}
       <View style={styles.workerHeader}>
         <View>
           <Text style={styles.workerName}>{user?.name ?? 'Worker'}</Text>
           <Text style={styles.workerRole}>Field Worker</Text>
-          {workerLocation && (
-            <Text style={styles.locationStatus}><Ionicons name="location-outline" size={20} color="#64748b" /> Location enabled</Text>
-          )}
-          {locationLoading && (
-            <Text style={styles.locationStatus}><Ionicons name="location-outline" size={20} color="#64748b" /> Getting location...</Text>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <Switch
+              value={isAvailable}
+              onValueChange={handleToggleAvailability}
+              trackColor={{ false: '#cbd5e1', true: '#5eead4' }}
+              thumbColor={isAvailable ? '#0F766E' : '#94a3b8'}
+              style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }], marginLeft: -4 }}
+            />
+            <Text style={[styles.locationStatus, { marginLeft: 4, marginTop: 0, color: isAvailable ? '#0F766E' : '#64748b' }]}>
+              {isAvailable ? 'Available for work' : 'Not available'}
+            </Text>
+          </View>
         </View>
         <View style={styles.headerActions}>
           {onNavigateToNotifications && (

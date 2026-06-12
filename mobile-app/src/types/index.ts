@@ -45,6 +45,9 @@ export interface Complaint {
 	address?: string;
 	city?: string;
 	imageUrls?: string[];
+	resolutionImages?: string[];
+	rating?: number;
+	feedback?: string;
 	createdAt?: string;
 	updatedAt?: string;
 }
