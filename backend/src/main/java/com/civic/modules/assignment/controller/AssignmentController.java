@@ -15,9 +15,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * REST controller for assignment management.
@@ -76,6 +78,25 @@ public class AssignmentController {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
         response.put("message", "Complaint reassigned successfully");
+        response.put("data", assignment);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Manually update the SLA deadline for an assignment.
+     */
+    @PutMapping("/{assignmentId}/sla")
+    @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> updateSlaDeadline(
+            @PathVariable String assignmentId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime newDeadline) {
+        
+        AssignmentResponse assignment = assignmentService.updateSlaDeadline(assignmentId, newDeadline);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", "SLA deadline updated successfully");
         response.put("data", assignment);
         
         return ResponseEntity.ok(response);

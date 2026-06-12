@@ -25,9 +25,8 @@ public class Notification {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "notification_type_id", nullable = false)
-    private NotificationType notificationType;
+    @Column(name = "type")
+    private String type;
 
     @Column(nullable = false)
     private String title;
@@ -75,10 +74,10 @@ public class Notification {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Notification(User user, NotificationType notificationType, String title, String message) {
+    public Notification(User user, String type, String title, String message) {
         this();
         this.user = user;
-        this.notificationType = notificationType;
+        this.type = type;
         this.title = title;
         this.message = message;
     }
@@ -122,23 +121,12 @@ public class Notification {
         // This would need user lookup to work properly
     }
 
-    public NotificationType getNotificationType() {
-        return notificationType;
-    }
-
-    public void setNotificationType(NotificationType notificationType) {
-        this.notificationType = notificationType;
-    }
-
-    // Backward compatibility method
-    @Deprecated
     public String getType() {
-        return notificationType != null ? notificationType.getName() : null;
+        return type;
     }
 
-    @Deprecated
     public void setType(String type) {
-        // This would need NotificationType lookup to work properly
+        this.type = type;
     }
 
     public String getTitle() {
@@ -165,15 +153,16 @@ public class Notification {
         this.relatedEntityId = relatedEntityId;
     }
 
-    // Backward compatibility method
-    @Deprecated
     public String getRelatedEntityIdAsString() {
         return relatedEntityId != null ? relatedEntityId.toString() : null;
     }
 
-    @Deprecated
     public void setRelatedEntityId(String relatedEntityId) {
         this.relatedEntityId = relatedEntityId != null ? UUID.fromString(relatedEntityId) : null;
+    }
+    
+    public void setReferenceId(String referenceId) {
+        this.relatedEntityId = referenceId != null ? UUID.fromString(referenceId) : null;
     }
 
     public String getRelatedEntityType() {

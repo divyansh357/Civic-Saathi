@@ -22,36 +22,52 @@ public class ReopenController {
 
     /** Citizen requests to reopen a complaint. */
     @PostMapping
-    public ResponseEntity<ReopenRequest> requestReopen(
+    public ResponseEntity<Map<String, Object>> requestReopen(
             @RequestBody Map<String, String> body,
             @RequestHeader("User-Id") String userId) {
         String complaintId = body.get("complaintId");
         String reason = body.get("reason");
         ReopenRequest request = reopenService.requestReopen(complaintId, userId, reason);
-        return ResponseEntity.status(HttpStatus.CREATED).body(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            "status", "success",
+            "message", "Reopen request submitted successfully",
+            "requestId", request.getId().toString()
+        ));
+    }
+
+    private Map<String, Object> mapToResponse(ReopenRequest r) {
+        return Map.of(
+            "id", r.getId().toString(),
+            "complaintId", r.getComplaint().getId().toString(),
+            "userId", r.getUser().getId().toString(),
+            "reason", r.getReason() != null ? r.getReason() : "",
+            "reopenCount", r.getReopenCount() != null ? r.getReopenCount() : 0,
+            "status", r.getStatus().name(),
+            "createdAt", r.getCreatedAt()
+        );
     }
 
     /** Officer approves a reopen request. */
     @PostMapping("/{id}/approve")
-    public ResponseEntity<ReopenRequest> approveReopen(@PathVariable String id) {
-        return ResponseEntity.ok(reopenService.approveReopen(id));
+    public ResponseEntity<Map<String, Object>> approveReopen(@PathVariable String id) {
+        return ResponseEntity.ok(mapToResponse(reopenService.approveReopen(id)));
     }
 
     /** Officer rejects a reopen request. */
     @PostMapping("/{id}/reject")
-    public ResponseEntity<ReopenRequest> rejectReopen(@PathVariable String id) {
-        return ResponseEntity.ok(reopenService.rejectReopen(id));
+    public ResponseEntity<Map<String, Object>> rejectReopen(@PathVariable String id) {
+        return ResponseEntity.ok(mapToResponse(reopenService.rejectReopen(id)));
     }
 
     /** Get all pending reopen requests. */
     @GetMapping("/pending")
-    public ResponseEntity<List<ReopenRequest>> getPendingRequests() {
-        return ResponseEntity.ok(reopenService.getPendingRequests());
+    public ResponseEntity<List<Map<String, Object>>> getPendingRequests() {
+        return ResponseEntity.ok(reopenService.getPendingRequestsMap());
     }
 
     /** Get reopen history for a complaint. */
     @GetMapping("/complaint/{complaintId}")
-    public ResponseEntity<List<ReopenRequest>> getReopenHistory(@PathVariable String complaintId) {
-        return ResponseEntity.ok(reopenService.getReopenHistory(complaintId));
+    public ResponseEntity<List<Map<String, Object>>> getReopenHistory(@PathVariable String complaintId) {
+        return ResponseEntity.ok(reopenService.getReopenHistoryMap(complaintId));
     }
 }

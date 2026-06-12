@@ -12,6 +12,9 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.civic.modules.assignment.repository.AssignmentRepository;
+import com.civic.modules.feedback.repository.FeedbackRepository;
+import com.civic.modules.feedback.entity.Feedback;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -27,6 +30,12 @@ public class ComplaintMapper {
 
     @Autowired
     private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    @Autowired
+    private FeedbackRepository feedbackRepository;
 
     private final GeometryFactory geometryFactory = new GeometryFactory();
 
@@ -160,6 +169,13 @@ public class ComplaintMapper {
         response.setVerificationMethod(complaint.getVerificationMethod());
         response.setAiSummary(complaint.getAiSummary());
         
+        // Fetch resolution images from assignment
+        if (complaint.getId() != null) {
+            assignmentRepository.findByComplaintId(complaint.getId()).ifPresent(assignment -> {
+                response.setResolutionImages(assignment.getCompletionImages());
+            });
+        }
+        
         // Address — set both fields for compatibility
         response.setLocation(complaint.getAddressText());
         response.setAddress(complaint.getAddressText());
@@ -174,8 +190,16 @@ public class ComplaintMapper {
         // Priority: convert numeric → label
         response.setPriority(priorityIntToLabel(complaint.getPriority()));
         
-        response.setRating(null); // Moved to Feedback entity
-        response.setFeedback(null); // Moved to Feedback entity
+        // Fetch feedback if any
+        if (complaint.getId() != null) {
+            java.util.List<Feedback> feedbacks = feedbackRepository.findByComplaintId(complaint.getId());
+            if (!feedbacks.isEmpty()) {
+                Feedback f = feedbacks.get(0);
+                response.setRating(f.getRating());
+                response.setFeedback(f.getComment());
+            }
+        }
+        
         return response;
     }
 }

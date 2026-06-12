@@ -98,13 +98,27 @@ public class ReopenService {
 
     /** Get all pending reopen requests (for officer dashboard). */
     @Transactional(readOnly = true)
-    public List<ReopenRequest> getPendingRequests() {
-        return reopenRequestRepository.findByStatus(ReopenRequest.ReopenStatus.REQUESTED);
+    public List<java.util.Map<String, Object>> getPendingRequestsMap() {
+        return reopenRequestRepository.findByStatus(ReopenRequest.ReopenStatus.REQUESTED)
+            .stream().map(this::mapToResponse).toList();
     }
 
     /** Get reopen history for a complaint. */
     @Transactional(readOnly = true)
-    public List<ReopenRequest> getReopenHistory(String complaintId) {
-        return reopenRequestRepository.findByComplaintId(UUID.fromString(complaintId));
+    public List<java.util.Map<String, Object>> getReopenHistoryMap(String complaintId) {
+        return reopenRequestRepository.findByComplaintId(UUID.fromString(complaintId))
+            .stream().map(this::mapToResponse).toList();
+    }
+
+    private java.util.Map<String, Object> mapToResponse(ReopenRequest r) {
+        return java.util.Map.of(
+            "id", r.getId().toString(),
+            "complaintId", r.getComplaint().getId().toString(),
+            "userId", r.getUser().getId().toString(),
+            "reason", r.getReason() != null ? r.getReason() : "",
+            "reopenCount", r.getReopenCount() != null ? r.getReopenCount() : 0,
+            "status", r.getStatus().name(),
+            "createdAt", r.getCreatedAt()
+        );
     }
 }

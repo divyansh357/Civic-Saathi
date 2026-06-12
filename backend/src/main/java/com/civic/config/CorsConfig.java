@@ -45,7 +45,8 @@ public class CorsConfig {
                 "Origin",
                 "X-Requested-With",
                 "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
+                "Access-Control-Request-Headers",
+                "User-Id"
         ));
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(false); // using Bearer tokens, not cookies

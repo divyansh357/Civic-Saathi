@@ -63,6 +63,9 @@ public class ComplaintResponse {
     @JsonProperty("imageUrls")
     private java.util.List<String> imageUrls;
 
+    @JsonProperty("resolutionImages")
+    private java.util.List<String> resolutionImages;
+
     @JsonProperty("verificationMethod")
     private String verificationMethod;
 
@@ -148,6 +151,9 @@ public class ComplaintResponse {
 
     public java.util.List<String> getImageUrls() { return imageUrls; }
     public void setImageUrls(java.util.List<String> imageUrls) { this.imageUrls = imageUrls; }
+
+    public java.util.List<String> getResolutionImages() { return resolutionImages; }
+    public void setResolutionImages(java.util.List<String> resolutionImages) { this.resolutionImages = resolutionImages; }
 
     public String getVerificationMethod() { return verificationMethod; }
     public void setVerificationMethod(String verificationMethod) { this.verificationMethod = verificationMethod; }

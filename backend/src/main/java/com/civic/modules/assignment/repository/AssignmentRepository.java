@@ -38,14 +38,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
     /** Find overdue assignments (past deadline, not completed/cancelled). */
     @Query("SELECT a FROM Assignment a WHERE a.deadlineAt < :currentTime " +
            "AND a.status NOT IN " +
-           "(com.civic.modules.assignment.entity.Assignment.AssignmentStatus.COMPLETED, " +
-           "com.civic.modules.assignment.entity.Assignment.AssignmentStatus.CANCELLED)")
+           "(com.civic.modules.assignment.entity.Assignment$AssignmentStatus.COMPLETED, " +
+           "com.civic.modules.assignment.entity.Assignment$AssignmentStatus.CANCELLED)")
     List<Assignment> findOverdueAssignments(@Param("currentTime") LocalDateTime currentTime);
 
     /** Find active assignments for a worker. */
     @Query("SELECT a FROM Assignment a WHERE a.worker.id = :workerId " +
            "AND a.status NOT IN " +
-           "(com.civic.modules.assignment.entity.Assignment.AssignmentStatus.COMPLETED, " +
-           "com.civic.modules.assignment.entity.Assignment.AssignmentStatus.CANCELLED)")
+           "(com.civic.modules.assignment.entity.Assignment$AssignmentStatus.COMPLETED, " +
+           "com.civic.modules.assignment.entity.Assignment$AssignmentStatus.CANCELLED)")
     List<Assignment> findActiveByWorkerId(@Param("workerId") UUID workerId);
 }

@@ -49,6 +49,9 @@ public class AssignmentService {
     @Autowired
     private AssignmentMapper assignmentMapper;
 
+    @Autowired
+    private com.civic.modules.notification.service.NotificationService notificationService;
+
     /**
      * Auto-assign complaint to appropriate department and worker.
      */
@@ -189,6 +192,17 @@ public class AssignmentService {
 
         logger.info("Successfully manually assigned complaint {} to worker {}", complaint.getId(), worker.getId());
 
+        // Send Notification to Worker
+        if (worker.getUser() != null) {
+            com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+            notif.setUser(worker.getUser());
+            notif.setTitle("New Assignment");
+            notif.setMessage("You have been assigned to complaint: " + complaint.getTitle());
+            notif.setType("ASSIGNMENT");
+            notif.setReferenceId(savedAssignment.getId().toString());
+            notificationService.sendNotification(notif);
+        }
+
         return assignmentMapper.toResponse(savedAssignment);
     }
 
@@ -233,6 +247,17 @@ public class AssignmentService {
         workerRepository.save(newWorker);
 
         logger.info("Successfully reassigned assignment {} to worker {}", assignmentId, newWorkerId);
+
+        // Send Notification to Worker
+        if (newWorker.getUser() != null) {
+            com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+            notif.setUser(newWorker.getUser());
+            notif.setTitle("New Assignment");
+            notif.setMessage("You have been assigned to complaint: " + complaint.getTitle());
+            notif.setType("ASSIGNMENT");
+            notif.setReferenceId(savedAssignment.getId().toString());
+            notificationService.sendNotification(notif);
+        }
 
         return assignmentMapper.toResponse(savedAssignment);
     }
@@ -346,6 +371,28 @@ public class AssignmentService {
     public Page<AssignmentResponse> getCompletedAssignmentsByWorker(String workerId, Pageable pageable) {
         return assignmentRepository.findByWorkerIdAndStatus(UUID.fromString(workerId), Assignment.AssignmentStatus.COMPLETED, pageable)
                 .map(assignmentMapper::toResponse);
+    }
+
+    /**
+     * Manually update the SLA deadline for an assignment.
+     */
+    public AssignmentResponse updateSlaDeadline(String assignmentId, LocalDateTime newDeadline) {
+        Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
+                .orElseThrow(() -> new RuntimeException("Assignment not found with ID: " + assignmentId));
+
+        assignment.setDeadlineAt(newDeadline);
+        
+        // Also update complaint SLA deadline if this is the active assignment
+        Complaint complaint = assignment.getComplaint();
+        if (complaint.getAssignedWorker() != null && 
+            assignment.getWorker() != null &&
+            complaint.getAssignedWorker().getId().equals(assignment.getWorker().getId())) {
+            complaint.setSlaDeadline(newDeadline);
+            complaintRepository.save(complaint);
+        }
+        
+        logger.info("Updated SLA deadline for assignment {} to {}", assignmentId, newDeadline);
+        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
     }
 
     /**

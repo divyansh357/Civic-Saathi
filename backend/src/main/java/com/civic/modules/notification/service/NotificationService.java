@@ -31,7 +31,7 @@ public class NotificationService {
      * Get notifications for a user.
      */
     public Page<NotificationResponse> getUserNotifications(String userId, Pageable pageable) {
-        return notificationRepository.findByUserId(userId, pageable)
+        return notificationRepository.findByUserId(UUID.fromString(userId), pageable)
                 .map(notificationMapper::toResponse);
     }
 
@@ -39,7 +39,7 @@ public class NotificationService {
      * Get unread notifications for a user.
      */
     public Page<NotificationResponse> getUnreadNotifications(String userId, Pageable pageable) {
-        return notificationRepository.findByUserIdAndRead(userId, false, pageable)
+        return notificationRepository.findByUserIdAndRead(UUID.fromString(userId), false, pageable)
                 .map(notificationMapper::toResponse);
     }
 
@@ -72,6 +72,6 @@ public class NotificationService {
      * Get unread count for user.
      */
     public long getUnreadCount(String userId) {
-        return notificationRepository.countByUserIdAndReadFalse(userId);
+        return notificationRepository.countByUserIdAndReadFalse(UUID.fromString(userId));
     }
 }

@@ -49,6 +49,9 @@ public class ComplaintService {
     @Autowired
     private com.civic.modules.assignment.service.AssignmentService assignmentService;
 
+    @Autowired
+    private com.civic.modules.notification.service.NotificationService notificationService;
+
     /**
      * Get all complaints with optional status/search filters.
      */
@@ -125,6 +128,15 @@ public class ComplaintService {
             logger.info("Complaint requires manual verification. AI Confidence: {}", aiResult.confidenceScore);
             complaint = complaintRepository.save(complaint);
         }
+
+        // Send Notification
+        com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+        notif.setUser(complaint.getUser());
+        notif.setTitle("Complaint Submitted");
+        notif.setMessage("Your complaint '" + complaint.getTitle() + "' has been successfully submitted.");
+        notif.setType("NEW_COMPLAINT");
+        notif.setReferenceId(complaint.getId().toString());
+        notificationService.sendNotification(notif);
 
         return complaintMapper.toResponse(complaint);
     }
