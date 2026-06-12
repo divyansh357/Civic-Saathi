@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image, Alert, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '@store/index';
@@ -50,8 +50,9 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
   const uploadImageToCloudinary = async (uri: string): Promise<string> => {
     const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name')) {
-      throw new Error("Cloudinary configuration is missing. Please check your .env file.");
+    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name') || cloudName === 'demo_cloud') {
+      console.warn("Cloudinary configuration is missing. Using local image URI for development.");
+      return uri;
     }
     const formData = new FormData();
     formData.append('file', { uri, type: 'image/jpeg', name: `profile_${Date.now()}.jpg` } as any);
@@ -98,7 +99,7 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
         address,
         aadharNo,
         workerCode
-      }, accessToken, { 'User-Id': user?.id });
+      }, accessToken, { 'User-Id': user?.id || '' });
 
       Alert.alert('Success', 'Profile updated successfully!');
     } catch (e) {

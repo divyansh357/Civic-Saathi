@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, ActivityIndicator
 } from 'react-native';
-import { notificationService, formatNotificationTime } from '@services/notifications';
+import { formatNotificationTime } from '@services/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@store/index';
 import { apiGetWithHeaders, apiPutWithHeaders } from '@services/api/client';
@@ -94,7 +94,7 @@ export default function NotificationsScreen({ onBack }: NotificationsScreenProps
     // Update backend
     if (!notification.read && user) {
       try {
-        await apiPutWithHeaders(`/notifications/${notification.id}/read`, {}, accessToken, { 'User-Id': user.id });
+        await apiPutWithHeaders(`/notifications/${notification.id}/read`, {}, accessToken || undefined, { 'User-Id': user.id });
       } catch (e) {
         console.error('Failed to mark read', e);
       }

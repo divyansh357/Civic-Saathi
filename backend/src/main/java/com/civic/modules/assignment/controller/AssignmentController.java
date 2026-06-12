@@ -52,8 +52,11 @@ public class AssignmentController {
      */
     @PostMapping("/manual-assign")
     @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN')")
-    public ResponseEntity<Map<String, Object>> manualAssignComplaint(@Valid @RequestBody AssignmentRequest request) {
-        AssignmentResponse assignment = assignmentService.manualAssignComplaint(request);
+    public ResponseEntity<Map<String, Object>> manualAssignComplaint(
+            @Valid @RequestBody AssignmentRequest request,
+            java.security.Principal principal) {
+        String userId = principal.getName();
+        AssignmentResponse assignment = assignmentService.manualAssignComplaint(request, userId);
         
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");

@@ -169,6 +169,16 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
               <Text style={styles.detailValue}>{complaint.address}</Text>
             </View>
           )}
+          {complaint.imageUrls && complaint.imageUrls.length > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Complaint Images</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                {complaint.imageUrls.map((uri, idx) => (
+                  <Image key={idx} source={{ uri }} style={styles.proofImage} />
+                ))}
+              </ScrollView>
+            </View>
+          )}
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Department</Text>
             <Text style={styles.detailValue}>{complaint.departmentName ?? 'Pending assignment'}</Text>

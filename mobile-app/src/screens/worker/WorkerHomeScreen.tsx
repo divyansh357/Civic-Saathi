@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import WorkerProfileScreen from './WorkerProfileScreen';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  RefreshControl, ActivityIndicator, Alert, Platform, Modal, TextInput, Switch
+  RefreshControl, ActivityIndicator, Alert, Platform, Modal, TextInput, Switch, Linking
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
@@ -40,14 +40,15 @@ function openMaps(latitude: number, longitude: number, address?: string) {
   });
   
   if (url) {
-    // In a real app, you'd use Linking.openURL(url)
-    Alert.alert('Navigation', `Would open maps to: ${address || `${latitude}, ${longitude}`}`);
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Unable to open maps. Please check if a map application is installed.');
+    });
   }
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  ASSIGNED: '#60a5fa',
-  ACCEPTED: '#a78bfa',
+  PENDING: '#60a5fa',
+  ACKNOWLEDGED: '#a78bfa',
   IN_PROGRESS: '#fb923c',
   COMPLETED: '#34d399',
   ESCALATED: '#f87171',
@@ -127,7 +128,7 @@ function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate
           </Pressable>
         )}
         
-        {assignment.status === 'ASSIGNED' && (
+        {assignment.status === 'PENDING' && (
           <>
             <Pressable style={styles.actionBtn} onPress={() => onAccept(assignment.id)}>
               <Text style={styles.actionBtnText}><Ionicons name="checkmark" size={16} color="#fff" /> Accept</Text>
@@ -142,7 +143,7 @@ function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate
             <Text style={[styles.actionBtnText, { color: "#065f46" }]}><Ionicons name="checkmark-circle" size={16} color="#065f46" /> Mark Complete</Text>
           </Pressable>
         )}
-        {assignment.status === 'ACCEPTED' && (
+        {assignment.status === 'ACKNOWLEDGED' && (
           <Pressable style={[styles.actionBtn, styles.actionBtnYellow]} onPress={() => onAccept(assignment.id)}>
             <Text style={[styles.actionBtnText, { color: "#92400e" }]}><Ionicons name="build" size={16} color="#92400e" /> Start Work</Text>
           </Pressable>
@@ -163,7 +164,6 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [workerLocation, setWorkerLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [locationLoading, setLocationLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [workerId, setWorkerId] = useState<string | null>(null);
   
@@ -176,42 +176,12 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [aadharInput, setAadharInput] = useState('');
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null);
   const [savingAadhar, setSavingAadhar] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Enhanced mock data with location
-  const MOCK: WorkerAssignment[] = [
-    { 
-      id: 'A-001', 
-      complaintId: 'C-1001', 
-      complaintTitle: 'Pothole on MG Road near bus stop', 
-      departmentId: 'd1', 
-      departmentName: 'Roads Department', 
-      status: 'PENDING', 
-      priority: 'HIGH', 
-      slaDeadline: new Date(Date.now() + 3600000 * 5).toISOString(), 
-      assignedAt: new Date().toISOString(), 
-      complaintAddress: 'MG Road, Bengaluru',
-      complaintLatitude: 12.9716,
-      complaintLongitude: 77.5946
-    },
-    { 
-      id: 'A-004', 
-      complaintId: 'C-1007', 
-      complaintTitle: 'Road cave-in near school', 
-      departmentId: 'd1', 
-      departmentName: 'Roads Department', 
-      status: 'IN_PROGRESS', 
-      priority: 'CRITICAL', 
-      slaDeadline: new Date(Date.now() + 3600000 * 1).toISOString(), 
-      assignedAt: new Date().toISOString(), 
-      complaintAddress: 'Near Govt School, Koramangala',
-      complaintLatitude: 12.9352,
-      complaintLongitude: 77.6245
-    },
-  ];
+
 
   // Get worker's current location
   const getCurrentLocation = async () => {
-    setLocationLoading(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
@@ -225,8 +195,6 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
       }
     } catch (error) {
       console.error('Location error:', error);
-    } finally {
-      setLocationLoading(false);
     }
   };
 
@@ -272,6 +240,13 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         setAssignments(assignmentsWithDistance);
       } else {
         setAssignments(res.data ?? []);
+      }
+      // Fetch unread notifications
+      try {
+        const count = await apiGet<number>('/notifications/unread/count', accessToken);
+        setUnreadCount(count);
+      } catch (e) {
+        console.error('Failed to fetch unread notifications', e);
       }
     } catch (err) {
       console.error(err);
@@ -324,10 +299,10 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     if (!accessToken) return;
     try {
       const assignment = assignments.find(a => a.id === id);
-      if (assignment?.status === 'ASSIGNED') {
+      if (assignment?.status === 'PENDING') {
         await apiPost(`/assignments/${id}/acknowledge`, {}, accessToken);
-        setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'ACCEPTED' as const } : a));
-      } else if (assignment?.status === 'ACCEPTED') {
+        setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'ACKNOWLEDGED' as const } : a));
+      } else if (assignment?.status === 'ACKNOWLEDGED') {
         await apiPost(`/assignments/${id}/start`, {}, accessToken);
         setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'IN_PROGRESS' as const } : a));
       }
@@ -349,7 +324,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     }
     setSavingAadhar(true);
     try {
-      await apiPut('/workers/me/profile', { aadharNumber: aadharInput }, accessToken);
+      await apiPut('/workers/me/profile', { aadharNumber: aadharInput }, accessToken || undefined);
       setShowAadharModal(false);
       Alert.alert('Success', 'Aadhar saved successfully. You can now accept tasks.');
       if (pendingAssignmentId) {
@@ -373,7 +348,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         { 
           text: 'Reject', 
           style: 'destructive',
-          onPress: async (reason) => {
+          onPress: async (reason?: string) => {
             if (!reason) {
               Alert.alert('Error', 'A reason is required to reject a task.');
               return;
@@ -394,8 +369,9 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const uploadImageToCloudinary = async (uri: string): Promise<string> => {
     const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name')) {
-      throw new Error("Cloudinary configuration is missing. Please check your .env file.");
+    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name') || cloudName === 'demo_cloud') {
+      console.warn("Cloudinary configuration is missing. Using local media URI for development.");
+      return uri;
     }
     const formData = new FormData();
     const isVideo = uri.toLowerCase().endsWith('.mp4') || uri.toLowerCase().endsWith('.mov');
@@ -540,7 +516,10 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         <View style={styles.headerActions}>
           {onNavigateToNotifications && (
             <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
-              <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
+              <View>
+                <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
+                {unreadCount > 0 && <View style={styles.notificationDot} />}
+              </View>
             </Pressable>
           )}
           <Pressable style={styles.notificationBtn} onPress={() => setShowProfile(true)}>
@@ -651,7 +630,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF9', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8,
     borderWidth: 1, borderColor: '#BBF7D0',
   },
-  notificationIcon: { fontSize: 16 },
+  notificationIcon: { fontSize: 18 },
+  notificationDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
   logoutBtn: { backgroundColor: '#FEE2E2', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   logoutText: { fontSize: 13, fontWeight: '600', color: '#DC2626' },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },

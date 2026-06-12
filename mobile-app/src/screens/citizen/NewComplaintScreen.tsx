@@ -315,8 +315,9 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
     const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
     
-    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name')) {
-      throw new Error("Cloudinary configuration is missing. Please check your .env file.");
+    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name') || cloudName === 'demo_cloud') {
+      console.warn("Cloudinary configuration is missing. Using local image URI for development.");
+      return uri;
     }
 
     const formData = new FormData();

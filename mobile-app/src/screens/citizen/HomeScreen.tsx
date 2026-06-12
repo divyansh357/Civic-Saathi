@@ -83,6 +83,7 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
   const [nearbyComplaints, setNearbyComplaints] = useState<Complaint[]>([]);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchComplaints = async (silent = false) => {
     if (!accessToken) return;
@@ -93,6 +94,14 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
         accessToken
       );
       setComplaints(res.content ?? []);
+      
+      // Fetch unread notifications
+      try {
+        const count = await apiGet<number>('/notifications/unread/count', accessToken);
+        setUnreadCount(count);
+      } catch (e) {
+        console.error('Failed to fetch unread notifications', e);
+      }
     } catch {
       // keep existing data
     } finally {
@@ -172,7 +181,10 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
           <Text style={styles.greetingSubtext}>Report civic issues in your area</Text>
         </View>
         <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
-          <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
+          <View>
+            <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
+            {unreadCount > 0 && <View style={styles.notificationDot} />}
+          </View>
         </Pressable>
       </View>
 
@@ -269,6 +281,17 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
   notificationIcon: { fontSize: 18 },
+  notificationDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   statCard: {
     flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12,

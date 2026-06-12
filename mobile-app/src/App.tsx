@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import { civicTheme } from '@theme/index';
-import { useAuthStore } from '@store/index';
+import { useAuthStore, useComplaintStore } from '@store/index';
 import { Complaint } from '@/types';
 import { notificationService } from '@services/notifications';
 
@@ -230,7 +230,7 @@ function AppContent() {
             });
             // Update the store as well
             const { complaints, setComplaints } = useComplaintStore.getState();
-            setComplaints(complaints.map(c => c.id === selectedComplaint.id ? { ...c, rating, feedback: comment } : c));
+            setComplaints(complaints.map((c: Complaint) => c.id === selectedComplaint.id ? { ...c, rating, feedback: comment } : c));
             
             // Go back to details to show the feedback immediately
             setCitizenScreen('complaint-detail');

@@ -41,7 +41,11 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
         const list = res.content ?? res.data ?? (Array.isArray(res) ? res : []);
         setWorkers(list as Worker[]);
       })
-      .catch(() => setWorkers([]))
+      .catch((err) => {
+        console.error('Failed to fetch workers:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load workers');
+        setWorkers([]);
+      })
       .finally(() => setLoading(false));
   }, [accessToken]);
 

@@ -6,12 +6,16 @@ import com.civic.modules.department.entity.Department;
 import com.civic.modules.department.repository.DepartmentRepository;
 import com.civic.modules.worker.entity.Worker;
 import com.civic.modules.worker.repository.WorkerRepository;
+import com.civic.modules.user.entity.User;
+import com.civic.modules.user.repository.UserRepository;
 import com.civic.modules.assignment.dto.AssignmentRequest;
 import com.civic.modules.assignment.dto.AssignmentResponse;
 import com.civic.modules.assignment.dto.AutoAssignmentRequest;
 import com.civic.modules.assignment.entity.Assignment;
 import com.civic.modules.assignment.repository.AssignmentRepository;
 import com.civic.modules.assignment.mapper.AssignmentMapper;
+import com.civic.modules.notification.entity.Notification;
+import com.civic.modules.notification.service.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,10 +51,13 @@ public class AssignmentService {
     private WorkerRepository workerRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private AssignmentMapper assignmentMapper;
 
     @Autowired
-    private com.civic.modules.notification.service.NotificationService notificationService;
+    private NotificationService notificationService;
 
     /**
      * Auto-assign complaint to appropriate department and worker.
@@ -154,7 +161,7 @@ public class AssignmentService {
     /**
      * Manually assign complaint to specific worker.
      */
-    public AssignmentResponse manualAssignComplaint(AssignmentRequest request) {
+    public AssignmentResponse manualAssignComplaint(AssignmentRequest request, String assignerUserId) {
         logger.info("Manually assigning complaint {} to worker {}", request.getComplaintId(), request.getWorkerId());
 
         Complaint complaint = complaintRepository.findById(UUID.fromString(request.getComplaintId()))
@@ -163,13 +170,36 @@ public class AssignmentService {
         Worker worker = workerRepository.findById(UUID.fromString(request.getWorkerId()))
                 .orElseThrow(() -> new RuntimeException("Worker not found with ID: " + request.getWorkerId()));
 
-        // Create assignment
-        Assignment assignment = new Assignment();
-        assignment.setComplaint(complaint);
-        assignment.setWorker(worker);
-        // Note: assignedBy should be set to the current user in the controller
-        assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
-        assignment.setAssignedAt(LocalDateTime.now());
+        User assigner = userRepository.findById(UUID.fromString(assignerUserId))
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + assignerUserId));
+
+        // Handle existing assignment or create new one
+        Optional<Assignment> existingAssignmentOpt = assignmentRepository.findByComplaintId(complaint.getId());
+        Assignment assignment;
+        boolean isReassignment = false;
+
+        if (existingAssignmentOpt.isPresent()) {
+            assignment = existingAssignmentOpt.get();
+            if (assignment.getWorker().getId().equals(worker.getId().toString())) {
+                logger.info("Complaint {} is already assigned to worker {}. Returning existing assignment.", complaint.getId(), worker.getId());
+                return assignmentMapper.toResponse(assignment);
+            }
+            // Reassignment to a different worker
+            logger.info("Reassigning complaint {} to new worker {}", complaint.getId(), worker.getId());
+            assignment.setWorker(worker);
+            assignment.setAssignedBy(assigner);
+            assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
+            assignment.setAssignedAt(LocalDateTime.now());
+            isReassignment = true;
+        } else {
+            // Create new assignment
+            assignment = new Assignment();
+            assignment.setComplaint(complaint);
+            assignment.setWorker(worker);
+            assignment.setAssignedBy(assigner);
+            assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
+            assignment.setAssignedAt(LocalDateTime.now());
+        }
 
         // Set deadline based on request priority or complaint priority
         String priorityStr = request.getPriority() != null ? request.getPriority().toString() : complaint.getPriority();

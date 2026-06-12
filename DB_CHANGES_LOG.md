@@ -34,6 +34,8 @@ ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'PENDING'
 - Added PostGIS location support (Point) to Complaint.
 - Added AI-verification fields (`ai_summary`, `ai_priority_score`, `verification_method`) to Complaint.
 - Upgraded Assignment to support assignment timestamps (`assigned_at`, `accepted_at`, `completed_at`, `rejected_at`, `deadline_at`).
+- **Authentication Context Refactor**: Removed reliance on custom `User-Id` headers in API controllers (`AssignmentController`, `NotificationController`) in favor of extracting the `java.security.Principal` directly from the JWT.
+- **Graceful Assignment Handling**: Updated logic to catch duplicate constraints on the `assignments_complaint_id_worker_id_key` unique index, ensuring idempotent assignment requests.
 
 ## Future / Pending Changes
 - **Add multiple proof attachments for assignments**: Currently, the `Assignment` entity has a `@ElementCollection` for `completionImages` (List of Strings). Ensure this table (`assignment_completion_images`) is fully utilized or upgraded to handle video URLs as well.
