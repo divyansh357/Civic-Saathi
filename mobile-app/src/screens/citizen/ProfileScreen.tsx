@@ -4,7 +4,8 @@ import {
   Pressable, ActivityIndicator, Alert
 } from 'react-native';
 import { useAuthStore } from '@store/index';
-import { apiPut } from '@services/api/client';
+import { apiPutWithHeaders } from '@services/api/client';
+import CityPickerModal from '@components/CityPickerModal';
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -19,6 +20,9 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
   const [name, setName] = useState(user?.name ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [address, setAddress] = useState(user?.address ?? '');
+  const [cityId, setCityId] = useState(user?.cityId ?? '');
+  const [cityName, setCityName] = useState(user?.city ?? '');
+  const [showCityPicker, setShowCityPicker] = useState(false);
   const [aadharNumber, setAadharNumber] = useState(user?.aadharNumber ?? '');
   const [zoneNumber, setZoneNumber] = useState(
     user?.zoneNumber != null ? String(user.zoneNumber) : ''
@@ -38,7 +42,7 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
     if (!accessToken || !user) return;
     setSaving(true);
     try {
-      const updated = await apiPut<typeof user>(
+      const updated = await apiPutWithHeaders<typeof user>(
         '/users/me',
         {
           name: name.trim(),
@@ -46,8 +50,10 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           address: address.trim() || undefined,
           aadharNumber: aadharNumber.trim() || undefined,
           zoneNumber: zoneNumber ? parseInt(zoneNumber, 10) : undefined,
+          cityId: cityId || undefined,
         },
-        accessToken
+        accessToken,
+        { 'User-Id': user.id }
       );
       if (updated) setUser(updated);
       Alert.alert('Saved', 'Your profile has been updated.');
@@ -140,12 +146,24 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           </View>
 
           <View style={styles.field}>
+            <Text style={styles.label}>City</Text>
+            <Pressable 
+              style={[styles.input, { justifyContent: 'center' }]} 
+              onPress={() => setShowCityPicker(true)}
+            >
+              <Text style={{ fontSize: 16, color: cityName ? '#2F3E32' : '#94A3B8' }}>
+                {cityName || 'Select your city'}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.field}>
             <Text style={styles.label}>Full Address</Text>
             <TextInput
               style={[styles.input, { minHeight: 72, textAlignVertical: 'top' }]}
               value={address}
               onChangeText={setAddress}
-              placeholder="House No., Street, City, State"
+              placeholder="House No., Street, Locality"
               placeholderTextColor="#94A3B8"
               autoCapitalize="words"
               multiline
@@ -225,12 +243,23 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           disabled={loggingOut}
         >
           {loggingOut ? (
-            <ActivityIndicator color="#EF4444" />
+            <ActivityIndicator color="#DC2626" />
           ) : (
             <Text style={styles.logoutText}>Sign Out</Text>
           )}
         </Pressable>
       </ScrollView>
+
+      <CityPickerModal
+        visible={showCityPicker}
+        onClose={() => setShowCityPicker(false)}
+        selectedCityId={cityId}
+        onSelect={(city) => {
+          setCityId(city.id);
+          setCityName(city.name);
+          setShowCityPicker(false);
+        }}
+      />
     </View>
   );
 }

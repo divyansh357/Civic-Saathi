@@ -5,6 +5,7 @@ import com.civic.modules.user.dto.UserResponse;
 import com.civic.modules.user.entity.User;
 import com.civic.modules.user.mapper.UserMapper;
 import com.civic.modules.user.repository.UserRepository;
+import com.civic.modules.geography.repository.CityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,9 @@ public class UserService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private CityRepository cityRepository;
 
     /**
      * Get all users (paginated).
@@ -92,6 +96,10 @@ public class UserService {
         if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
         if (updateData.getDepartmentCode() != null && !updateData.getDepartmentCode().isBlank()) {
             user.setDepartmentCode(updateData.getDepartmentCode().trim().toUpperCase());
+        }
+        if (updateData.getCityId() != null && !updateData.getCityId().isBlank()) {
+            cityRepository.findById(UUID.fromString(updateData.getCityId()))
+                .ifPresent(user::setCity);
         }
 
         user.setUpdatedAt(LocalDateTime.now());

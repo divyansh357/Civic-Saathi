@@ -76,6 +76,12 @@ public class AuthMapper {
         response.setAddress(user.getAddress());
         response.setAadharNumber(user.getAadharNumber());
         response.setZoneNumber(user.getZoneNumber());
+        
+        if (user.getCity() != null) {
+            response.setCityId(user.getCity().getId().toString());
+            response.setCity(user.getCity().getName());
+        }
+        
         response.setProfileComplete(profileComplete);
         return response;
     }

@@ -35,6 +35,9 @@ public class ProfileUpdateRequest {
     @JsonProperty("departmentCode")
     private String departmentCode;
 
+    @JsonProperty("cityId")
+    private String cityId;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -55,4 +58,7 @@ public class ProfileUpdateRequest {
 
     public String getDepartmentCode() { return departmentCode; }
     public void setDepartmentCode(String departmentCode) { this.departmentCode = departmentCode; }
+
+    public String getCityId() { return cityId; }
+    public void setCityId(String cityId) { this.cityId = cityId; }
 }

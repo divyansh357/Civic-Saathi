@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from 'react-native-paper';
 import { apiPost } from '@services/api/client';
 import { isValidEmail } from '@utils/index';
+import CityPickerModal from '@components/CityPickerModal';
 
 // ─── Country codes ────────────────────────────────────────────────────────────
 
@@ -211,6 +212,10 @@ export default function SignupScreen({ onGoToLogin }: Props) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [zoneNumber, setZoneNumber] = useState('');
+  
+  const [cityId, setCityId] = useState('');
+  const [cityName, setCityName] = useState('');
+  const [showCityPicker, setShowCityPicker] = useState(false);
 
   // Worker-specific
   const [designation, setDesignation] = useState('');
@@ -240,7 +245,8 @@ export default function SignupScreen({ onGoToLogin }: Props) {
     phoneOk &&
     password.length >= 8 &&
     password === confirmPassword &&
-    /^\d+$/.test(zoneNumber.trim());
+    /^\d+$/.test(zoneNumber.trim()) &&
+    cityId !== '';
 
   const workerValid = commonValid && designation.trim().length >= 2;
 
@@ -262,6 +268,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
       password,
       role: selectedRole,
       zoneNumber: parseInt(zoneNumber, 10),
+      cityId,
     };
 
     if (selectedRole === 'worker') {
@@ -387,6 +394,20 @@ export default function SignupScreen({ onGoToLogin }: Props) {
             error={phoneError}
           />
 
+          <View style={fieldStyles.group}>
+            <View style={fieldStyles.labelRow}>
+              <Text style={fieldStyles.label}>City</Text>
+            </View>
+            <Pressable 
+              style={[fieldStyles.inputWrap, { justifyContent: 'center' }]} 
+              onPress={() => setShowCityPicker(true)}
+            >
+              <Text style={{ fontSize: 16, color: cityName ? '#2F3E32' : '#7F8D82' }}>
+                {cityName || 'Select your city'}
+              </Text>
+            </Pressable>
+          </View>
+
           <Field
             label="Zone Number"
             value={zoneNumber}
@@ -440,6 +461,17 @@ export default function SignupScreen({ onGoToLogin }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+
+      <CityPickerModal
+        visible={showCityPicker}
+        onClose={() => setShowCityPicker(false)}
+        selectedCityId={cityId}
+        onSelect={(city) => {
+          setCityId(city.id);
+          setCityName(city.name);
+          setShowCityPicker(false);
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }

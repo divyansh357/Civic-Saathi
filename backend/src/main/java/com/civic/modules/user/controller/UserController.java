@@ -21,22 +21,22 @@ public class UserController {
     private UserService userService;
 
     /**
-     * Get current user's own profile (uses JWT identity).
+     * Get current user's own profile (identity derived from JWT token).
      */
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getMyProfile(@RequestHeader("User-Id") String userId) {
-        UserResponse response = userService.getUserById(userId);
+    public ResponseEntity<UserResponse> getMyProfile(java.security.Principal principal) {
+        UserResponse response = userService.getUserById(principal.getName());
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Update current user's own profile.
+     * Update current user's own profile (identity derived from JWT token).
      */
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateMyProfile(
-            @RequestHeader("User-Id") String userId,
+            java.security.Principal principal,
             @RequestBody ProfileUpdateRequest updateData) {
-        UserResponse response = userService.updateUserProfile(userId, updateData);
+        UserResponse response = userService.updateUserProfile(principal.getName(), updateData);
         return ResponseEntity.ok(response);
     }
 

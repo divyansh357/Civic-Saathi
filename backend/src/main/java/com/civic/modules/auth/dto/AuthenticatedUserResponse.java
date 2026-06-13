@@ -42,6 +42,12 @@ public class AuthenticatedUserResponse {
     @JsonProperty("zoneNumber")
     private Integer zoneNumber;
 
+    @JsonProperty("cityId")
+    private String cityId;
+
+    @JsonProperty("city")
+    private String city;
+
     @JsonProperty("profileComplete")
     private boolean profileComplete;
 
@@ -119,5 +125,23 @@ public class AuthenticatedUserResponse {
     public void setZoneNumber(Integer zoneNumber) { this.zoneNumber = zoneNumber; }
 
     public boolean isProfileComplete() { return profileComplete; }
-    public void setProfileComplete(boolean profileComplete) { this.profileComplete = profileComplete; }
+    public void setProfileComplete(boolean profileComplete) {
+        this.profileComplete = profileComplete;
+    }
+
+    public String getCityId() {
+        return cityId;
+    }
+
+    public void setCityId(String cityId) {
+        this.cityId = cityId;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
 }

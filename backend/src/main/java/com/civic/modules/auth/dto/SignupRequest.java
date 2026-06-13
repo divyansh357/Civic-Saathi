@@ -27,9 +27,12 @@ public class SignupRequest {
     private String phone;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @Size(min = 6, message = "Password must be at least 6 characters long")
     @JsonProperty("password")
     private String password;
+
+    @JsonProperty("cityId")
+    private String cityId;
 
     @JsonProperty("role")
     private String role;
@@ -57,6 +60,9 @@ public class SignupRequest {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getCityId() { return cityId; }
+    public void setCityId(String cityId) { this.cityId = cityId; }
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }

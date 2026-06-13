@@ -25,6 +25,8 @@ import com.civic.modules.department.repository.DepartmentRepository;
 import com.civic.modules.department.entity.Department;
 import com.civic.modules.geography.repository.ZoneRepository;
 import com.civic.modules.geography.entity.Zone;
+import com.civic.modules.geography.repository.CityRepository;
+import com.civic.modules.geography.entity.City;
 import com.civic.modules.auth.dto.WorkerSignupRequest;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -71,6 +73,9 @@ public class AuthService {
 
     @Autowired
     private ZoneRepository zoneRepository;
+
+    @Autowired
+    private CityRepository cityRepository;
 
     /**
      * Authenticate user and generate token.
@@ -137,6 +142,10 @@ public class AuthService {
         if (request.getZoneNumber() != null) user.setZoneNumber(request.getZoneNumber());
         if (request.getDepartmentCode() != null && !request.getDepartmentCode().isBlank()) {
             user.setDepartmentCode(request.getDepartmentCode().trim().toUpperCase());
+        }
+        if (request.getCityId() != null && !request.getCityId().isBlank()) {
+            cityRepository.findById(UUID.fromString(request.getCityId()))
+                .ifPresent(user::setCity);
         }
 
         Role role = roleRepository.findByName(roleName)

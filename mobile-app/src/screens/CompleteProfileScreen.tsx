@@ -1,16 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet,
   ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { useAuthStore } from '@store/index';
-import { apiPut } from '@services/api/client';
+import { apiPutWithHeaders } from '@services/api/client';
+import CityPickerModal from '@components/CityPickerModal';
 
-/**
- * Mandatory profile completion screen shown to all users immediately after
- * login if their profile is incomplete (missing address or aadhar number).
- * The user cannot access any feature until this is submitted.
- */
 export default function CompleteProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -22,6 +18,9 @@ export default function CompleteProfileScreen() {
   const [zoneNumber, setZoneNumber] = useState(
     user?.zoneNumber != null ? String(user.zoneNumber) : ''
   );
+  const [cityId, setCityId] = useState(user?.cityId ?? '');
+  const [cityName, setCityName] = useState(user?.city ?? '');
+  const [showCityPicker, setShowCityPicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const aadharError = aadharNumber && !/^\d{12}$/.test(aadharNumber)
@@ -34,20 +33,23 @@ export default function CompleteProfileScreen() {
   const canSubmit =
     address.trim().length >= 5 &&
     /^\d{12}$/.test(aadharNumber) &&
-    /^\d+$/.test(zoneNumber);
+    /^\d+$/.test(zoneNumber) &&
+    cityId !== '';
 
   const handleSave = async () => {
     if (!canSubmit || saving || !accessToken || !user) return;
     setSaving(true);
     try {
-      const updated = await apiPut<typeof user>(
+      const updated = await apiPutWithHeaders<typeof user>(
         '/users/me',
         {
           address: address.trim(),
           aadharNumber: aadharNumber.trim(),
           zoneNumber: parseInt(zoneNumber, 10),
+          cityId: cityId,
         },
         accessToken,
+        { 'User-Id': user.id }
       );
       // Mark profile as complete and unblock the app
       if (updated) {
@@ -82,6 +84,19 @@ export default function CompleteProfileScreen() {
 
         {/* Form */}
         <View style={styles.card}>
+          {/* City */}
+          <View style={styles.field}>
+            <Text style={styles.label}>City <Text style={styles.required}>*</Text></Text>
+            <Pressable 
+              style={styles.inputWrap} 
+              onPress={() => setShowCityPicker(true)}
+            >
+              <Text style={[styles.inputText, !cityName && styles.placeholderText]}>
+                {cityName || 'Select your city'}
+              </Text>
+            </Pressable>
+          </View>
+
           {/* Address */}
           <View style={styles.field}>
             <Text style={styles.label}>Full Address <Text style={styles.required}>*</Text></Text>
@@ -89,7 +104,7 @@ export default function CompleteProfileScreen() {
               style={styles.input}
               value={address}
               onChangeText={setAddress}
-              placeholder="House No., Street, City, State"
+              placeholder="House No., Street, Locality"
               placeholderTextColor="#94A3B8"
               autoCapitalize="words"
               multiline
@@ -145,6 +160,17 @@ export default function CompleteProfileScreen() {
           <Text style={styles.logoutText}>Sign out</Text>
         </Pressable>
       </ScrollView>
+
+      <CityPickerModal
+        visible={showCityPicker}
+        onClose={() => setShowCityPicker(false)}
+        selectedCityId={cityId}
+        onSelect={(city) => {
+          setCityId(city.id);
+          setCityName(city.name);
+          setShowCityPicker(false);
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -172,6 +198,9 @@ const styles = StyleSheet.create({
   field: { marginBottom: 18 },
   label: { fontSize: 12, fontWeight: '700', color: '#4A5D4E', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   required: { color: '#DC2626' },
+  inputWrap: { backgroundColor: '#F3F4F1', borderRadius: 12, borderWidth: 1.5, borderColor: '#E1E5E1', paddingHorizontal: 14, height: 48, justifyContent: 'center' },
+  inputText: { fontSize: 14, color: '#2F3E32' },
+  placeholderText: { color: '#7F8D82' },
   input: {
     backgroundColor: '#F3F4F1', borderRadius: 12, borderWidth: 1.5,
     borderColor: '#E1E5E1', paddingHorizontal: 14, paddingVertical: 12,
