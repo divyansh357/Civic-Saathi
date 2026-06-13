@@ -116,17 +116,19 @@ function TaskReviewModal({ assignment, onClose, onRefresh, onUpdate }: TaskRevie
   const [saving, setSaving] = useState(false);
   
   const [editingSla, setEditingSla] = useState(false);
-  const [newSla, setNewSla] = useState(assignment.slaDeadline ? assignment.slaDeadline.slice(0, 16) : '');
+  const [slaHours, setSlaHours] = useState('');
   const [savingSla, setSavingSla] = useState(false);
 
   const handleSlaUpdate = async () => {
-    if (!newSla) return;
+    const hours = parseInt(slaHours, 10);
+    if (!slaHours || isNaN(hours) || hours < 1) return;
     setSavingSla(true);
     try {
-      // Append :00 if needed to match ISO_DATE_TIME
-      const formattedSla = newSla.length === 16 ? `${newSla}:00` : newSla;
-      await apiPut(`/assignments/${assignment.id}/sla?newDeadline=${formattedSla}`, {}, accessToken ?? undefined);
-      onUpdate(assignment.id, { slaDeadline: formattedSla });
+      // Compute the new deadline: now + hours, formatted as ISO_DATE_TIME
+      const newDeadline = new Date(Date.now() + hours * 3600000);
+      const iso = newDeadline.toISOString().replace('Z', '').slice(0, 19); // e.g. 2026-06-14T10:30:00
+      await apiPut(`/assignments/${assignment.id}/sla?newDeadline=${iso}`, {}, accessToken ?? undefined);
+      onUpdate(assignment.id, { slaDeadline: newDeadline.toISOString() });
       setEditingSla(false);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'SLA update failed');
@@ -217,9 +219,17 @@ function TaskReviewModal({ assignment, onClose, onRefresh, onUpdate }: TaskRevie
                 </button>
               </div>
               {editingSla ? (
-                <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                  <input type="datetime-local" className="form-input" style={{ padding: 4, fontSize: '0.75rem' }} value={newSla} onChange={e => setNewSla(e.target.value)} />
-                  <button className="btn btn-primary btn-sm" style={{ padding: '0 8px', fontSize: '0.75rem' }} onClick={() => void handleSlaUpdate()} disabled={savingSla}>
+                <div style={{ display: 'flex', gap: 4, marginTop: 4, alignItems: 'center' }}>
+                  <input
+                    type="number" min="1" className="form-input"
+                    style={{ padding: 4, fontSize: '0.75rem', width: 90 }}
+                    value={slaHours}
+                    onChange={(e) => setSlaHours(e.target.value.replace(/\D/g, ''))}
+                    placeholder="hours"
+                  />
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>h from now</span>
+                  <button className="btn btn-primary btn-sm" style={{ padding: '0 8px', fontSize: '0.75rem' }}
+                    onClick={() => void handleSlaUpdate()} disabled={savingSla || !slaHours}>
                     {savingSla ? '...' : 'Save'}
                   </button>
                 </div>

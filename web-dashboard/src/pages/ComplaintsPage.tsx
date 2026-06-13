@@ -37,7 +37,14 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
   useEffect(() => {
     if (!accessToken) return;
     setLoading(true);
-    apiGet<{ content?: Worker[]; data?: Worker[] }>('/workers?page=0&size=100', accessToken)
+
+    // If the complaint has a department assigned, fetch only workers from that department.
+    // This ensures complaint type ↔ department ↔ worker alignment.
+    const endpoint = complaint.departmentId
+      ? `/workers/department/${complaint.departmentId}?page=0&size=100`
+      : `/workers?page=0&size=100`;
+
+    apiGet<{ content?: Worker[]; data?: Worker[] }>(endpoint, accessToken)
       .then((res) => {
         const list = res.content ?? res.data ?? (Array.isArray(res) ? res : []);
         setWorkers(list as Worker[]);
@@ -48,7 +55,7 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
         setWorkers([]);
       })
       .finally(() => setLoading(false));
-  }, [accessToken]);
+  }, [accessToken, complaint.departmentId]);
 
   const handleAssign = async () => {
     if (!selectedWorkerId) { setError('Select a worker'); return; }
@@ -78,12 +85,22 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
         </div>
         <div className="modal-body">
           <p style={{ color: 'var(--text-2)', fontSize: '0.875rem', marginBottom: 12 }}>
-            Assign a worker to complaint: <strong>{complaint.title}</strong>
+            Assign a worker to: <strong>{complaint.title}</strong>
+            {complaint.departmentName && (
+              <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-3)', marginTop: 4 }}>
+                Showing workers from: <strong>{complaint.departmentName}</strong>
+              </span>
+            )}
           </p>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 20 }}><span className="spinner" /></div>
           ) : workers.length === 0 ? (
-            <div className="auth-error"><AlertTriangle size={16} className="icon-inline" /> No workers available. Register workers first.</div>
+            <div className="auth-error">
+              <AlertTriangle size={16} className="icon-inline" />
+              {complaint.departmentId
+                ? 'No workers in this department. Assign the complaint to a department first, or register workers.'
+                : 'No workers available. Register workers first.'}
+            </div>
           ) : (
             <>
               <div className="form-group" style={{ marginBottom: 12 }}>
@@ -98,13 +115,14 @@ function AssignWorkerModal({ complaint, onClose, onAssigned }: AssignWorkerModal
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Time to Complete (Hours) <span style={{color: 'var(--text-3)', fontWeight: 'normal'}}>(Optional)</span></label>
-                <input 
-                  type="number" 
-                  min="1"
-                  className="form-input" 
-                  value={deadlineHours} 
-                  onChange={(e) => setDeadlineHours(e.target.value)}
+                <label className="form-label">
+                  Time to Complete (Hours)
+                  <span style={{ color: 'var(--text-3)', fontWeight: 'normal', marginLeft: 6 }}>(optional — overrides priority-based SLA)</span>
+                </label>
+                <input
+                  type="number" min="1" className="form-input"
+                  value={deadlineHours}
+                  onChange={(e) => setDeadlineHours(e.target.value.replace(/\D/g, ''))}
                   placeholder="e.g. 48"
                 />
               </div>

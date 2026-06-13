@@ -178,6 +178,11 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [savingAadhar, setSavingAadhar] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Denial modal state
+  const [denialAssignment, setDenialAssignment] = useState<WorkerAssignment | null>(null);
+  const [denialReason, setDenialReason] = useState('');
+  const [submittingDenial, setSubmittingDenial] = useState(false);
+
 
 
   // Get worker's current location
@@ -338,32 +343,42 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     }
   };
 
-  const handleReject = async (id: string) => {
-    if (!accessToken) return;
-    Alert.prompt(
-      'Reject Task',
-      'Please enter a reason for rejection (e.g. Too far, Not my scope):',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Reject', 
-          style: 'destructive',
-          onPress: async (reason?: string) => {
-            if (!reason) {
-              Alert.alert('Error', 'A reason is required to reject a task.');
-              return;
-            }
-            try {
-              await apiPost(`/assignments/${id}/reject`, { reason }, accessToken);
-              // Assuming backend sets it to REJECTED or removes it from worker
-              fetchAssignments(); 
-            } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to reject (Admins assigned tasks cannot be rejected)');
-            }
-          }
-        }
-      ]
-    );
+  const handleReject = (id: string) => {
+    const assignment = assignments.find((a) => a.id === id);
+    if (!assignment) return;
+    setDenialAssignment(assignment);
+    setDenialReason('');
+  };
+
+  const handleSubmitDenial = async () => {
+    if (!denialAssignment || !accessToken) return;
+    if (!denialReason.trim()) {
+      Alert.alert('Reason required', 'Please enter a reason before submitting.');
+      return;
+    }
+    setSubmittingDenial(true);
+    try {
+      const isAutoAssigned = (denialAssignment as any).isAutoAssigned === true;
+      if (isAutoAssigned) {
+        // Auto-assigned → direct rejection, sends message to admin
+        await apiPost(`/assignments/${denialAssignment.id}/reject`, { reason: denialReason.trim() }, accessToken);
+        Alert.alert('Task Rejected', 'Your rejection message has been sent to the admin.');
+        void fetchAssignments();
+      } else {
+        // Manually assigned → send denial request to admin
+        await apiPost(`/assignments/${denialAssignment.id}/denial-request`, { reason: denialReason.trim() }, accessToken);
+        Alert.alert(
+          'Denial Request Sent',
+          'Your denial request has been sent to the admin. The task remains assigned until the admin reviews it.'
+        );
+      }
+      setDenialAssignment(null);
+      setDenialReason('');
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to submit denial');
+    } finally {
+      setSubmittingDenial(false);
+    }
   };
 
   const uploadImageToCloudinary = async (uri: string): Promise<string> => {
@@ -611,6 +626,81 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         )}
       </Modal>
 
+      {/* ── Denial Modal ───────────────────────────────────────────────────────── */}
+      <Modal
+        visible={!!denialAssignment}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDenialAssignment(null)}
+      >
+        <View style={denialStyles.overlay}>
+          <View style={denialStyles.sheet}>
+            {/* Header */}
+            <View style={denialStyles.header}>
+              <Text style={denialStyles.title}>
+                {(denialAssignment as any)?.isAutoAssigned
+                  ? '❌ Reject Task'
+                  : '📩 Request Denial'}
+              </Text>
+              <Pressable onPress={() => setDenialAssignment(null)}>
+                <Text style={denialStyles.closeBtn}>✕</Text>
+              </Pressable>
+            </View>
+
+            {/* Context note */}
+            <Text style={denialStyles.contextNote}>
+              {(denialAssignment as any)?.isAutoAssigned
+                ? 'This task was auto-assigned by the system. Your rejection reason will be sent as a message to the admin.'
+                : 'This task was manually assigned by an admin. Your denial request will be sent to the admin for review. The task remains assigned until the admin reassigns it.'}
+            </Text>
+
+            {/* Complaint ref */}
+            <Text style={denialStyles.complaintRef} numberOfLines={2}>
+              Task: {denialAssignment?.complaintTitle ?? denialAssignment?.complaintId}
+            </Text>
+
+            {/* Reason input */}
+            <Text style={denialStyles.label}>Reason <Text style={{ color: '#DC2626' }}>*</Text></Text>
+            <TextInput
+              style={denialStyles.input}
+              value={denialReason}
+              onChangeText={setDenialReason}
+              placeholder="e.g. Location too far, Outside my expertise, Emergency at home..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              maxLength={500}
+            />
+            <Text style={denialStyles.charCount}>{denialReason.length}/500</Text>
+
+            {/* Actions */}
+            <View style={denialStyles.actions}>
+              <Pressable
+                style={denialStyles.cancelBtn}
+                onPress={() => setDenialAssignment(null)}
+              >
+                <Text style={denialStyles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  denialStyles.submitBtn,
+                  (submittingDenial || !denialReason.trim()) && denialStyles.submitBtnDisabled,
+                ]}
+                onPress={() => void handleSubmitDenial()}
+                disabled={submittingDenial || !denialReason.trim()}
+              >
+                {submittingDenial
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={denialStyles.submitBtnText}>
+                      {(denialAssignment as any)?.isAutoAssigned ? 'Submit Rejection' : 'Send Request'}
+                    </Text>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }
@@ -695,4 +785,91 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 40, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#334155', marginBottom: 6 },
   emptySubtitle: { fontSize: 13, color: '#94A3B8', textAlign: 'center' },
+});
+
+const denialStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 36,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  title: { fontSize: 17, fontWeight: '700', color: '#0F172A' },
+  closeBtn: { fontSize: 18, color: '#64748B', paddingHorizontal: 4 },
+  contextNote: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 19,
+    marginBottom: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  complaintRef: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4A5D4E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F3F4F1',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E1E5E1',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#2F3E32',
+    minHeight: 100,
+  },
+  charCount: {
+    fontSize: 11,
+    color: '#94A3B8',
+    textAlign: 'right',
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: '#F3F4F1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelBtnText: { fontSize: 14, fontWeight: '600', color: '#4A5D4E' },
+  submitBtn: {
+    flex: 2,
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  submitBtnDisabled: { opacity: 0.45 },
+  submitBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
