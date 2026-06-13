@@ -382,3 +382,31 @@ No deployment configuration existed for the chosen hosting stack. The project co
 | 17 | Backend / Web | SLA deadlines used days, not hours | ✅ Fixed |
 | 18 | Mobile / Backend | Worker rejection broken on Android; no denial-request flow | ✅ Fixed |
 | 19 | DevOps | No hosting configuration for Supabase + Render + Vercel | ✅ Fixed |
+
+---
+
+## 20. Aadhar Number Had No Format Validation
+
+### Issue
+Aadhar is a 12-digit numeric identifier, but there was no enforcement of this rule anywhere. Letters, symbols, or short numeric strings were accepted silently — both at the API level and in the UI. The `@Size(12,12)` annotation on `ProfileUpdateRequest` only checked length, not that the characters were digits.
+
+### Solution Applied
+
+**Backend — 4 layers:**
+- `ProfileUpdateRequest`: added `@Pattern(regexp = "\\d{12}")` alongside the existing `@Size` — bean validation now rejects non-numeric input before the service is even called.
+- `WorkerProfileUpdateRequest`: had no validation at all — added `@Pattern(regexp = "\\d{12}")`.
+- `UserService.updateUserProfile(ProfileUpdateRequest)`: added a service-layer guard that strips and checks `\\d{12}` before saving, throws `IllegalArgumentException("Aadhar number must contain exactly 12 numeric digits")` if invalid. Same guard added to the legacy `User`-entity overload.
+- `WorkerController PUT /{id}/aadhar`: added `@Pattern` directly on the `@RequestParam` so the endpoint rejects invalid values with a 400 before reaching the service.
+
+**Mobile:**
+- `ProfileScreen` (citizen): `onChangeText` already stripped non-digits; added a red border when length < 12, a live `⚠ Aadhar must be exactly 12 digits (X/12)` counter hint, a "locked" hint when Aadhar is already saved, and a validation guard at the top of `handleSave()`.
+- `WorkerProfileScreen`: same treatment — `onChangeText` now strips non-digits, inline counter error added, validation guard before API call.
+
+**Web/Mobile — already correct:**
+- `CompleteProfileScreen`, `UsersPage` modal: already stripped non-digits on change and gated submit on `/^\d{12}$/` — no changes needed.
+
+**Files changed:** `ProfileUpdateRequest.java`, `WorkerProfileUpdateRequest.java`, `UserService.java`, `WorkerController.java`, `ProfileScreen.tsx`, `WorkerProfileScreen.tsx`
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 20 | All | Aadhar accepted any string — no 12-digit numeric validation | ✅ Fixed |
