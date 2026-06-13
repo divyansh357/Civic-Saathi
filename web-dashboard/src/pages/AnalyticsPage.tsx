@@ -4,6 +4,8 @@ import {
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
   ScatterChart, Scatter, ZAxis
 } from 'recharts';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { AlertTriangle, ClipboardList , CheckCircle2, Clock, Star, TrendingUp, TrendingDown, Bot } from 'lucide-react';
@@ -236,15 +238,6 @@ export default function AnalyticsPage() {
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Bot size={20} className="text-accent" /> AI Insights
-                {aiStatus && (
-                  <span style={{
-                    fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 12,
-                    background: aiStatus.llmAvailable ? 'var(--green-bg)' : 'var(--bg-3)',
-                    color: aiStatus.llmAvailable ? 'var(--green)' : 'var(--text-3)',
-                  }}>
-                    {aiStatus.provider}
-                  </span>
-                )}
               </div>
               <div className="card-subtitle">AI-generated analysis of current platform state</div>
             </div>
@@ -256,21 +249,13 @@ export default function AnalyticsPage() {
           </div>
           {aiInsights ? (
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 16
-            }}>
-              {aiInsights.split('\n\n').filter(p => p.trim() !== '').map((paragraph, idx) => (
-                <div key={idx} style={{
-                  background: 'var(--bg)', borderRadius: 12, padding: '16px',
-                  border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8
-                }}>
-                  <div style={{
-                    fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.6,
-                    whiteSpace: 'pre-wrap', fontFamily: 'inherit',
-                  }}>
-                    {paragraph.replace(/^[-*•]\s+/, '')}
-                  </div>
-                </div>
-              ))}
+              background: 'var(--bg)', borderRadius: 12, padding: '20px',
+              border: '1px solid var(--border)', marginTop: 16,
+              color: 'var(--text)', lineHeight: 1.6, fontSize: '0.95rem'
+            }} className="markdown-container">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {aiInsights}
+              </ReactMarkdown>
             </div>
           ) : (
             <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', padding: '8px 0', marginTop: 16 }}>

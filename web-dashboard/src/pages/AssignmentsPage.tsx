@@ -159,8 +159,9 @@ function TaskReviewModal({ assignment, onClose, onRefresh, onUpdate }: TaskRevie
   };
 
   const timeTaken = () => {
-    if (!assignment.assignedAt || !assignment.completedAt) return null;
-    const start = new Date(assignment.assignedAt).getTime();
+    const startVal = assignment.assignedAt || assignment.createdAt;
+    if (!startVal || !assignment.completedAt) return null;
+    const start = new Date(startVal).getTime();
     const end = new Date(assignment.completedAt).getTime();
     const hrs = Math.floor((end - start) / 3600000);
     const mins = Math.floor(((end - start) % 3600000) / 60000);
@@ -201,7 +202,7 @@ function TaskReviewModal({ assignment, onClose, onRefresh, onUpdate }: TaskRevie
           <div className="grid-2" style={{ background: 'var(--bg-2)', padding: 12, borderRadius: 8 }}>
             <div>
               <div className="form-label" style={{ fontSize: '0.75rem' }}>Assigned At</div>
-              <div style={{ fontSize: '0.85rem', marginTop: 4 }}>{formatDate(assignment.assignedAt)}</div>
+              <div style={{ fontSize: '0.85rem', marginTop: 4 }}>{formatDate(assignment.assignedAt || assignment.createdAt)}</div>
             </div>
             <div>
               <div className="form-label" style={{ fontSize: '0.75rem' }}>Accepted At</div>
