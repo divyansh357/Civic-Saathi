@@ -2,6 +2,7 @@ package com.civic.modules.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -30,6 +31,11 @@ public class SignupRequest {
 
     @JsonProperty("role")
     private String role;
+
+    /** Zone number the user belongs to. Must be a positive integer. */
+    @Min(value = 1, message = "Zone number must be a positive integer")
+    @JsonProperty("zoneNumber")
+    private Integer zoneNumber;
 
     public String getName() {
         return name;
@@ -69,5 +75,13 @@ public class SignupRequest {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Integer getZoneNumber() {
+        return zoneNumber;
+    }
+
+    public void setZoneNumber(Integer zoneNumber) {
+        this.zoneNumber = zoneNumber;
     }
 }

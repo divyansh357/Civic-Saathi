@@ -130,6 +130,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [zoneNumber, setZoneNumber] = useState('');
 
   // Worker-specific
   const [designation, setDesignation] = useState('');
@@ -145,12 +146,17 @@ export default function SignupScreen({ onGoToLogin }: Props) {
   const passwordError = password && password.length < 8 ? 'Password must be at least 8 characters' : '';
   const confirmError = confirmPassword && confirmPassword !== password ? 'Passwords do not match' : '';
 
+  const zoneError = zoneNumber && !/^\d+$/.test(zoneNumber.trim())
+    ? 'Zone number must be a whole number'
+    : '';
+
   const commonValid =
     name.trim().length >= 2 &&
     isValidEmail(email.trim()) &&
     phone.replace(/\D/g, '').length >= 10 &&
     password.length >= 8 &&
-    password === confirmPassword;
+    password === confirmPassword &&
+    /^\d+$/.test(zoneNumber.trim());
 
   const workerValid = commonValid && designation.trim().length >= 2;
 
@@ -171,6 +177,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
       phone: phone.trim(),
       password,
       role: selectedRole,
+      zoneNumber: zoneNumber.trim(),
     };
 
     if (selectedRole === 'worker') {
@@ -312,6 +319,15 @@ export default function SignupScreen({ onGoToLogin }: Props) {
             keyboardType="phone-pad"
             autoCapitalize="none"
             error={phoneError}
+          />
+          <Field
+            label="Zone Number"
+            value={zoneNumber}
+            onChange={(v) => setZoneNumber(v.replace(/[^0-9]/g, ''))}
+            placeholder="e.g. 4"
+            keyboardType="numeric"
+            autoCapitalize="none"
+            error={zoneError}
           />
           <Field
             label="Password"
