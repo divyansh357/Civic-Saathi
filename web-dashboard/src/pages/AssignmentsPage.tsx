@@ -439,7 +439,7 @@ export default function AssignmentsPage() {
                       <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{a.id.substring(0, 8)}</span></td>
                       <td>
                         <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {a.complaintTitle ?? a.complaintId?.substring(0, 8)}
+                          {a.complaintNumber ?? a.complaintId?.substring(0, 8)} — {a.complaintTitle}
                         </div>
                         {a.escalationReason && (
                           <div style={{ fontSize: '0.72rem', color: 'var(--red)', marginTop: 2 }}>

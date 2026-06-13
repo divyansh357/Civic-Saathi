@@ -105,6 +105,7 @@ export interface Worker {
 export interface Assignment {
   id: string;
   complaintId: string;
+  complaintNumber?: string;
   complaintTitle?: string;
   departmentId?: string;
   departmentName?: string;

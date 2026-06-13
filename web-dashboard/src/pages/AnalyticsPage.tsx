@@ -51,21 +51,35 @@ export default function AnalyticsPage() {
   const [deptRanking, setDeptRanking] = useState<DeptRanking[]>([]);
   const [aiStatus, setAiStatus] = useState<{ llmAvailable: boolean; provider: string } | null>(null);
 
+  const [loadingInsights, setLoadingInsights] = useState(false);
+
   useEffect(() => {
     if (!accessToken) return;
     setLoading(true);
     Promise.allSettled([
-      apiGet<{ insights: string }>('/ai/insights?scope=all', accessToken),
       apiGet<HeatmapPoint[]>('/analytics/heatmap', accessToken),
       apiGet<DeptRanking[]>('/analytics/departments/ranking', accessToken),
       apiGet<{ llmAvailable: boolean; provider: string }>('/ai/status', accessToken),
-    ]).then(([insightsRes, heatmapRes, rankingRes, statusRes]) => {
-      if (insightsRes.status === 'fulfilled') setAiInsights(insightsRes.value.insights);
+    ]).then(([heatmapRes, rankingRes, statusRes]) => {
       if (heatmapRes.status === 'fulfilled') setHeatmapData(heatmapRes.value);
       if (rankingRes.status === 'fulfilled') setDeptRanking(rankingRes.value);
       if (statusRes.status === 'fulfilled') setAiStatus(statusRes.value);
     }).finally(() => setLoading(false));
   }, [accessToken]);
+
+  const fetchAiInsights = async () => {
+    if (!accessToken) return;
+    setLoadingInsights(true);
+    try {
+      const res = await apiGet<{ insights: string }>('/ai/insights?scope=all', accessToken);
+      setAiInsights(res.insights);
+    } catch (e) {
+      console.error(e);
+      setAiInsights("Failed to fetch insights. You may have hit rate limits.");
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
 
   return (
     <div className="page-content">
@@ -234,18 +248,33 @@ export default function AnalyticsPage() {
               </div>
               <div className="card-subtitle">AI-generated analysis of current platform state</div>
             </div>
+            {!aiInsights && (
+              <button className="btn btn-primary btn-sm" onClick={() => void fetchAiInsights()} disabled={loadingInsights || !aiStatus?.llmAvailable}>
+                {loadingInsights ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <><Bot size={14} className="icon-inline" /> Generate Insights</>}
+              </button>
+            )}
           </div>
           {aiInsights ? (
             <div style={{
-              background: 'var(--bg)', borderRadius: 8, padding: '14px 16px',
-              fontSize: '0.875rem', color: 'var(--text-2)', lineHeight: 1.7,
-              whiteSpace: 'pre-wrap', fontFamily: 'inherit',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 16
             }}>
-              {aiInsights}
+              {aiInsights.split('\n\n').filter(p => p.trim() !== '').map((paragraph, idx) => (
+                <div key={idx} style={{
+                  background: 'var(--bg)', borderRadius: 12, padding: '16px',
+                  border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8
+                }}>
+                  <div style={{
+                    fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap', fontFamily: 'inherit',
+                  }}>
+                    {paragraph.replace(/^[-*•]\s+/, '')}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', padding: '8px 0' }}>
-              {loading ? 'Generating insights...' : 'No insights available. Configure CEREBRAS_API_KEY for LLM-powered insights.'}
+            <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', padding: '8px 0', marginTop: 16 }}>
+              {!aiStatus?.llmAvailable ? 'Configure CEREBRAS_API_KEY for LLM-powered insights.' : 'Click "Generate Insights" to run AI analysis.'}
             </div>
           )}
         </div>
