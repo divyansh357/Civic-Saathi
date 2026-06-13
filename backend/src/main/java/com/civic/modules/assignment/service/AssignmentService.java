@@ -304,7 +304,15 @@ public class AssignmentService {
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
             
         Worker worker = assignment.getWorker();
-        if (worker != null && (worker.getAadharNo() == null || worker.getAadharNo().trim().isEmpty())) {
+        // Check Aadhar on the User entity (set via profile) first, then fall back to Worker entity legacy field
+        boolean hasAadhar = false;
+        if (worker != null) {
+            String userAadhar = worker.getUser() != null ? worker.getUser().getAadharNumber() : null;
+            String workerAadhar = worker.getAadharNo();
+            hasAadhar = (userAadhar != null && !userAadhar.isBlank())
+                     || (workerAadhar != null && !workerAadhar.isBlank());
+        }
+        if (worker != null && !hasAadhar) {
             throw new RuntimeException("Aadhar number is required before accepting a task");
         }
             
