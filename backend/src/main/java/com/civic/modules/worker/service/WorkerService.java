@@ -159,6 +159,16 @@ public class WorkerService {
         if (request.getProfileImageUrl() != null) worker.setProfileImageUrl(request.getProfileImageUrl());
         if (request.getPreviousWorks() != null) worker.setPreviousWorks(request.getPreviousWorks());
         
+        if (request.getDepartmentId() != null && !request.getDepartmentId().isBlank()) {
+            departmentRepository.findById(UUID.fromString(request.getDepartmentId()))
+                .ifPresent(dept -> {
+                    worker.setDepartment(dept);
+                    if (worker.getUser() != null) {
+                        worker.getUser().setDepartmentCode(dept.getId().toString());
+                    }
+                });
+        }
+        
         if (request.getPreferredZoneIds() != null) {
             // Update preferred zones if necessary. (omitted full mapping to Zone entity for brevity unless required)
             // Assuming Zone mapping logic or just skipping for now.

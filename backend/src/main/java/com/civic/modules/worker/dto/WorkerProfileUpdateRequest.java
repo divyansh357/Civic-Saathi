@@ -21,6 +21,9 @@ public class WorkerProfileUpdateRequest {
     @JsonProperty("workerCode")
     private String workerCode;
 
+    @JsonProperty("departmentId")
+    private String departmentId;
+
     @JsonProperty("preferredZoneIds")
     private List<String> preferredZoneIds;
 
@@ -39,6 +42,9 @@ public class WorkerProfileUpdateRequest {
 
     public String getWorkerCode() { return workerCode; }
     public void setWorkerCode(String workerCode) { this.workerCode = workerCode; }
+
+    public String getDepartmentId() { return departmentId; }
+    public void setDepartmentId(String departmentId) { this.departmentId = departmentId; }
 
     public List<String> getPreferredZoneIds() { return preferredZoneIds; }
     public void setPreferredZoneIds(List<String> preferredZoneIds) { this.preferredZoneIds = preferredZoneIds; }
