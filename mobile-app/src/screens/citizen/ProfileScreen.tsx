@@ -6,6 +6,7 @@ import {
 import { useAuthStore } from '@store/index';
 import { apiPutWithHeaders } from '@services/api/client';
 import CityPickerModal from '@components/CityPickerModal';
+import DepartmentPickerModal from '@components/DepartmentPickerModal';
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -27,6 +28,11 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
   const [zoneNumber, setZoneNumber] = useState(
     user?.zoneNumber != null ? String(user.zoneNumber) : ''
   );
+  
+  const [departmentCode, setDepartmentCode] = useState(user?.departmentCode ?? '');
+  const [departmentName, setDepartmentName] = useState(user?.departmentCode ? 'Current Department' : ''); // Ideal to fetch actual name but for now we set a placeholder
+  const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -51,6 +57,7 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           aadharNumber: aadharNumber.trim() || undefined,
           zoneNumber: zoneNumber ? parseInt(zoneNumber, 10) : undefined,
           cityId: cityId || undefined,
+          departmentCode: departmentCode || undefined,
         },
         accessToken,
         { 'User-Id': user.id }
@@ -202,6 +209,20 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
             />
           </View>
 
+          {user?.role === 'WORKER' && (
+            <View style={styles.field}>
+              <Text style={styles.label}>Department</Text>
+              <Pressable 
+                style={[styles.input, { justifyContent: 'center' }]} 
+                onPress={() => setShowDepartmentPicker(true)}
+              >
+                <Text style={{ fontSize: 16, color: departmentName ? '#2F3E32' : '#94A3B8' }}>
+                  {departmentName || 'Select your department'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
           <View style={styles.field}>
             <Text style={styles.label}>Email Address</Text>
             <View style={[styles.input, styles.readOnly]}>
@@ -258,6 +279,17 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           setCityId(city.id);
           setCityName(city.name);
           setShowCityPicker(false);
+        }}
+      />
+
+      <DepartmentPickerModal
+        visible={showDepartmentPicker}
+        onClose={() => setShowDepartmentPicker(false)}
+        selectedDepartmentId={departmentCode}
+        onSelect={(dept) => {
+          setDepartmentCode(dept.id);
+          setDepartmentName(dept.name);
+          setShowDepartmentPicker(false);
         }}
       />
     </View>

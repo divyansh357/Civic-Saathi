@@ -6,6 +6,8 @@ import com.civic.modules.user.entity.User;
 import com.civic.modules.user.mapper.UserMapper;
 import com.civic.modules.user.repository.UserRepository;
 import com.civic.modules.geography.repository.CityRepository;
+import com.civic.modules.worker.repository.WorkerRepository;
+import com.civic.modules.department.repository.DepartmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +33,12 @@ public class UserService {
 
     @Autowired
     private CityRepository cityRepository;
+
+    @Autowired
+    private WorkerRepository workerRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
 
     /**
      * Get all users (paginated).
@@ -96,6 +104,18 @@ public class UserService {
         if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
         if (updateData.getDepartmentCode() != null && !updateData.getDepartmentCode().isBlank()) {
             user.setDepartmentCode(updateData.getDepartmentCode().trim().toUpperCase());
+            // If user is a WORKER, also update the worker entity's department
+            if (user.getRoles().stream().anyMatch(r -> r.getName().equals("WORKER"))) {
+                workerRepository.findByUserId(user.getUuid()).ifPresent(worker -> {
+                    try {
+                        departmentRepository.findById(UUID.fromString(updateData.getDepartmentCode()))
+                            .ifPresent(worker::setDepartment);
+                        workerRepository.save(worker);
+                    } catch (Exception e) {
+                        // ignore invalid UUID parsing
+                    }
+                });
+            }
         }
         if (updateData.getCityId() != null && !updateData.getCityId().isBlank()) {
             cityRepository.findById(UUID.fromString(updateData.getCityId()))
