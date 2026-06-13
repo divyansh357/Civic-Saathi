@@ -87,6 +87,10 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
 
   const handleSave = async () => {
     if (!accessToken || !workerId) return;
+    if (aadharNo && !/^\d{12}$/.test(aadharNo)) {
+      Alert.alert('Validation', 'Aadhar number must be exactly 12 numeric digits.');
+      return;
+    }
     setSaving(true);
     try {
       let finalImageUrl = profileImage;
@@ -160,13 +164,18 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
         <View style={styles.formGroup}>
           <Text style={styles.label}>Aadhar Number</Text>
           <TextInput 
-            style={[styles.input, { minHeight: 40 }]}
+            style={[styles.input, { minHeight: 40 }, aadharNo && !/^\d{12}$/.test(aadharNo) ? { borderColor: '#FCA5A5', borderWidth: 1.5 } : null]}
             value={aadharNo}
-            onChangeText={setAadharNo}
+            onChangeText={(v) => setAadharNo(v.replace(/\D/g, '').slice(0, 12))}
             placeholder="Enter 12-digit Aadhar"
             keyboardType="numeric"
             maxLength={12}
           />
+          {aadharNo && aadharNo.length < 12 && (
+            <Text style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>
+              ⚠ Aadhar must be exactly 12 digits ({aadharNo.length}/12)
+            </Text>
+          )}
         </View>
 
         <View style={styles.formGroup}>

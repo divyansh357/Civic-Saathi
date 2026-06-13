@@ -31,6 +31,10 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
       Alert.alert('Validation', 'Name cannot be empty.');
       return;
     }
+    if (aadharNumber && !/^\d{12}$/.test(aadharNumber)) {
+      Alert.alert('Validation', 'Aadhar number must be exactly 12 numeric digits.');
+      return;
+    }
     if (!accessToken || !user) return;
     setSaving(true);
     try {
@@ -152,7 +156,7 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           <View style={styles.field}>
             <Text style={styles.label}>Aadhar Number</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, aadharNumber && !/^\d{12}$/.test(aadharNumber) ? styles.inputError : null]}
               value={aadharNumber}
               onChangeText={(v) => setAadharNumber(v.replace(/\D/g, '').slice(0, 12))}
               placeholder="12-digit Aadhar number"
@@ -160,6 +164,12 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
               keyboardType="numeric"
               maxLength={12}
             />
+            {aadharNumber && aadharNumber.length < 12 && (
+              <Text style={styles.errorHint}>⚠ Aadhar must be exactly 12 digits ({aadharNumber.length}/12)</Text>
+            )}
+            {user?.aadharNumber ? (
+              <Text style={styles.hint}>Aadhar is locked and cannot be changed.</Text>
+            ) : null}
           </View>
 
           <View style={styles.field}>
@@ -271,6 +281,8 @@ const styles = StyleSheet.create({
   readOnly: { justifyContent: 'center' },
   readOnlyText: { fontSize: 14, color: '#94A3B8' },
   hint: { fontSize: 11, color: '#94A3B8', marginTop: 4 },
+  inputError: { borderColor: '#FCA5A5', borderWidth: 1.5 },
+  errorHint: { fontSize: 11, color: '#DC2626', marginTop: 4 },
 
   saveBtn: {
     backgroundColor: '#0F766E', borderRadius: 10, paddingVertical: 14,

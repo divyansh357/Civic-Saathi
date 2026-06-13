@@ -114,7 +114,10 @@ public class WorkerController {
     @PutMapping("/{id}/aadhar")
     public ResponseEntity<WorkerResponse> updateAadhar(
             @PathVariable String id,
-            @RequestParam String aadharNo) {
+            @RequestParam @jakarta.validation.constraints.Pattern(
+                regexp = "\\d{12}",
+                message = "Aadhar number must contain exactly 12 numeric digits"
+            ) String aadharNo) {
         WorkerResponse response = workerService.updateAadhar(id, aadharNo);
         return ResponseEntity.ok(response);
     }

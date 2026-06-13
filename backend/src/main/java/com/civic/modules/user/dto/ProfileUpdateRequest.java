@@ -2,6 +2,7 @@ package com.civic.modules.user.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -20,6 +21,7 @@ public class ProfileUpdateRequest {
     private String address;
 
     @Size(min = 12, max = 12, message = "Aadhar number must be exactly 12 digits")
+    @Pattern(regexp = "\\d{12}", message = "Aadhar number must contain exactly 12 numeric digits")
     @JsonProperty("aadharNumber")
     private String aadharNumber;
 

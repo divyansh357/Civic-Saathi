@@ -82,7 +82,11 @@ public class UserService {
         // Aadhar is locked once set — only update if it is currently empty
         if (updateData.getAadharNumber() != null
                 && (user.getAadharNumber() == null || user.getAadharNumber().isBlank())) {
-            user.setAadharNumber(updateData.getAadharNumber());
+            String aadhar = updateData.getAadharNumber().trim();
+            if (!aadhar.matches("\\d{12}")) {
+                throw new IllegalArgumentException("Aadhar number must contain exactly 12 numeric digits");
+            }
+            user.setAadharNumber(aadhar);
         }
         if (updateData.getZoneNumber() != null) user.setZoneNumber(updateData.getZoneNumber());
         if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
@@ -112,7 +116,13 @@ public class UserService {
         if (updateData.getCity() != null) user.setCity(updateData.getCity());
         if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
         if (updateData.getAddress() != null) user.setAddress(updateData.getAddress());
-        if (updateData.getAadharNumber() != null) user.setAadharNumber(updateData.getAadharNumber());
+        if (updateData.getAadharNumber() != null) {
+            String aadhar = updateData.getAadharNumber().trim();
+            if (!aadhar.matches("\\d{12}")) {
+                throw new IllegalArgumentException("Aadhar number must contain exactly 12 numeric digits");
+            }
+            user.setAadharNumber(aadhar);
+        }
         if (updateData.getZoneNumber() != null) user.setZoneNumber(updateData.getZoneNumber());
 
         user.setUpdatedAt(LocalDateTime.now());
