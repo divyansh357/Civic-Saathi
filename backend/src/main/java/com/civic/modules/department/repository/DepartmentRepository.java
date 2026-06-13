@@ -19,7 +19,7 @@ import java.util.UUID;
 public interface DepartmentRepository extends JpaRepository<Department, UUID> {
     Optional<Department> findByNameIgnoreCase(String name);
     Page<Department> findByActive(boolean active, Pageable pageable);
-    Page<Department> findByCategoryType(String categoryType, Pageable pageable);
+    Page<Department> findByCategoryTypeIgnoreCase(String categoryType, Pageable pageable);
     long countByActive(boolean active);
     
     /**

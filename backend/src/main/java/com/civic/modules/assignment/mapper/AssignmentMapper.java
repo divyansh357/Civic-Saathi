@@ -54,13 +54,13 @@ public class AssignmentMapper {
             }
         }
         
-        // Department info comes from worker's department or complaint's department
-        if (assignment.getWorker() != null && assignment.getWorker().getDepartment() != null) {
-            response.setDepartmentId(assignment.getWorker().getDepartment().getId());
-            response.setDepartmentName(assignment.getWorker().getDepartment().getName());
-        } else if (assignment.getComplaint() != null && assignment.getComplaint().getDepartment() != null) {
+        // Department info comes from complaint's department or worker's department
+        if (assignment.getComplaint() != null && assignment.getComplaint().getDepartment() != null) {
             response.setDepartmentId(assignment.getComplaint().getDepartment().getId());
             response.setDepartmentName(assignment.getComplaint().getDepartment().getName());
+        } else if (assignment.getWorker() != null && assignment.getWorker().getDepartment() != null) {
+            response.setDepartmentId(assignment.getWorker().getDepartment().getId());
+            response.setDepartmentName(assignment.getWorker().getDepartment().getName());
         }
         
         response.setAssignedWorkerId(assignment.getWorker() != null ? assignment.getWorker().getId() : null);
