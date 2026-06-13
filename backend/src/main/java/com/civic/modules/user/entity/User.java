@@ -76,6 +76,18 @@ public class User {
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
+    @Column(name = "aadhar_number", length = 12)
+    private String aadharNumber;
+
+    @Column(name = "zone_number")
+    private Integer zoneNumber;
+
+    @Column(name = "department_code", length = 50)
+    private String departmentCode;
+
     @Column(nullable = false)
     private Boolean verified = false;
 
@@ -233,6 +245,38 @@ public class User {
 
     public void setProfilePictureUrl(String profilePictureUrl) {
         this.profilePictureUrl = profilePictureUrl;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getAadharNumber() {
+        return aadharNumber;
+    }
+
+    public void setAadharNumber(String aadharNumber) {
+        this.aadharNumber = aadharNumber;
+    }
+
+    public Integer getZoneNumber() {
+        return zoneNumber;
+    }
+
+    public void setZoneNumber(Integer zoneNumber) {
+        this.zoneNumber = zoneNumber;
+    }
+
+    public String getDepartmentCode() {
+        return departmentCode;
+    }
+
+    public void setDepartmentCode(String departmentCode) {
+        this.departmentCode = departmentCode;
     }
 
     public Boolean getVerified() {

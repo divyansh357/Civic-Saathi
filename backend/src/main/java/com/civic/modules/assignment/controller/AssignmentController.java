@@ -52,8 +52,11 @@ public class AssignmentController {
      */
     @PostMapping("/manual-assign")
     @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN')")
-    public ResponseEntity<Map<String, Object>> manualAssignComplaint(@Valid @RequestBody AssignmentRequest request) {
-        AssignmentResponse assignment = assignmentService.manualAssignComplaint(request);
+    public ResponseEntity<Map<String, Object>> manualAssignComplaint(
+            @Valid @RequestBody AssignmentRequest request,
+            java.security.Principal principal) {
+        String userId = principal.getName();
+        AssignmentResponse assignment = assignmentService.manualAssignComplaint(request, userId);
         
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
@@ -233,7 +236,7 @@ public class AssignmentController {
     }
 
     /**
-     * Worker rejects an assignment.
+     * Worker rejects an auto-assigned task (direct rejection with reason message).
      */
     @PostMapping("/{assignmentId}/reject")
     @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
@@ -242,6 +245,25 @@ public class AssignmentController {
             @RequestBody @Valid com.civic.modules.assignment.dto.AssignmentRejectRequest request) {
         AssignmentResponse assignment = assignmentService.rejectAssignment(assignmentId, request.getReason());
         return ResponseEntity.ok(Map.of("status", "success", "data", assignment));
+    }
+
+    /**
+     * Worker sends a denial request to admin for a manually-assigned task.
+     * The task remains assigned until admin reassigns or approves denial.
+     */
+    @PostMapping("/{assignmentId}/denial-request")
+    @PreAuthorize("hasAnyRole('WORKER', 'OFFICER', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> requestDenial(
+            @PathVariable String assignmentId,
+            @RequestBody @Valid com.civic.modules.assignment.dto.AssignmentRejectRequest request,
+            java.security.Principal principal) {
+        String workerUserId = principal != null ? principal.getName() : null;
+        AssignmentResponse assignment = assignmentService.requestDenial(assignmentId, request.getReason(), workerUserId);
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "message", "Denial request sent to admin",
+            "data", assignment
+        ));
     }
 
     /**

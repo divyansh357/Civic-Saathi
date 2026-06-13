@@ -33,11 +33,15 @@ public class AiVerificationService {
         String url = "https://api.cerebras.ai/v1/chat/completions";
 
         String prompt = String.format(
-            "You are an AI assistant for a civic management system. Analyze the following citizen complaint.\n" +
+            "You are a strict AI civic auditor. Analyze the citizen complaint text below to determine if it is a GENUINE civic issue that requires municipal attention.\n\n" +
             "Title: %s\n" +
             "Category: %s\n" +
             "Description: %s\n\n" +
-            "Determine if this is a valid civic complaint that requires attention. Provide a JSON response EXACTLY in this format, with no markdown tags:\n" +
+            "Rules for verification:\n" +
+            "1. Reject spam, tests, gibberish, and complaints unrelated to public civic infrastructure (e.g., personal disputes).\n" +
+            "2. Accept valid civic issues (e.g., potholes, broken streetlights, water leaks, garbage dumps).\n" +
+            "3. If description is too vague, mark it invalid.\n\n" +
+            "Provide a JSON response EXACTLY in this format, with no markdown tags:\n" +
             "{\"is_valid\": true/false, \"confidence_score\": 0.0-1.0, \"summary\": \"Brief 1-2 sentence explanation of your reasoning\"}",
             title, category != null ? category : "Unknown", description
         );

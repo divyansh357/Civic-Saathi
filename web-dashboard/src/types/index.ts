@@ -11,6 +11,11 @@ export interface User {
   status?: string;
   verified?: boolean;
   createdAt?: string;
+  address?: string;
+  aadharNumber?: string;
+  zoneNumber?: number;
+  profileComplete?: boolean;
+  departmentCode?: string;
 }
 
 export interface AuthTokens {
@@ -100,6 +105,7 @@ export interface Worker {
 export interface Assignment {
   id: string;
   complaintId: string;
+  complaintNumber?: string;
   complaintTitle?: string;
   departmentId?: string;
   departmentName?: string;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image, Alert, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '@store/index';
@@ -15,6 +15,7 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
   const [previousWorks, setPreviousWorks] = useState<string>('');
   const [address, setAddress] = useState<string>('');
   const [aadharNo, setAadharNo] = useState<string>('');
+  const [zoneNumber, setZoneNumber] = useState<string>('');
   const [workerCode, setWorkerCode] = useState<string>('');
   const [workerId, setWorkerId] = useState<string | null>(null);
   
@@ -24,6 +25,10 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
 
   const fetchProfile = async () => {
     if (!accessToken || !user) return;
+    // Pre-fill zone number from user object (saved during signup)
+    if (user.zoneNumber != null) setZoneNumber(String(user.zoneNumber));
+    if (user.address) setAddress(user.address);
+    if (user.aadharNumber) setAadharNo(user.aadharNumber);
     try {
       const res = await apiGet<any>(`/workers/user/${user.id}`, accessToken);
       if (res.id) setWorkerId(res.id);
@@ -32,7 +37,6 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
       if (res.aadharNo) setAadharNo(res.aadharNo);
       if (res.workerCode) setWorkerCode(res.workerCode);
       if (res.previousWorks) {
-        // Parse JSON if needed
         try {
           const worksArray = JSON.parse(res.previousWorks);
           setPreviousWorks(Array.isArray(worksArray) ? worksArray.join(', ') : res.previousWorks);
@@ -50,8 +54,9 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
   const uploadImageToCloudinary = async (uri: string): Promise<string> => {
     const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name')) {
-      throw new Error("Cloudinary configuration is missing. Please check your .env file.");
+    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name') || cloudName === 'demo_cloud') {
+      console.warn("Cloudinary configuration is missing. Using local image URI for development.");
+      return uri;
     }
     const formData = new FormData();
     formData.append('file', { uri, type: 'image/jpeg', name: `profile_${Date.now()}.jpg` } as any);
@@ -82,6 +87,10 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
 
   const handleSave = async () => {
     if (!accessToken || !workerId) return;
+    if (aadharNo && !/^\d{12}$/.test(aadharNo)) {
+      Alert.alert('Validation', 'Aadhar number must be exactly 12 numeric digits.');
+      return;
+    }
     setSaving(true);
     try {
       let finalImageUrl = profileImage;
@@ -98,7 +107,7 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
         address,
         aadharNo,
         workerCode
-      }, accessToken, { 'User-Id': user?.id });
+      }, accessToken, { 'User-Id': user?.id || '' });
 
       Alert.alert('Success', 'Profile updated successfully!');
     } catch (e) {
@@ -155,12 +164,28 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
         <View style={styles.formGroup}>
           <Text style={styles.label}>Aadhar Number</Text>
           <TextInput 
-            style={[styles.input, { minHeight: 40 }]}
+            style={[styles.input, { minHeight: 40 }, aadharNo && !/^\d{12}$/.test(aadharNo) ? { borderColor: '#FCA5A5', borderWidth: 1.5 } : null]}
             value={aadharNo}
-            onChangeText={setAadharNo}
+            onChangeText={(v) => setAadharNo(v.replace(/\D/g, '').slice(0, 12))}
             placeholder="Enter 12-digit Aadhar"
             keyboardType="numeric"
             maxLength={12}
+          />
+          {aadharNo && aadharNo.length < 12 && (
+            <Text style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>
+              ⚠ Aadhar must be exactly 12 digits ({aadharNo.length}/12)
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Zone Number</Text>
+          <TextInput 
+            style={[styles.input, { minHeight: 40 }]}
+            value={zoneNumber}
+            onChangeText={(v) => setZoneNumber(v.replace(/[^0-9]/g, ''))}
+            placeholder="e.g. 4"
+            keyboardType="numeric"
           />
         </View>
 

@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import WorkerProfileScreen from './WorkerProfileScreen';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  RefreshControl, ActivityIndicator, Alert, Platform, Modal, TextInput, Switch
+  RefreshControl, ActivityIndicator, Alert, Platform, Modal, TextInput, Switch, Linking
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
@@ -40,14 +40,15 @@ function openMaps(latitude: number, longitude: number, address?: string) {
   });
   
   if (url) {
-    // In a real app, you'd use Linking.openURL(url)
-    Alert.alert('Navigation', `Would open maps to: ${address || `${latitude}, ${longitude}`}`);
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Unable to open maps. Please check if a map application is installed.');
+    });
   }
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  ASSIGNED: '#60a5fa',
-  ACCEPTED: '#a78bfa',
+  PENDING: '#60a5fa',
+  ACKNOWLEDGED: '#a78bfa',
   IN_PROGRESS: '#fb923c',
   COMPLETED: '#34d399',
   ESCALATED: '#f87171',
@@ -96,7 +97,7 @@ function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate
       </View>
 
       <Text style={styles.cardTitle} numberOfLines={2}>
-        {assignment.complaintTitle ?? assignment.complaintId}
+        {assignment.complaintTitle ?? assignment.complaintNumber ?? assignment.complaintId}
       </Text>
 
       {assignment.complaintAddress && (
@@ -127,7 +128,7 @@ function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate
           </Pressable>
         )}
         
-        {assignment.status === 'ASSIGNED' && (
+        {assignment.status === 'PENDING' && (
           <>
             <Pressable style={styles.actionBtn} onPress={() => onAccept(assignment.id)}>
               <Text style={styles.actionBtnText}><Ionicons name="checkmark" size={16} color="#fff" /> Accept</Text>
@@ -142,7 +143,7 @@ function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate
             <Text style={[styles.actionBtnText, { color: "#065f46" }]}><Ionicons name="checkmark-circle" size={16} color="#065f46" /> Mark Complete</Text>
           </Pressable>
         )}
-        {assignment.status === 'ACCEPTED' && (
+        {assignment.status === 'ACKNOWLEDGED' && (
           <Pressable style={[styles.actionBtn, styles.actionBtnYellow]} onPress={() => onAccept(assignment.id)}>
             <Text style={[styles.actionBtnText, { color: "#92400e" }]}><Ionicons name="build" size={16} color="#92400e" /> Start Work</Text>
           </Pressable>
@@ -163,7 +164,6 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [workerLocation, setWorkerLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [locationLoading, setLocationLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [workerId, setWorkerId] = useState<string | null>(null);
   
@@ -176,42 +176,17 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [aadharInput, setAadharInput] = useState('');
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null);
   const [savingAadhar, setSavingAadhar] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Enhanced mock data with location
-  const MOCK: WorkerAssignment[] = [
-    { 
-      id: 'A-001', 
-      complaintId: 'C-1001', 
-      complaintTitle: 'Pothole on MG Road near bus stop', 
-      departmentId: 'd1', 
-      departmentName: 'Roads Department', 
-      status: 'PENDING', 
-      priority: 'HIGH', 
-      slaDeadline: new Date(Date.now() + 3600000 * 5).toISOString(), 
-      assignedAt: new Date().toISOString(), 
-      complaintAddress: 'MG Road, Bengaluru',
-      complaintLatitude: 12.9716,
-      complaintLongitude: 77.5946
-    },
-    { 
-      id: 'A-004', 
-      complaintId: 'C-1007', 
-      complaintTitle: 'Road cave-in near school', 
-      departmentId: 'd1', 
-      departmentName: 'Roads Department', 
-      status: 'IN_PROGRESS', 
-      priority: 'CRITICAL', 
-      slaDeadline: new Date(Date.now() + 3600000 * 1).toISOString(), 
-      assignedAt: new Date().toISOString(), 
-      complaintAddress: 'Near Govt School, Koramangala',
-      complaintLatitude: 12.9352,
-      complaintLongitude: 77.6245
-    },
-  ];
+  // Denial modal state
+  const [denialAssignment, setDenialAssignment] = useState<WorkerAssignment | null>(null);
+  const [denialReason, setDenialReason] = useState('');
+  const [submittingDenial, setSubmittingDenial] = useState(false);
+
+
 
   // Get worker's current location
   const getCurrentLocation = async () => {
-    setLocationLoading(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
@@ -225,8 +200,6 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
       }
     } catch (error) {
       console.error('Location error:', error);
-    } finally {
-      setLocationLoading(false);
     }
   };
 
@@ -272,6 +245,13 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         setAssignments(assignmentsWithDistance);
       } else {
         setAssignments(res.data ?? []);
+      }
+      // Fetch unread notifications
+      try {
+        const count = await apiGet<number>('/notifications/unread/count', accessToken);
+        setUnreadCount(count);
+      } catch (e) {
+        console.error('Failed to fetch unread notifications', e);
       }
     } catch (err) {
       console.error(err);
@@ -324,10 +304,10 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     if (!accessToken) return;
     try {
       const assignment = assignments.find(a => a.id === id);
-      if (assignment?.status === 'ASSIGNED') {
+      if (assignment?.status === 'PENDING') {
         await apiPost(`/assignments/${id}/acknowledge`, {}, accessToken);
-        setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'ACCEPTED' as const } : a));
-      } else if (assignment?.status === 'ACCEPTED') {
+        setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'ACKNOWLEDGED' as const } : a));
+      } else if (assignment?.status === 'ACKNOWLEDGED') {
         await apiPost(`/assignments/${id}/start`, {}, accessToken);
         setAssignments((prev) => prev.map((a) => a.id === id ? { ...a, status: 'IN_PROGRESS' as const } : a));
       }
@@ -349,7 +329,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     }
     setSavingAadhar(true);
     try {
-      await apiPut('/workers/me/profile', { aadharNumber: aadharInput }, accessToken);
+      await apiPut('/workers/me/profile', { aadharNumber: aadharInput }, accessToken || undefined);
       setShowAadharModal(false);
       Alert.alert('Success', 'Aadhar saved successfully. You can now accept tasks.');
       if (pendingAssignmentId) {
@@ -363,39 +343,50 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     }
   };
 
-  const handleReject = async (id: string) => {
-    if (!accessToken) return;
-    Alert.prompt(
-      'Reject Task',
-      'Please enter a reason for rejection (e.g. Too far, Not my scope):',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Reject', 
-          style: 'destructive',
-          onPress: async (reason) => {
-            if (!reason) {
-              Alert.alert('Error', 'A reason is required to reject a task.');
-              return;
-            }
-            try {
-              await apiPost(`/assignments/${id}/reject`, { reason }, accessToken);
-              // Assuming backend sets it to REJECTED or removes it from worker
-              fetchAssignments(); 
-            } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to reject (Admins assigned tasks cannot be rejected)');
-            }
-          }
-        }
-      ]
-    );
+  const handleReject = (id: string) => {
+    const assignment = assignments.find((a) => a.id === id);
+    if (!assignment) return;
+    setDenialAssignment(assignment);
+    setDenialReason('');
+  };
+
+  const handleSubmitDenial = async () => {
+    if (!denialAssignment || !accessToken) return;
+    if (!denialReason.trim()) {
+      Alert.alert('Reason required', 'Please enter a reason before submitting.');
+      return;
+    }
+    setSubmittingDenial(true);
+    try {
+      const isAutoAssigned = (denialAssignment as any).isAutoAssigned === true;
+      if (isAutoAssigned) {
+        // Auto-assigned → direct rejection, sends message to admin
+        await apiPost(`/assignments/${denialAssignment.id}/reject`, { reason: denialReason.trim() }, accessToken);
+        Alert.alert('Task Rejected', 'Your rejection message has been sent to the admin.');
+        void fetchAssignments();
+      } else {
+        // Manually assigned → send denial request to admin
+        await apiPost(`/assignments/${denialAssignment.id}/denial-request`, { reason: denialReason.trim() }, accessToken);
+        Alert.alert(
+          'Denial Request Sent',
+          'Your denial request has been sent to the admin. The task remains assigned until the admin reviews it.'
+        );
+      }
+      setDenialAssignment(null);
+      setDenialReason('');
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to submit denial');
+    } finally {
+      setSubmittingDenial(false);
+    }
   };
 
   const uploadImageToCloudinary = async (uri: string): Promise<string> => {
     const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name')) {
-      throw new Error("Cloudinary configuration is missing. Please check your .env file.");
+    if (!cloudName || !uploadPreset || cloudName.includes('your_cloud_name') || cloudName === 'demo_cloud') {
+      console.warn("Cloudinary configuration is missing. Using local media URI for development.");
+      return uri;
     }
     const formData = new FormData();
     const isVideo = uri.toLowerCase().endsWith('.mp4') || uri.toLowerCase().endsWith('.mov');
@@ -540,7 +531,10 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         <View style={styles.headerActions}>
           {onNavigateToNotifications && (
             <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
-              <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
+              <View>
+                <Text style={styles.notificationIcon}><Ionicons name="notifications-outline" size={20} color="#64748b" /></Text>
+                {unreadCount > 0 && <View style={styles.notificationDot} />}
+              </View>
             </Pressable>
           )}
           <Pressable style={styles.notificationBtn} onPress={() => setShowProfile(true)}>
@@ -632,6 +626,81 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         )}
       </Modal>
 
+      {/* ── Denial Modal ───────────────────────────────────────────────────────── */}
+      <Modal
+        visible={!!denialAssignment}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDenialAssignment(null)}
+      >
+        <View style={denialStyles.overlay}>
+          <View style={denialStyles.sheet}>
+            {/* Header */}
+            <View style={denialStyles.header}>
+              <Text style={denialStyles.title}>
+                {(denialAssignment as any)?.isAutoAssigned
+                  ? '❌ Reject Task'
+                  : '📩 Request Denial'}
+              </Text>
+              <Pressable onPress={() => setDenialAssignment(null)}>
+                <Text style={denialStyles.closeBtn}>✕</Text>
+              </Pressable>
+            </View>
+
+            {/* Context note */}
+            <Text style={denialStyles.contextNote}>
+              {(denialAssignment as any)?.isAutoAssigned
+                ? 'This task was auto-assigned by the system. Your rejection reason will be sent as a message to the admin.'
+                : 'This task was manually assigned by an admin. Your denial request will be sent to the admin for review. The task remains assigned until the admin reassigns it.'}
+            </Text>
+
+            {/* Complaint ref */}
+            <Text style={denialStyles.complaintRef} numberOfLines={2}>
+              Task: {denialAssignment?.complaintTitle ?? denialAssignment?.complaintId}
+            </Text>
+
+            {/* Reason input */}
+            <Text style={denialStyles.label}>Reason <Text style={{ color: '#DC2626' }}>*</Text></Text>
+            <TextInput
+              style={denialStyles.input}
+              value={denialReason}
+              onChangeText={setDenialReason}
+              placeholder="e.g. Location too far, Outside my expertise, Emergency at home..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              maxLength={500}
+            />
+            <Text style={denialStyles.charCount}>{denialReason.length}/500</Text>
+
+            {/* Actions */}
+            <View style={denialStyles.actions}>
+              <Pressable
+                style={denialStyles.cancelBtn}
+                onPress={() => setDenialAssignment(null)}
+              >
+                <Text style={denialStyles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  denialStyles.submitBtn,
+                  (submittingDenial || !denialReason.trim()) && denialStyles.submitBtnDisabled,
+                ]}
+                onPress={() => void handleSubmitDenial()}
+                disabled={submittingDenial || !denialReason.trim()}
+              >
+                {submittingDenial
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={denialStyles.submitBtnText}>
+                      {(denialAssignment as any)?.isAutoAssigned ? 'Submit Rejection' : 'Send Request'}
+                    </Text>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }
@@ -651,7 +720,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF9', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8,
     borderWidth: 1, borderColor: '#BBF7D0',
   },
-  notificationIcon: { fontSize: 16 },
+  notificationIcon: { fontSize: 18 },
+  notificationDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
   logoutBtn: { backgroundColor: '#FEE2E2', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   logoutText: { fontSize: 13, fontWeight: '600', color: '#DC2626' },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
@@ -705,4 +785,91 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 40, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#334155', marginBottom: 6 },
   emptySubtitle: { fontSize: 13, color: '#94A3B8', textAlign: 'center' },
+});
+
+const denialStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 36,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  title: { fontSize: 17, fontWeight: '700', color: '#0F172A' },
+  closeBtn: { fontSize: 18, color: '#64748B', paddingHorizontal: 4 },
+  contextNote: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 19,
+    marginBottom: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  complaintRef: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4A5D4E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F3F4F1',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E1E5E1',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#2F3E32',
+    minHeight: 100,
+  },
+  charCount: {
+    fontSize: 11,
+    color: '#94A3B8',
+    textAlign: 'right',
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: '#F3F4F1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelBtnText: { fontSize: 14, fontWeight: '600', color: '#4A5D4E' },
+  submitBtn: {
+    flex: 2,
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  submitBtnDisabled: { opacity: 0.45 },
+  submitBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });

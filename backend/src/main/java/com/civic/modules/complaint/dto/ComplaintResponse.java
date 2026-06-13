@@ -85,6 +85,7 @@ public class ComplaintResponse {
     private LocalDateTime resolvedAt;
 
     @JsonProperty("slaDeadline")
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime slaDeadline;
 
     @JsonProperty("rating")

@@ -11,6 +11,11 @@ export interface User {
 	status?: string;
 	verified?: boolean;
 	profilePictureUrl?: string;
+	address?: string;
+	aadharNumber?: string;
+	zoneNumber?: number;
+	profileComplete?: boolean;
+	departmentCode?: string;
 }
 
 export interface AuthTokens {
@@ -29,6 +34,7 @@ export type ComplaintStatus =
 
 export interface Complaint {
 	id: string;
+	complaintNumber?: string;
 	title: string;
 	description?: string;
 	status: ComplaintStatus;
@@ -55,6 +61,7 @@ export interface Complaint {
 export interface Assignment {
 	id: string;
 	complaintId: string;
+	complaintNumber?: string;
 	complaintTitle?: string;
 	departmentId: string;
 	departmentName?: string;

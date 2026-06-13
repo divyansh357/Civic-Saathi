@@ -7,16 +7,20 @@ import {
   Text,
   View,
   Animated,
+  Platform,
 } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import { civicTheme } from '@theme/index';
-import { useAuthStore } from '@store/index';
+import { useAuthStore, useComplaintStore } from '@store/index';
 import { Complaint } from '@/types';
 import { notificationService } from '@services/notifications';
 
 // Auth screens
 import LoginScreen from '@screens/auth/LoginScreen';
 import SignupScreen from '@screens/auth/SignupScreen';
+
+// Complete profile screen
+import CompleteProfileScreen from '@screens/CompleteProfileScreen';
 
 // Citizen screens
 import HomeScreen from '@screens/citizen/HomeScreen';
@@ -151,6 +155,18 @@ function AppContent() {
     );
   }
 
+  // ── Profile completion gate ─────────────────────────────────────────────────
+  // All roles must fill address + aadhar before accessing any features.
+
+  if (isAuthenticated && user && !user.profileComplete) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F3F4F1" />
+        <CompleteProfileScreen />
+      </SafeAreaView>
+    );
+  }
+
   // ── Worker view ─────────────────────────────────────────────────────────────
 
   if (user?.role === 'WORKER') {
@@ -230,7 +246,7 @@ function AppContent() {
             });
             // Update the store as well
             const { complaints, setComplaints } = useComplaintStore.getState();
-            setComplaints(complaints.map(c => c.id === selectedComplaint.id ? { ...c, rating, feedback: comment } : c));
+            setComplaints(complaints.map((c: Complaint) => c.id === selectedComplaint.id ? { ...c, rating, feedback: comment } : c));
             
             // Go back to details to show the feedback immediately
             setCitizenScreen('complaint-detail');
@@ -304,8 +320,8 @@ export default function App() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F1' },
-  splash: { flex: 1, backgroundColor: '#F3F4F1' },
+  container: { flex: 1, backgroundColor: '#F3F4F1', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+  splash: { flex: 1, backgroundColor: '#F3F4F1', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   splashContent: {
     flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24,
   },

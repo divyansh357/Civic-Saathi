@@ -61,12 +61,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       void storageService.saveUser(user);
     }
 
-    set({
+    set((state) => ({
       user,
-      accessToken: null,
+      // Preserve existing accessToken when updating user data (e.g. after profile completion)
+      accessToken: user ? state.accessToken : null,
       isAuthenticated: !!user,
       error: null
-    });
+    }));
   },
 
   setLoading: (isLoading: boolean) => set({ isLoading }),

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.security.Principal;
 
 /**
  * REST Controller for notification management endpoints.
@@ -23,8 +24,9 @@ public class NotificationController {
      */
     @GetMapping
     public ResponseEntity<Page<NotificationResponse>> getNotifications(
-            @RequestHeader("User-Id") String userId,
+            Principal principal,
             Pageable pageable) {
+        String userId = principal.getName();
         Page<NotificationResponse> notifications = notificationService.getUserNotifications(userId, pageable);
         return ResponseEntity.ok(notifications);
     }
@@ -34,8 +36,9 @@ public class NotificationController {
      */
     @GetMapping("/unread")
     public ResponseEntity<Page<NotificationResponse>> getUnreadNotifications(
-            @RequestHeader("User-Id") String userId,
+            Principal principal,
             Pageable pageable) {
+        String userId = principal.getName();
         Page<NotificationResponse> notifications = notificationService.getUnreadNotifications(userId, pageable);
         return ResponseEntity.ok(notifications);
     }
@@ -44,7 +47,8 @@ public class NotificationController {
      * Get unread count for current user.
      */
     @GetMapping("/unread/count")
-    public ResponseEntity<Long> getUnreadCount(@RequestHeader("User-Id") String userId) {
+    public ResponseEntity<Long> getUnreadCount(Principal principal) {
+        String userId = principal.getName();
         long count = notificationService.getUnreadCount(userId);
         return ResponseEntity.ok(count);
     }

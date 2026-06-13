@@ -160,6 +160,7 @@ From repo root:
 cd backend
 .\mvnw.cmd clean spring-boot:run
 ```
+.\mvnw.cmd spring-boot:run
 
 Backend URL:
 

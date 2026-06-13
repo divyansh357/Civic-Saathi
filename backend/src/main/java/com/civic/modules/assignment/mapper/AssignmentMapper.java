@@ -42,6 +42,7 @@ public class AssignmentMapper {
         AssignmentResponse response = new AssignmentResponse();
         response.setId(assignment.getId().toString());
         response.setComplaintId(assignment.getComplaint() != null ? assignment.getComplaint().getId().toString() : null);
+        response.setComplaintNumber(assignment.getComplaint() != null ? assignment.getComplaint().getComplaintNumber() : null);
         response.setComplaintTitle(assignment.getComplaint() != null ? assignment.getComplaint().getTitle() : null);
         
         if (assignment.getComplaint() != null) {
@@ -67,7 +68,16 @@ public class AssignmentMapper {
                 ? assignment.getWorker().getUser().getName() : null);
         
         response.setAssignmentType(Boolean.TRUE.equals(assignment.getIsAutoAssigned()) ? "AUTO" : "MANUAL");
-        response.setStatus(assignment.getStatus().name());
+        
+        // Map backend statuses to frontend expected statuses
+        String frontendStatus = assignment.getStatus().name();
+        if ("ASSIGNED".equals(frontendStatus)) {
+            frontendStatus = "PENDING";
+        } else if ("ACCEPTED".equals(frontendStatus)) {
+            frontendStatus = "ACKNOWLEDGED";
+        }
+        response.setStatus(frontendStatus);
+        
         response.setIsAutoAssigned(assignment.getIsAutoAssigned());
         
         // Priority: derive from complaint entity

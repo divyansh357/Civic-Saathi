@@ -6,12 +6,16 @@ import com.civic.modules.department.entity.Department;
 import com.civic.modules.department.repository.DepartmentRepository;
 import com.civic.modules.worker.entity.Worker;
 import com.civic.modules.worker.repository.WorkerRepository;
+import com.civic.modules.user.entity.User;
+import com.civic.modules.user.repository.UserRepository;
 import com.civic.modules.assignment.dto.AssignmentRequest;
 import com.civic.modules.assignment.dto.AssignmentResponse;
 import com.civic.modules.assignment.dto.AutoAssignmentRequest;
 import com.civic.modules.assignment.entity.Assignment;
 import com.civic.modules.assignment.repository.AssignmentRepository;
 import com.civic.modules.assignment.mapper.AssignmentMapper;
+import com.civic.modules.notification.entity.Notification;
+import com.civic.modules.notification.service.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,10 +51,13 @@ public class AssignmentService {
     private WorkerRepository workerRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private AssignmentMapper assignmentMapper;
 
     @Autowired
-    private com.civic.modules.notification.service.NotificationService notificationService;
+    private NotificationService notificationService;
 
     /**
      * Auto-assign complaint to appropriate department and worker.
@@ -154,7 +161,7 @@ public class AssignmentService {
     /**
      * Manually assign complaint to specific worker.
      */
-    public AssignmentResponse manualAssignComplaint(AssignmentRequest request) {
+    public AssignmentResponse manualAssignComplaint(AssignmentRequest request, String assignerUserId) {
         logger.info("Manually assigning complaint {} to worker {}", request.getComplaintId(), request.getWorkerId());
 
         Complaint complaint = complaintRepository.findById(UUID.fromString(request.getComplaintId()))
@@ -163,18 +170,45 @@ public class AssignmentService {
         Worker worker = workerRepository.findById(UUID.fromString(request.getWorkerId()))
                 .orElseThrow(() -> new RuntimeException("Worker not found with ID: " + request.getWorkerId()));
 
-        // Create assignment
-        Assignment assignment = new Assignment();
-        assignment.setComplaint(complaint);
-        assignment.setWorker(worker);
-        // Note: assignedBy should be set to the current user in the controller
-        assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
-        assignment.setAssignedAt(LocalDateTime.now());
+        User assigner = userRepository.findById(UUID.fromString(assignerUserId))
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + assignerUserId));
 
-        // Set deadline based on request priority or complaint priority
-        String priorityStr = request.getPriority() != null ? request.getPriority().toString() : complaint.getPriority();
-        int priority = priorityStr != null ? Integer.parseInt(priorityStr) : 3;
-        assignment.setDeadlineAt(calculateSlaDeadline(priority));
+        // Handle existing assignment or create new one
+        Optional<Assignment> existingAssignmentOpt = assignmentRepository.findByComplaintId(complaint.getId());
+        Assignment assignment;
+        boolean isReassignment = false;
+
+        if (existingAssignmentOpt.isPresent()) {
+            assignment = existingAssignmentOpt.get();
+            if (assignment.getWorker().getId().equals(worker.getId().toString())) {
+                logger.info("Complaint {} is already assigned to worker {}. Returning existing assignment.", complaint.getId(), worker.getId());
+                return assignmentMapper.toResponse(assignment);
+            }
+            // Reassignment to a different worker
+            logger.info("Reassigning complaint {} to new worker {}", complaint.getId(), worker.getId());
+            assignment.setWorker(worker);
+            assignment.setAssignedBy(assigner);
+            assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
+            assignment.setAssignedAt(LocalDateTime.now());
+            isReassignment = true;
+        } else {
+            // Create new assignment
+            assignment = new Assignment();
+            assignment.setComplaint(complaint);
+            assignment.setWorker(worker);
+            assignment.setAssignedBy(assigner);
+            assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
+            assignment.setAssignedAt(LocalDateTime.now());
+        }
+
+        // Set deadline based on request deadlineHours, or calculate from priority
+        if (request.getDeadlineHours() != null) {
+            assignment.setDeadlineAt(LocalDateTime.now().plusHours(request.getDeadlineHours()));
+        } else {
+            String priorityStr = request.getPriority() != null ? request.getPriority().toString() : complaint.getPriority();
+            int priority = priorityStr != null ? Integer.parseInt(priorityStr) : 3;
+            assignment.setDeadlineAt(calculateSlaDeadline(priority));
+        }
 
         Assignment savedAssignment = assignmentRepository.save(assignment);
 
@@ -270,12 +304,29 @@ public class AssignmentService {
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
             
         Worker worker = assignment.getWorker();
-        if (worker != null && (worker.getAadharNo() == null || worker.getAadharNo().trim().isEmpty())) {
+        // Check Aadhar on the User entity (set via profile) first, then fall back to Worker entity legacy field
+        boolean hasAadhar = false;
+        if (worker != null) {
+            String userAadhar = worker.getUser() != null ? worker.getUser().getAadharNumber() : null;
+            String workerAadhar = worker.getAadharNo();
+            hasAadhar = (userAadhar != null && !userAadhar.isBlank())
+                     || (workerAadhar != null && !workerAadhar.isBlank());
+        }
+        if (worker != null && !hasAadhar) {
             throw new RuntimeException("Aadhar number is required before accepting a task");
         }
             
         assignment.accept();
-        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+        Assignment savedAssignment = assignmentRepository.save(assignment);
+        
+        Complaint complaint = savedAssignment.getComplaint();
+        if (complaint != null) {
+            complaint.setStatus(Complaint.ComplaintStatus.ACKNOWLEDGED);
+            complaint.setUpdatedAt(LocalDateTime.now());
+            complaintRepository.save(complaint);
+        }
+        
+        return assignmentMapper.toResponse(savedAssignment);
     }
 
     /**
@@ -293,7 +344,16 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
         assignment.startProgress();
-        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+        Assignment savedAssignment = assignmentRepository.save(assignment);
+        
+        Complaint complaint = savedAssignment.getComplaint();
+        if (complaint != null) {
+            complaint.setStatus(Complaint.ComplaintStatus.IN_PROGRESS);
+            complaint.setUpdatedAt(LocalDateTime.now());
+            complaintRepository.save(complaint);
+        }
+        
+        return assignmentMapper.toResponse(savedAssignment);
     }
 
     /**
@@ -325,18 +385,75 @@ public class AssignmentService {
     }
 
     /**
-     * Worker rejects an assignment.
+     * Worker rejects an auto-assigned task with a reason message.
+     * For manually-assigned tasks, use requestDenial() instead.
      */
     public AssignmentResponse rejectAssignment(String assignmentId, String reason) {
         Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
-            
+
         if (!Boolean.TRUE.equals(assignment.getIsAutoAssigned())) {
-            throw new RuntimeException("Cannot reject tasks that are assigned manually by an Admin or Ward Head");
+            throw new RuntimeException(
+                "This task was assigned by an admin. Use the 'Request Denial' option to send a denial request to the admin instead.");
         }
-        
+
         assignment.reject(reason);
-        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+        Assignment saved = assignmentRepository.save(assignment);
+
+        // Notify the complaint creator / admin that the worker rejected
+        Complaint complaint = assignment.getComplaint();
+        if (complaint != null) {
+            complaint.setStatus(Complaint.ComplaintStatus.ROUTED);
+            complaint.setAssignedWorker(null);
+            complaint.setUpdatedAt(LocalDateTime.now());
+            complaintRepository.save(complaint);
+            
+            if (complaint.getCreatedBy() != null) {
+                com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+                notif.setUser(complaint.getCreatedBy());
+                notif.setTitle("Task Rejected by Worker");
+                notif.setMessage("Worker rejected complaint \"" + complaint.getTitle() + "\". Reason: " + reason);
+                notif.setType("REJECTION");
+                notif.setReferenceId(saved.getId().toString());
+                notificationService.sendNotification(notif);
+            }
+        }
+
+        return assignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Worker sends a denial request to the admin for a manually-assigned task.
+     * The task stays assigned — admin must approve or reject the denial.
+     */
+    public AssignmentResponse requestDenial(String assignmentId, String reason, String workerUserId) {
+        Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
+            .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+
+        if (Boolean.TRUE.equals(assignment.getIsAutoAssigned())) {
+            throw new RuntimeException("Auto-assigned tasks can be rejected directly. Use the reject endpoint.");
+        }
+
+        // Record the denial request reason without changing status
+        assignment.setRejectionReason("[DENIAL REQUEST] " + reason);
+        Assignment saved = assignmentRepository.save(assignment);
+
+        // Notify the assigning admin/officer
+        Complaint complaint = assignment.getComplaint();
+        User assignedBy = assignment.getAssignedBy();
+        if (assignedBy != null) {
+            com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+            notif.setUser(assignedBy);
+            notif.setTitle("Denial Request from Worker");
+            notif.setMessage("Worker has requested to deny assignment for complaint \""
+                + complaint.getTitle() + "\". Reason: " + reason
+                + ". Please review and reassign if needed.");
+            notif.setType("DENIAL_REQUEST");
+            notif.setReferenceId(saved.getId().toString());
+            notificationService.sendNotification(notif);
+        }
+
+        return assignmentMapper.toResponse(saved);
     }
 
     /**
@@ -436,20 +553,44 @@ public class AssignmentService {
     }
 
     /**
+     * Maps AI-generated category labels to Department.categoryType values.
+     * AI may return "Road Damage", department stores "ROADS" — normalize here.
+     */
+    private String normalizeCategoryToDeptType(String category) {
+        if (category == null) return null;
+        String upper = category.toUpperCase().trim();
+        // Direct match patterns
+        if (upper.contains("ROAD") || upper.contains("POTHOLE") || upper.contains("PAVEMENT")) return "ROADS";
+        if (upper.contains("WATER") || upper.contains("PIPE") || upper.contains("DRAIN")) return "WATER";
+        if (upper.contains("ELECTRIC") || upper.contains("POWER") || upper.contains("LIGHT")) return "ELECTRICITY";
+        if (upper.contains("SANIT") || upper.contains("GARBAGE") || upper.contains("WASTE") || upper.contains("TRASH")) return "SANITATION";
+        if (upper.contains("PARK") || upper.contains("GARDEN") || upper.contains("TREE")) return "PARKS";
+        if (upper.contains("SEWER") || upper.contains("SEWAGE")) return "WATER";
+        // Return as-is (uppercased) — may still match if dept is configured correctly
+        return upper;
+    }
+
+    /**
      * Find department by category and city.
+     * Normalizes AI category labels to department categoryType values.
      */
     private Department findDepartmentByCategory(String category, String city) {
-        // First try to find department by exact category match
-        Optional<Department> department = departmentRepository.findByCategoryTypeAndCity(category, city);
-        
-        if (department.isPresent()) {
-            return department.get();
+        String deptType = normalizeCategoryToDeptType(category);
+
+        if (deptType != null) {
+            // Try exact match with normalized type
+            Optional<Department> department = departmentRepository.findByCategoryTypeAndCity(deptType, city);
+            if (department.isPresent()) return department.get();
+
+            // Try city-agnostic fallback
+            List<Department> byType = departmentRepository.findByCategoryType(deptType, org.springframework.data.domain.PageRequest.of(0, 1)).getContent();
+            if (!byType.isEmpty()) return byType.get(0);
         }
 
         // Fallback to any active department in the city
-        List<Department> departments = departmentRepository.findByActiveAndCity(true, city);
-        if (!departments.isEmpty()) {
-            return departments.get(0); // Return first available department
+        if (city != null && !city.isBlank()) {
+            List<Department> departments = departmentRepository.findByActiveAndCity(true, city);
+            if (!departments.isEmpty()) return departments.get(0);
         }
 
         return null;
@@ -480,18 +621,17 @@ public class AssignmentService {
     }
 
     /**
-     * Calculate SLA deadline based on priority.
+     * Calculate SLA deadline based on priority — all in hours.
      */
     private LocalDateTime calculateSlaDeadline(Integer priority) {
         LocalDateTime now = LocalDateTime.now();
-        
         return switch (priority) {
-            case 5 -> now.plusHours(4);   // Critical - 4 hours
-            case 4 -> now.plusHours(12);  // High - 12 hours
-            case 3 -> now.plusDays(2);    // Medium - 2 days
-            case 2 -> now.plusDays(5);    // Low - 5 days
-            case 1 -> now.plusDays(10);   // Very Low - 10 days
-            default -> now.plusDays(3);   // Default - 3 days
+            case 5 -> now.plusHours(4);    // Critical  — 4 h
+            case 4 -> now.plusHours(12);   // High      — 12 h
+            case 3 -> now.plusHours(48);   // Medium    — 48 h
+            case 2 -> now.plusHours(120);  // Low       — 120 h (5 days)
+            case 1 -> now.plusHours(240);  // Very Low  — 240 h (10 days)
+            default -> now.plusHours(72);  // Default   — 72 h (3 days)
         };
     }
 }

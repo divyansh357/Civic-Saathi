@@ -8,12 +8,17 @@ interface BackendAuthResponse {
 }
 
 interface BackendCurrentUserResponse {
-  userId: string;
+  id?: string;
+  userId?: string;
   name: string;
   email: string;
   phone?: string;
   role?: string;
   roles?: string[];
+  address?: string;
+  aadharNumber?: string;
+  zoneNumber?: number;
+  profileComplete?: boolean;
 }
 
 export interface AuthSession {
@@ -32,11 +37,15 @@ const normalizeRole = (role?: string, roles?: string[]): UserRole => {
 };
 
 const toUser = (payload: BackendCurrentUserResponse): User => ({
-  id: payload.userId,
+  id: payload.id ?? payload.userId ?? '',
   name: payload.name,
   email: payload.email,
   phone: payload.phone,
-  role: normalizeRole(payload.role, payload.roles)
+  role: normalizeRole(payload.role, payload.roles),
+  address: payload.address,
+  aadharNumber: payload.aadharNumber,
+  zoneNumber: payload.zoneNumber,
+  profileComplete: payload.profileComplete
 });
 
 const toAccessToken = (payload: BackendAuthResponse): string => {

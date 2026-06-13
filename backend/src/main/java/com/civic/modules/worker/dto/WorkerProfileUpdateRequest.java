@@ -1,6 +1,7 @@
 package com.civic.modules.worker.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Pattern;
 import java.util.List;
 
 public class WorkerProfileUpdateRequest {
@@ -13,6 +14,7 @@ public class WorkerProfileUpdateRequest {
     @JsonProperty("address")
     private String address;
 
+    @Pattern(regexp = "\\d{12}", message = "Aadhar number must contain exactly 12 numeric digits")
     @JsonProperty("aadharNo")
     private String aadharNo;
 

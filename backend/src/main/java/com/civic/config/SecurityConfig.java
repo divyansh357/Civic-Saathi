@@ -44,6 +44,7 @@ public class SecurityConfig {
 								"/api/v1/auth/refresh-token",
 								"/api/v1/auth/logout",
 								"/api/v1/auth/validate",
+								"/api/v1/geography/cities",
 								"/actuator/**").permitAll()
 						.requestMatchers("/api/v1/**").authenticated()
 						.anyRequest().permitAll())

@@ -135,13 +135,6 @@ export function apiPut<TResponse, TBody = unknown>(
   return request<TResponse>(path, { method: 'PUT', body, accessToken });
 }
 
-export function apiDelete<TResponse>(
-  path: string,
-  accessToken?: string
-): Promise<TResponse> {
-  return request<TResponse>(path, { method: 'DELETE', accessToken });
-}
-
 export function apiPutWithHeaders<TResponse, TBody = unknown>(
   path: string,
   body?: TBody,
@@ -150,3 +143,11 @@ export function apiPutWithHeaders<TResponse, TBody = unknown>(
 ): Promise<TResponse> {
   return request<TResponse>(path, { method: 'PUT', body, accessToken, extraHeaders });
 }
+
+export function apiDelete<TResponse>(
+  path: string,
+  accessToken?: string
+): Promise<TResponse> {
+  return request<TResponse>(path, { method: 'DELETE', accessToken });
+}
+

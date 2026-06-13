@@ -100,7 +100,7 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
 
         {/* Title & ID */}
         <View style={styles.card}>
-          <Text style={styles.complaintId}>{complaint.id}</Text>
+          <Text style={styles.complaintId}>{complaint.complaintNumber ?? complaint.id.substring(0, 8).toUpperCase()}</Text>
           <Text style={styles.complaintTitle}>{complaint.title}</Text>
           <View style={styles.tagsRow}>
             {complaint.category && (
@@ -167,6 +167,16 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}><Ionicons name="location-outline" size={20} color="#64748b" /> Location</Text>
               <Text style={styles.detailValue}>{complaint.address}</Text>
+            </View>
+          )}
+          {complaint.imageUrls && complaint.imageUrls.length > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Complaint Images</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                {complaint.imageUrls.map((uri, idx) => (
+                  <Image key={idx} source={{ uri }} style={styles.proofImage} />
+                ))}
+              </ScrollView>
             </View>
           )}
           <View style={styles.detailRow}>
