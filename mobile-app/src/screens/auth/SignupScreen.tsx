@@ -7,7 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from 'react-native-paper';
 import { apiPost } from '@services/api/client';
 import { isValidEmail } from '@utils/index';
-import CityPickerModal from '@components/CityPickerModal';
+import Checkbox from '@components/Checkbox';
+import CityPickerModal, { City } from '@components/CityPickerModal';
+import DepartmentPickerModal, { Department } from '@components/DepartmentPickerModal';
 
 // ─── Country codes ────────────────────────────────────────────────────────────
 
@@ -220,6 +222,8 @@ export default function SignupScreen({ onGoToLogin }: Props) {
   // Worker-specific
   const [designation, setDesignation] = useState('');
   const [departmentCode, setDepartmentCode] = useState('');
+  const [departmentName, setDepartmentName] = useState('');
+  const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -428,9 +432,19 @@ export default function SignupScreen({ onGoToLogin }: Props) {
               <View style={styles.divider} />
               <Field label="Designation / Job Title" value={designation} onChange={setDesignation}
                 placeholder="Designation" autoCapitalize="words" />
-              <Field label="Department Code" value={departmentCode}
-                onChange={(v) => setDepartmentCode(v.toUpperCase())}
-                placeholder="e.g. ROADS, WATER" autoCapitalize="characters" optional />
+              <View style={fieldStyles.group}>
+                <View style={fieldStyles.labelRow}>
+                  <Text style={fieldStyles.label}>Department</Text>
+                </View>
+                <Pressable
+                  style={[fieldStyles.inputWrap, { justifyContent: 'center' }]}
+                  onPress={() => setShowDepartmentPicker(true)}
+                >
+                  <Text style={{ fontSize: 16, color: departmentName ? '#2F3E32' : '#7F8D82' }}>
+                    {departmentName || 'Select your department'}
+                  </Text>
+                </Pressable>
+              </View>
             </>
           )}
 
@@ -470,6 +484,16 @@ export default function SignupScreen({ onGoToLogin }: Props) {
           setCityId(city.id);
           setCityName(city.name);
           setShowCityPicker(false);
+        }}
+      />
+      <DepartmentPickerModal
+        visible={showDepartmentPicker}
+        onClose={() => setShowDepartmentPicker(false)}
+        selectedDepartmentId={departmentCode}
+        onSelect={(dept) => {
+          setDepartmentCode(dept.id);
+          setDepartmentName(dept.name);
+          setShowDepartmentPicker(false);
         }}
       />
     </KeyboardAvoidingView>

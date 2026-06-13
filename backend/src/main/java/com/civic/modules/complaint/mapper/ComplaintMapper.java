@@ -77,7 +77,7 @@ public class ComplaintMapper {
                     .orElse(null);
         }
         if (department == null && request.getCategory() != null && !request.getCategory().isEmpty()) {
-            department = departmentRepository.findByCategoryType(request.getCategory(), org.springframework.data.domain.PageRequest.of(0, 1))
+            department = departmentRepository.findByCategoryTypeIgnoreCase(request.getCategory(), org.springframework.data.domain.PageRequest.of(0, 1))
                     .stream()
                     .findFirst()
                     .orElse(null);

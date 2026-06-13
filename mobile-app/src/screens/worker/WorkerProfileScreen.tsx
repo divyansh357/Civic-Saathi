@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '@store/index';
 import { apiGet, apiPutWithHeaders } from '@services/api/client';
 import { Ionicons } from '@expo/vector-icons';
+import DepartmentPickerModal from '@components/DepartmentPickerModal';
 
 export default function WorkerProfileScreen({ onBack }: { onBack?: () => void }) {
   const user = useAuthStore(s => s.user);
@@ -18,6 +19,9 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
   const [zoneNumber, setZoneNumber] = useState<string>('');
   const [workerCode, setWorkerCode] = useState<string>('');
   const [workerId, setWorkerId] = useState<string | null>(null);
+  const [departmentId, setDepartmentId] = useState<string>('');
+  const [departmentName, setDepartmentName] = useState<string>('');
+  const [showDepartmentPicker, setShowDepartmentPicker] = useState<boolean>(false);
   
   useEffect(() => {
     fetchProfile();
@@ -36,6 +40,8 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
       if (res.address) setAddress(res.address);
       if (res.aadharNo) setAadharNo(res.aadharNo);
       if (res.workerCode) setWorkerCode(res.workerCode);
+      if (res.departmentId) setDepartmentId(res.departmentId);
+      if (res.departmentName) setDepartmentName(res.departmentName);
       if (res.previousWorks) {
         try {
           const worksArray = JSON.parse(res.previousWorks);
@@ -106,7 +112,8 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
         previousWorks: JSON.stringify(worksArray),
         address,
         aadharNo,
-        workerCode
+        workerCode,
+        departmentId: departmentId || undefined
       }, accessToken, { 'User-Id': user?.id || '' });
 
       Alert.alert('Success', 'Profile updated successfully!');
@@ -133,7 +140,7 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
         <View style={styles.imageSection}>
           <Pressable onPress={pickImage}>
             {profileImage ? (
@@ -190,6 +197,18 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
         </View>
 
         <View style={styles.formGroup}>
+          <Text style={styles.label}>Department</Text>
+          <Pressable 
+            style={[styles.input, { justifyContent: 'center', minHeight: 40 }]} 
+            onPress={() => setShowDepartmentPicker(true)}
+          >
+            <Text style={{ fontSize: 16, color: departmentName ? '#0F172A' : '#94A3B8' }}>
+              {departmentName || 'Select your department'}
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.formGroup}>
           <Text style={styles.label}>Worker Code (Optional)</Text>
           <TextInput 
             style={[styles.input, { minHeight: 40 }]}
@@ -218,6 +237,17 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Profile</Text>}
         </Pressable>
       </ScrollView>
+
+      <DepartmentPickerModal
+        visible={showDepartmentPicker}
+        onClose={() => setShowDepartmentPicker(false)}
+        selectedDepartmentId={departmentId}
+        onSelect={(dept) => {
+          setDepartmentId(dept.id);
+          setDepartmentName(dept.name);
+          setShowDepartmentPicker(false);
+        }}
+      />
     </View>
   );
 }
