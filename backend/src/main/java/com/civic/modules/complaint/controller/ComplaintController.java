@@ -59,8 +59,8 @@ public class ComplaintController {
     @PostMapping
     public ResponseEntity<ComplaintResponse> createComplaint(
             @RequestBody CreateComplaintRequest request,
-            @RequestHeader("User-Id") String userId) {
-        ComplaintResponse response = complaintService.createComplaint(request, userId);
+            java.security.Principal principal) {
+        ComplaintResponse response = complaintService.createComplaint(request, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -78,9 +78,9 @@ public class ComplaintController {
      */
     @GetMapping("/user/my-complaints")
     public ResponseEntity<Page<ComplaintResponse>> getMyComplaints(
-            @RequestHeader("User-Id") String userId,
+            java.security.Principal principal,
             Pageable pageable) {
-        Page<ComplaintResponse> complaints = complaintService.getComplaintsByUserId(userId, pageable);
+        Page<ComplaintResponse> complaints = complaintService.getComplaintsByUserId(principal.getName(), pageable);
         return ResponseEntity.ok(complaints);
     }
 

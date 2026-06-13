@@ -26,8 +26,8 @@ public class FeedbackController {
     @PostMapping
     public ResponseEntity<FeedbackResponse> submitFeedback(
             @Valid @RequestBody FeedbackRequest request,
-            @RequestHeader("User-Id") String userId) {
-        FeedbackResponse response = feedbackService.submitFeedback(request, userId);
+            java.security.Principal principal) {
+        FeedbackResponse response = feedbackService.submitFeedback(request, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

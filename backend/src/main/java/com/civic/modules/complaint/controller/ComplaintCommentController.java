@@ -50,11 +50,11 @@ public class ComplaintCommentController {
     public ResponseEntity<Map<String, Object>> addComment(
             @PathVariable String complaintId,
             @RequestBody Map<String, String> body,
-            @RequestHeader("User-Id") String userId) {
+            java.security.Principal principal) {
 
         var complaint = complaintRepository.findById(UUID.fromString(complaintId))
             .orElseThrow(() -> new RuntimeException("Complaint not found"));
-        var user = userRepository.findById(UUID.fromString(userId))
+        var user = userRepository.findById(UUID.fromString(principal.getName()))
             .orElseThrow(() -> new RuntimeException("User not found"));
 
         ComplaintComment comment = new ComplaintComment(complaint, user, body.get("message"));
@@ -85,10 +85,10 @@ public class ComplaintCommentController {
     @PostMapping("/{complaintId}/vote")
     public ResponseEntity<Map<String, Object>> toggleVote(
             @PathVariable String complaintId,
-            @RequestHeader("User-Id") String userId) {
+            java.security.Principal principal) {
 
         UUID cid = UUID.fromString(complaintId);
-        UUID uid = UUID.fromString(userId);
+        UUID uid = UUID.fromString(principal.getName());
 
         var existing = voteRepository.findByComplaintIdAndUserId(cid, uid);
         if (existing.isPresent()) {

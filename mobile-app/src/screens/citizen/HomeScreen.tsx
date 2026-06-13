@@ -47,8 +47,8 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
     <Pressable style={styles.card} onPress={onPress} android_ripple={{ color: '#e2e8f0' }}>
       <View style={styles.cardHeader}>
         <View style={[styles.statusDot, { backgroundColor: color }]} />
-        <Text style={styles.cardId}>{complaint.id}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: `${color}20` }]}>
+        <Text style={styles.cardId}>{complaint.complaintNumber ?? complaint.id.substring(0, 8).toUpperCase()}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: `${STATUS_COLORS[complaint.status] || '#94a3b8'}20` }]}>
           <Text style={[styles.statusText, { color }]}>
             {STATUS_LABELS[complaint.status] ?? complaint.status}
           </Text>

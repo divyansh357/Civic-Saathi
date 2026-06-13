@@ -311,7 +311,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
     );
   };
 
-  const uploadImageToCloudinary = async (uri: string): Promise<string> => {
+  const uploadImageToCloudinary = async (uri: string, lat?: number, lon?: number): Promise<string> => {
     const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
     
@@ -343,7 +343,25 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
     }
 
     const data = await res.json();
-    return data.secure_url;
+    let finalUrl = data.secure_url;
+    
+    if (lat && lon) {
+      // Add watermark with Lat, Lng, Date
+      const dateStr = new Date().toISOString().split('T')[0];
+      const timeStr = new Date().toISOString().split('T')[1].substring(0, 5);
+      // Format text, replacing spaces with %20 and newlines with %0A
+      const text = `Lat: ${lat.toFixed(5)}%0ALon: ${lon.toFixed(5)}%0A${dateStr} ${timeStr}`.replace(/ /g, '%20');
+      // Create Cloudinary transformation string
+      // l_text:Arial_25_bold:...,g_south_east,x_20,y_20,co_white
+      const transform = `l_text:Arial_30_bold:${text},g_south_east,x_20,y_20,co_white`;
+      
+      const parts = finalUrl.split('/upload/');
+      if (parts.length === 2) {
+        finalUrl = `${parts[0]}/upload/${transform}/${parts[1]}`;
+      }
+    }
+    
+    return finalUrl;
   };
 
   const handleSubmit = async () => {
@@ -378,7 +396,7 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
       // Upload all images to Cloudinary
       const imageUrls: string[] = [];
       for (let i = 0; i < images.length; i++) {
-        const url = await uploadImageToCloudinary(images[i]);
+        const url = await uploadImageToCloudinary(images[i], location?.latitude, location?.longitude);
         imageUrls.push(url);
       }
 

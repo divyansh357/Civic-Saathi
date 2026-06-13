@@ -100,7 +100,7 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
 
         {/* Title & ID */}
         <View style={styles.card}>
-          <Text style={styles.complaintId}>{complaint.id}</Text>
+          <Text style={styles.complaintId}>{complaint.complaintNumber ?? complaint.id.substring(0, 8).toUpperCase()}</Text>
           <Text style={styles.complaintTitle}>{complaint.title}</Text>
           <View style={styles.tagsRow}>
             {complaint.category && (

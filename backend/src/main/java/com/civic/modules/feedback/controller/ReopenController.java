@@ -24,10 +24,10 @@ public class ReopenController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> requestReopen(
             @RequestBody Map<String, String> body,
-            @RequestHeader("User-Id") String userId) {
+            java.security.Principal principal) {
         String complaintId = body.get("complaintId");
         String reason = body.get("reason");
-        ReopenRequest request = reopenService.requestReopen(complaintId, userId, reason);
+        ReopenRequest request = reopenService.requestReopen(complaintId, principal.getName(), reason);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
             "status", "success",
             "message", "Reopen request submitted successfully",
