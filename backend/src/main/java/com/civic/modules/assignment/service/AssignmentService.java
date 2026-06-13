@@ -317,7 +317,16 @@ public class AssignmentService {
         }
             
         assignment.accept();
-        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+        Assignment savedAssignment = assignmentRepository.save(assignment);
+        
+        Complaint complaint = savedAssignment.getComplaint();
+        if (complaint != null) {
+            complaint.setStatus(Complaint.ComplaintStatus.ACKNOWLEDGED);
+            complaint.setUpdatedAt(LocalDateTime.now());
+            complaintRepository.save(complaint);
+        }
+        
+        return assignmentMapper.toResponse(savedAssignment);
     }
 
     /**
@@ -335,7 +344,16 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(UUID.fromString(assignmentId))
             .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
         assignment.startProgress();
-        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+        Assignment savedAssignment = assignmentRepository.save(assignment);
+        
+        Complaint complaint = savedAssignment.getComplaint();
+        if (complaint != null) {
+            complaint.setStatus(Complaint.ComplaintStatus.IN_PROGRESS);
+            complaint.setUpdatedAt(LocalDateTime.now());
+            complaintRepository.save(complaint);
+        }
+        
+        return assignmentMapper.toResponse(savedAssignment);
     }
 
     /**
@@ -384,14 +402,21 @@ public class AssignmentService {
 
         // Notify the complaint creator / admin that the worker rejected
         Complaint complaint = assignment.getComplaint();
-        if (complaint.getCreatedBy() != null) {
-            com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
-            notif.setUser(complaint.getCreatedBy());
-            notif.setTitle("Task Rejected by Worker");
-            notif.setMessage("Worker rejected complaint \"" + complaint.getTitle() + "\". Reason: " + reason);
-            notif.setType("REJECTION");
-            notif.setReferenceId(saved.getId().toString());
-            notificationService.sendNotification(notif);
+        if (complaint != null) {
+            complaint.setStatus(Complaint.ComplaintStatus.ROUTED);
+            complaint.setAssignedWorker(null);
+            complaint.setUpdatedAt(LocalDateTime.now());
+            complaintRepository.save(complaint);
+            
+            if (complaint.getCreatedBy() != null) {
+                com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+                notif.setUser(complaint.getCreatedBy());
+                notif.setTitle("Task Rejected by Worker");
+                notif.setMessage("Worker rejected complaint \"" + complaint.getTitle() + "\". Reason: " + reason);
+                notif.setType("REJECTION");
+                notif.setReferenceId(saved.getId().toString());
+                notificationService.sendNotification(notif);
+            }
         }
 
         return assignmentMapper.toResponse(saved);

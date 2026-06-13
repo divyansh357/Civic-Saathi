@@ -97,7 +97,7 @@ function AssignmentCard({ assignment, onAccept, onReject, onComplete, onNavigate
       </View>
 
       <Text style={styles.cardTitle} numberOfLines={2}>
-        {assignment.complaintTitle ?? assignment.complaintId}
+        {assignment.complaintTitle ?? assignment.complaintNumber ?? assignment.complaintId}
       </Text>
 
       {assignment.complaintAddress && (

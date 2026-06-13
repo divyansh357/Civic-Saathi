@@ -9,6 +9,7 @@ public class AssignmentResponse {
 
     private String id;
     private String complaintId;
+    private String complaintNumber;
     private String complaintTitle;
     private String departmentId;
     private String departmentName;
@@ -17,6 +18,7 @@ public class AssignmentResponse {
     private String assignmentType;
     private String status;
     private String priority;
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime slaDeadline;
     private String notes;
     private LocalDateTime createdAt;
@@ -46,6 +48,14 @@ public class AssignmentResponse {
 
     public void setComplaintId(String complaintId) {
         this.complaintId = complaintId;
+    }
+
+    public String getComplaintNumber() {
+        return complaintNumber;
+    }
+
+    public void setComplaintNumber(String complaintNumber) {
+        this.complaintNumber = complaintNumber;
     }
 
     public String getComplaintTitle() {
