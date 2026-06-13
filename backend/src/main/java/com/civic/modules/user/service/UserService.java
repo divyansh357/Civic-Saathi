@@ -79,9 +79,16 @@ public class UserService {
         if (updateData.getName() != null) user.setName(updateData.getName());
         if (updateData.getPhone() != null) user.setPhone(updateData.getPhone());
         if (updateData.getAddress() != null) user.setAddress(updateData.getAddress());
-        if (updateData.getAadharNumber() != null) user.setAadharNumber(updateData.getAadharNumber());
+        // Aadhar is locked once set — only update if it is currently empty
+        if (updateData.getAadharNumber() != null
+                && (user.getAadharNumber() == null || user.getAadharNumber().isBlank())) {
+            user.setAadharNumber(updateData.getAadharNumber());
+        }
         if (updateData.getZoneNumber() != null) user.setZoneNumber(updateData.getZoneNumber());
         if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
+        if (updateData.getDepartmentCode() != null && !updateData.getDepartmentCode().isBlank()) {
+            user.setDepartmentCode(updateData.getDepartmentCode().trim().toUpperCase());
+        }
 
         user.setUpdatedAt(LocalDateTime.now());
         User updatedUser = userRepository.save(user);

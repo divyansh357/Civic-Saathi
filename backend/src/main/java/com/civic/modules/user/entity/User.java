@@ -85,6 +85,9 @@ public class User {
     @Column(name = "zone_number")
     private Integer zoneNumber;
 
+    @Column(name = "department_code", length = 50)
+    private String departmentCode;
+
     @Column(nullable = false)
     private Boolean verified = false;
 
@@ -266,6 +269,14 @@ public class User {
 
     public void setZoneNumber(Integer zoneNumber) {
         this.zoneNumber = zoneNumber;
+    }
+
+    public String getDepartmentCode() {
+        return departmentCode;
+    }
+
+    public void setDepartmentCode(String departmentCode) {
+        this.departmentCode = departmentCode;
     }
 
     public Boolean getVerified() {

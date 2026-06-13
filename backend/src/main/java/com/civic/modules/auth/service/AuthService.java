@@ -103,6 +103,15 @@ public class AuthService {
     public AuthResponse signup(SignupRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
         String normalizedPhone = normalizePhone(request.getPhone());
+        String roleName = normalizeRole(request.getRole());
+
+        // ADMIN and OFFICER must use a @municipal.in email address.
+        // This acts as an implicit organisation-level verification gate.
+        if ((roleName.equals("ADMIN") || roleName.equals("OFFICER"))
+                && !normalizedEmail.endsWith("@municipal.in")) {
+            throw new ResourceConflictException(
+                "Admin and Officer accounts require an official @municipal.in email address");
+        }
 
         userRepository.findByEmailIgnoreCase(normalizedEmail)
                 .ifPresent(existing -> {
@@ -119,14 +128,17 @@ public class AuthService {
         user.setEmail(normalizedEmail);
         user.setPhone(normalizedPhone);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setVerified(false);
+        // ADMIN/OFFICER are auto-verified via @municipal.in email rule
+        user.setVerified(roleName.equals("ADMIN") || roleName.equals("OFFICER"));
         user.setStatus("ACTIVE");
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         user.setLastLoginAt(LocalDateTime.now());
+        if (request.getZoneNumber() != null) user.setZoneNumber(request.getZoneNumber());
+        if (request.getDepartmentCode() != null && !request.getDepartmentCode().isBlank()) {
+            user.setDepartmentCode(request.getDepartmentCode().trim().toUpperCase());
+        }
 
-        // Resolve and assign the role via the roles table
-        String roleName = normalizeRole(request.getRole());
         Role role = roleRepository.findByName(roleName)
                 .orElseGet(() -> {
                     Role newRole = new Role(roleName);

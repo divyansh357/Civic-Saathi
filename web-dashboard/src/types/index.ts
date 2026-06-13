@@ -15,6 +15,7 @@ export interface User {
   aadharNumber?: string;
   zoneNumber?: number;
   profileComplete?: boolean;
+  departmentCode?: string;
 }
 
 export interface AuthTokens {

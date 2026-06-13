@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -21,6 +22,7 @@ public class SignupRequest {
     private String email;
 
     @NotBlank(message = "Phone is required")
+    @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Phone must be 10–15 digits, optionally prefixed with country code")
     @JsonProperty("phone")
     private String phone;
 
@@ -37,51 +39,31 @@ public class SignupRequest {
     @JsonProperty("zoneNumber")
     private Integer zoneNumber;
 
-    public String getName() {
-        return name;
-    }
+    /**
+     * Department code for ADMIN and OFFICER roles.
+     * Optional — admins/officers can set this later via profile update.
+     */
+    @JsonProperty("departmentCode")
+    private String departmentCode;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public String getPhone() {
-        return phone;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public String getPassword() {
-        return password;
-    }
+    public Integer getZoneNumber() { return zoneNumber; }
+    public void setZoneNumber(Integer zoneNumber) { this.zoneNumber = zoneNumber; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public Integer getZoneNumber() {
-        return zoneNumber;
-    }
-
-    public void setZoneNumber(Integer zoneNumber) {
-        this.zoneNumber = zoneNumber;
-    }
+    public String getDepartmentCode() { return departmentCode; }
+    public void setDepartmentCode(String departmentCode) { this.departmentCode = departmentCode; }
 }

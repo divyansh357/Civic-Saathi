@@ -30,6 +30,9 @@ public class ProfileUpdateRequest {
     @JsonProperty("profilePictureUrl")
     private String profilePictureUrl;
 
+    @JsonProperty("departmentCode")
+    private String departmentCode;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -47,4 +50,7 @@ public class ProfileUpdateRequest {
 
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public String getDepartmentCode() { return departmentCode; }
+    public void setDepartmentCode(String departmentCode) { this.departmentCode = departmentCode; }
 }

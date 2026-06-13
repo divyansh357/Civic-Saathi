@@ -26,6 +26,7 @@ public class UserMapper {
         response.setAddress(user.getAddress());
         response.setAadharNumber(user.getAadharNumber());
         response.setZoneNumber(user.getZoneNumber());
+        response.setDepartmentCode(user.getDepartmentCode());
         response.setVerified(user.isVerified());
         response.setStatus(user.getStatus());
         // Profile is complete when address and aadharNumber are both filled in

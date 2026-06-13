@@ -16,6 +16,13 @@ interface MeResponse {
   name: string;
   email: string;
   role?: string;
+  phone?: string;
+  address?: string;
+  aadharNumber?: string;
+  zoneNumber?: number;
+  departmentCode?: string;
+  profileComplete?: boolean;
+  verified?: boolean;
 }
 
 const ACCESS_KEY = 'civic.auth.accessToken';
@@ -52,7 +59,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const me = await apiGet<MeResponse>('/auth/me', accessToken);
       set({
-        user: { id: me.userId, name: me.name, email: me.email, role: (me.role ?? 'CITIZEN') as User['role'] },
+        user: {
+          id: me.userId, name: me.name, email: me.email,
+          role: (me.role ?? 'CITIZEN') as User['role'],
+          phone: me.phone, address: me.address, aadharNumber: me.aadharNumber,
+          zoneNumber: me.zoneNumber, departmentCode: me.departmentCode,
+          profileComplete: me.profileComplete, verified: me.verified,
+        },
         accessToken, refreshToken, isAuthenticated: true, isLoading: false
       });
     } catch {
@@ -64,7 +77,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           localStorage.setItem(ACCESS_KEY, newToken);
           if (r.refreshToken) localStorage.setItem(REFRESH_KEY, r.refreshToken);
           set({
-            user: { id: me.userId, name: me.name, email: me.email, role: (me.role ?? 'CITIZEN') as User['role'] },
+            user: {
+              id: me.userId, name: me.name, email: me.email,
+              role: (me.role ?? 'CITIZEN') as User['role'],
+              phone: me.phone, address: me.address, aadharNumber: me.aadharNumber,
+              zoneNumber: me.zoneNumber, departmentCode: me.departmentCode,
+              profileComplete: me.profileComplete, verified: me.verified,
+            },
             accessToken: newToken, refreshToken: r.refreshToken ?? refreshToken,
             isAuthenticated: true, isLoading: false
           });
@@ -87,7 +106,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem(ACCESS_KEY, accessToken);
       if (auth.refreshToken) localStorage.setItem(REFRESH_KEY, auth.refreshToken);
       set({
-        user: { id: me.userId, name: me.name, email: me.email, role: (me.role ?? 'CITIZEN') as User['role'] },
+        user: {
+          id: me.userId, name: me.name, email: me.email,
+          role: (me.role ?? 'CITIZEN') as User['role'],
+          phone: me.phone, address: me.address, aadharNumber: me.aadharNumber,
+          zoneNumber: me.zoneNumber, departmentCode: me.departmentCode,
+          profileComplete: me.profileComplete, verified: me.verified,
+        },
         accessToken, refreshToken: auth.refreshToken ?? null,
         isAuthenticated: true, isLoading: false, error: null
       });
