@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [signupError, setSignupError] = useState('');
   const [signupSuccess, setSignupSuccess] = useState('');
   const [role, setRole] = useState('ADMIN');
+  const [zoneNumber, setZoneNumber] = useState('');
 
   const canLogin = email.trim().length > 0 && password.trim().length > 0;
   const canSignup =
@@ -26,7 +27,8 @@ export default function LoginPage() {
     email.trim().length > 0 &&
     phone.trim().length >= 10 &&
     password.length >= 8 &&
-    password === confirmPassword;
+    password === confirmPassword &&
+    /^\d+$/.test(zoneNumber.trim());
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -53,6 +55,7 @@ export default function LoginPage() {
         phone: phone.trim(),
         password,
         role: role,
+        zoneNumber: parseInt(zoneNumber, 10),
       });
       setSignupSuccess('Account created! You can now sign in.');
       setTab('login');
@@ -233,6 +236,24 @@ export default function LoginPage() {
             </div>
 
             <div className="form-group">
+              <label className="form-label" htmlFor="signup-zone">Zone Number</label>
+              <input
+                id="signup-zone"
+                type="number"
+                min="1"
+                className="form-input"
+                value={zoneNumber}
+                onChange={(e) => setZoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="e.g. 4"
+              />
+              {zoneNumber && !/^\d+$/.test(zoneNumber) && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--red)', marginTop: 4 }}>
+                  Must be a whole number
+                </span>
+              )}
+            </div>
+
+            <div className="form-group">
               <label className="form-label" htmlFor="signup-password">
                 Password <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(min 8 chars)</span>
               </label>
@@ -285,18 +306,6 @@ export default function LoginPage() {
           </form>
         )}
 
-        {/* Demo hint — only on login tab */}
-        {tab === 'login' && (
-          <div style={{
-            marginTop: 20, padding: '10px 12px',
-            background: 'var(--bg-3)', borderRadius: 'var(--radius)',
-            fontSize: '0.78rem', color: 'var(--text-3)',
-          }}>
-            <strong style={{ color: 'var(--text-2)' }}>Demo credentials:</strong><br />
-            Admin: admin@civic.com / password<br />
-            Officer: officer@civic.com / password
-          </div>
-        )}
       </div>
     </div>
   );

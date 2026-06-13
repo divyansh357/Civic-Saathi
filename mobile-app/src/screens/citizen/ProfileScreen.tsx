@@ -18,6 +18,11 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
 
   const [name, setName] = useState(user?.name ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  const [address, setAddress] = useState(user?.address ?? '');
+  const [aadharNumber, setAadharNumber] = useState(user?.aadharNumber ?? '');
+  const [zoneNumber, setZoneNumber] = useState(
+    user?.zoneNumber != null ? String(user.zoneNumber) : ''
+  );
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -31,7 +36,13 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
     try {
       const updated = await apiPut<typeof user>(
         '/users/me',
-        { name: name.trim(), phone: phone.trim() || undefined },
+        {
+          name: name.trim(),
+          phone: phone.trim() || undefined,
+          address: address.trim() || undefined,
+          aadharNumber: aadharNumber.trim() || undefined,
+          zoneNumber: zoneNumber ? parseInt(zoneNumber, 10) : undefined,
+        },
         accessToken
       );
       if (updated) setUser(updated);
@@ -121,6 +132,45 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
               placeholderTextColor="#94A3B8"
               keyboardType="phone-pad"
               maxLength={15}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Full Address</Text>
+            <TextInput
+              style={[styles.input, { minHeight: 72, textAlignVertical: 'top' }]}
+              value={address}
+              onChangeText={setAddress}
+              placeholder="House No., Street, City, State"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="words"
+              multiline
+              numberOfLines={3}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Aadhar Number</Text>
+            <TextInput
+              style={styles.input}
+              value={aadharNumber}
+              onChangeText={(v) => setAadharNumber(v.replace(/\D/g, '').slice(0, 12))}
+              placeholder="12-digit Aadhar number"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
+              maxLength={12}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Zone Number</Text>
+            <TextInput
+              style={styles.input}
+              value={zoneNumber}
+              onChangeText={(v) => setZoneNumber(v.replace(/[^0-9]/g, ''))}
+              placeholder="e.g. 4"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
             />
           </View>
 

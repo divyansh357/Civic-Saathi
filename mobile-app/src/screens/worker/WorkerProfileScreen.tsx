@@ -15,6 +15,7 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
   const [previousWorks, setPreviousWorks] = useState<string>('');
   const [address, setAddress] = useState<string>('');
   const [aadharNo, setAadharNo] = useState<string>('');
+  const [zoneNumber, setZoneNumber] = useState<string>('');
   const [workerCode, setWorkerCode] = useState<string>('');
   const [workerId, setWorkerId] = useState<string | null>(null);
   
@@ -24,6 +25,10 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
 
   const fetchProfile = async () => {
     if (!accessToken || !user) return;
+    // Pre-fill zone number from user object (saved during signup)
+    if (user.zoneNumber != null) setZoneNumber(String(user.zoneNumber));
+    if (user.address) setAddress(user.address);
+    if (user.aadharNumber) setAadharNo(user.aadharNumber);
     try {
       const res = await apiGet<any>(`/workers/user/${user.id}`, accessToken);
       if (res.id) setWorkerId(res.id);
@@ -32,7 +37,6 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
       if (res.aadharNo) setAadharNo(res.aadharNo);
       if (res.workerCode) setWorkerCode(res.workerCode);
       if (res.previousWorks) {
-        // Parse JSON if needed
         try {
           const worksArray = JSON.parse(res.previousWorks);
           setPreviousWorks(Array.isArray(worksArray) ? worksArray.join(', ') : res.previousWorks);
@@ -162,6 +166,17 @@ export default function WorkerProfileScreen({ onBack }: { onBack?: () => void })
             placeholder="Enter 12-digit Aadhar"
             keyboardType="numeric"
             maxLength={12}
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Zone Number</Text>
+          <TextInput 
+            style={[styles.input, { minHeight: 40 }]}
+            value={zoneNumber}
+            onChangeText={(v) => setZoneNumber(v.replace(/[^0-9]/g, ''))}
+            placeholder="e.g. 4"
+            keyboardType="numeric"
           />
         </View>
 

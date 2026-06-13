@@ -19,6 +19,9 @@ import { notificationService } from '@services/notifications';
 import LoginScreen from '@screens/auth/LoginScreen';
 import SignupScreen from '@screens/auth/SignupScreen';
 
+// Complete profile screen
+import CompleteProfileScreen from '@screens/CompleteProfileScreen';
+
 // Citizen screens
 import HomeScreen from '@screens/citizen/HomeScreen';
 import NewComplaintScreen from '@screens/citizen/NewComplaintScreen';
@@ -148,6 +151,18 @@ function AppContent() {
             setAuthScreen('signup');
           }}
         />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Profile completion gate ─────────────────────────────────────────────────
+  // All roles must fill address + aadhar before accessing any features.
+
+  if (isAuthenticated && user && !user.profileComplete) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F3F4F1" />
+        <CompleteProfileScreen />
       </SafeAreaView>
     );
   }

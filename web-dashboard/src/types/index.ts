@@ -11,6 +11,10 @@ export interface User {
   status?: string;
   verified?: boolean;
   createdAt?: string;
+  address?: string;
+  aadharNumber?: string;
+  zoneNumber?: number;
+  profileComplete?: boolean;
 }
 
 export interface AuthTokens {

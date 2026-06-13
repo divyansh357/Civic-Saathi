@@ -33,6 +33,18 @@ public class AuthenticatedUserResponse {
     @JsonProperty("active")
     private boolean active;
 
+    @JsonProperty("address")
+    private String address;
+
+    @JsonProperty("aadharNumber")
+    private String aadharNumber;
+
+    @JsonProperty("zoneNumber")
+    private Integer zoneNumber;
+
+    @JsonProperty("profileComplete")
+    private boolean profileComplete;
+
     public String getUserId() {
         return userId;
     }
@@ -96,4 +108,16 @@ public class AuthenticatedUserResponse {
     public void setActive(boolean active) {
         this.active = active;
     }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public String getAadharNumber() { return aadharNumber; }
+    public void setAadharNumber(String aadharNumber) { this.aadharNumber = aadharNumber; }
+
+    public Integer getZoneNumber() { return zoneNumber; }
+    public void setZoneNumber(Integer zoneNumber) { this.zoneNumber = zoneNumber; }
+
+    public boolean isProfileComplete() { return profileComplete; }
+    public void setProfileComplete(boolean profileComplete) { this.profileComplete = profileComplete; }
 }

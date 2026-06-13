@@ -1,5 +1,6 @@
 package com.civic.modules.user.service;
 
+import com.civic.modules.user.dto.ProfileUpdateRequest;
 import com.civic.modules.user.dto.UserResponse;
 import com.civic.modules.user.entity.User;
 import com.civic.modules.user.mapper.UserMapper;
@@ -66,8 +67,32 @@ public class UserService {
     }
 
     /**
-     * Update user profile.
+     * Update user profile using a dedicated update DTO.
      */
+    public UserResponse updateUserProfile(String id, ProfileUpdateRequest updateData) {
+        Optional<User> userOptional = userRepository.findById(UUID.fromString(id));
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("User not found with ID: " + id);
+        }
+
+        User user = userOptional.get();
+        if (updateData.getName() != null) user.setName(updateData.getName());
+        if (updateData.getPhone() != null) user.setPhone(updateData.getPhone());
+        if (updateData.getAddress() != null) user.setAddress(updateData.getAddress());
+        if (updateData.getAadharNumber() != null) user.setAadharNumber(updateData.getAadharNumber());
+        if (updateData.getZoneNumber() != null) user.setZoneNumber(updateData.getZoneNumber());
+        if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
+
+        user.setUpdatedAt(LocalDateTime.now());
+        User updatedUser = userRepository.save(user);
+        return userMapper.toResponse(updatedUser);
+    }
+
+    /**
+     * Update user profile (legacy — accepts raw User entity for backward compatibility).
+     * @deprecated Use updateUserProfile(String, ProfileUpdateRequest) instead.
+     */
+    @Deprecated
     public UserResponse updateUserProfile(String id, User updateData) {
         Optional<User> userOptional = userRepository.findById(UUID.fromString(id));
         if (userOptional.isEmpty()) {
@@ -79,6 +104,9 @@ public class UserService {
         if (updateData.getPhone() != null) user.setPhone(updateData.getPhone());
         if (updateData.getCity() != null) user.setCity(updateData.getCity());
         if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
+        if (updateData.getAddress() != null) user.setAddress(updateData.getAddress());
+        if (updateData.getAadharNumber() != null) user.setAadharNumber(updateData.getAadharNumber());
+        if (updateData.getZoneNumber() != null) user.setZoneNumber(updateData.getZoneNumber());
 
         user.setUpdatedAt(LocalDateTime.now());
         User updatedUser = userRepository.save(user);

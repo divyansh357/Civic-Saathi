@@ -61,6 +61,9 @@ public class AuthMapper {
                 .collect(Collectors.toList());
         if (roles.isEmpty()) roles = Collections.singletonList(role);
 
+        boolean profileComplete = user.getAddress() != null && !user.getAddress().isBlank()
+                && user.getAadharNumber() != null && !user.getAadharNumber().isBlank();
+
         AuthenticatedUserResponse response = new AuthenticatedUserResponse();
         response.setUserId(user.getId());
         response.setName(user.getName());
@@ -70,6 +73,10 @@ public class AuthMapper {
         response.setRoles(roles);
         response.setVerified(user.isVerified());
         response.setActive(user.isActive());
+        response.setAddress(user.getAddress());
+        response.setAadharNumber(user.getAadharNumber());
+        response.setZoneNumber(user.getZoneNumber());
+        response.setProfileComplete(profileComplete);
         return response;
     }
 }

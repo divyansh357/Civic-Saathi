@@ -1,5 +1,6 @@
 package com.civic.modules.user.controller;
 
+import com.civic.modules.user.dto.ProfileUpdateRequest;
 import com.civic.modules.user.dto.UserResponse;
 import com.civic.modules.user.entity.User;
 import com.civic.modules.user.service.UserService;
@@ -34,7 +35,7 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateMyProfile(
             @RequestHeader("User-Id") String userId,
-            @RequestBody User updateData) {
+            @RequestBody ProfileUpdateRequest updateData) {
         UserResponse response = userService.updateUserProfile(userId, updateData);
         return ResponseEntity.ok(response);
     }
