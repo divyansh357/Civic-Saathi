@@ -28,7 +28,7 @@ async function main() {
 
   let tunnel;
   try {
-    tunnel = await localtunnel({ port: BACKEND_PORT });
+    tunnel = await localtunnel({ port: BACKEND_PORT, local_host: '127.0.0.1' });
   } catch (err) {
     console.error('❌  Failed to open tunnel:', err.message);
     process.exit(1);

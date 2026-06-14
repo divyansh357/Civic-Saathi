@@ -29,6 +29,7 @@ import NewComplaintScreen from '@screens/citizen/NewComplaintScreen';
 import ComplaintDetailScreen from '@screens/citizen/ComplaintDetailScreen';
 import FeedbackScreen from '@screens/citizen/FeedbackScreen';
 import ProfileScreen from '@screens/citizen/ProfileScreen';
+import BadgesScreen from '@screens/citizen/BadgesScreen';
 
 // Worker screens
 import WorkerHomeScreen from '@screens/worker/WorkerHomeScreen';
@@ -40,7 +41,7 @@ import { Ionicons } from '@expo/vector-icons';
 // ─── Screen types ─────────────────────────────────────────────────────────────
 
 type AuthScreen = 'login' | 'signup';
-type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail' | 'notifications' | 'feedback' | 'profile';
+type CitizenScreen = 'home' | 'new-complaint' | 'complaint-detail' | 'notifications' | 'feedback' | 'profile' | 'badges';
 type WorkerScreen = 'home' | 'notifications';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -260,7 +261,14 @@ function AppContent() {
       )}
 
       {citizenScreen === 'profile' && (
-        <ProfileScreen onBack={() => setCitizenScreen('home')} />
+        <ProfileScreen 
+          onBack={() => setCitizenScreen('home')} 
+          onNavigateToBadges={() => setCitizenScreen('badges')}
+        />
+      )}
+
+      {citizenScreen === 'badges' && (
+        <BadgesScreen onBack={() => setCitizenScreen('profile')} />
       )}
     </SafeAreaView>
   );
