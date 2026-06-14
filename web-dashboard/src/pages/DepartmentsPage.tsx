@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store';
 import { apiGet, apiPost } from '../services/api/client';
 import { Department } from '../types';
-import { Search } from 'lucide-react';
+import { Search, Building2, CheckCircle2, PauseCircle, Building } from 'lucide-react';
 
 const MOCK: Department[] = [
   { id: 'd1', name: 'Roads & Infrastructure', code: 'ROADS', categoryType: 'ROADS', city: 'Bengaluru', active: true, headName: 'Rajesh Nair', email: 'roads@civic.gov.in', phone: '080-22334455' },
@@ -58,17 +58,17 @@ export default function DepartmentsPage() {
 
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 20 }}>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}>🏛️</div>
+          <div className="stat-icon" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}><Building2 size={20} /></div>
           <div className="stat-value">{departments.length}</div>
           <div className="stat-label">Total Departments</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>✅</div>
+          <div className="stat-icon" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}><CheckCircle2 size={20} /></div>
           <div className="stat-value">{departments.filter((d) => d.active).length}</div>
           <div className="stat-label">Active</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}>⏸️</div>
+          <div className="stat-icon" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}><PauseCircle size={20} /></div>
           <div className="stat-value">{departments.filter((d) => !d.active).length}</div>
           <div className="stat-label">Inactive</div>
         </div>
@@ -90,7 +90,7 @@ export default function DepartmentsPage() {
 
         {filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">🏛️</div>
+            <div className="empty-state-icon"><Building size={48} /></div>
             <h3>No departments found</h3>
           </div>
         ) : (
