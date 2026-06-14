@@ -11,6 +11,7 @@ import WorkersPage from './pages/WorkersPage';
 import UsersPage from './pages/UsersPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import LiveMapPage from './pages/LiveMapPage';
 import { Building2, Sun, Moon, Bell, Globe } from 'lucide-react';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -22,6 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   users: 'topbar.users',
   analytics: 'topbar.analytics',
   notifications: 'topbar.notifications',
+  livemap: 'sidebar.livemap',
 };
 
 export default function App() {
@@ -69,6 +71,7 @@ export default function App() {
       case 'users': return <UsersPage />;
       case 'analytics': return <AnalyticsPage />;
       case 'notifications': return <NotificationsPage />;
+      case 'livemap': return <LiveMapPage />;
       default: return <DashboardPage />;
     }
   };

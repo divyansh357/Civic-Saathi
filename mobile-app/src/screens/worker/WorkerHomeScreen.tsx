@@ -279,6 +279,16 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     }
   }, [workerLocation]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync location to backend
+  useEffect(() => {
+    if (workerLocation && workerId && accessToken) {
+      apiPut(`/workers/${workerId}/location`, {
+        latitude: workerLocation.latitude,
+        longitude: workerLocation.longitude
+      }, accessToken).catch(e => console.log('Failed to sync location to server:', e));
+    }
+  }, [workerLocation, workerId, accessToken]);
+
   const onRefresh = () => { 
     setRefreshing(true); 
     void getCurrentLocation();

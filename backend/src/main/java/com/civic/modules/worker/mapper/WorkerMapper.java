@@ -38,6 +38,11 @@ public class WorkerMapper {
         response.setProfileImageUrl(worker.getProfileImageUrl());
         response.setPreviousWorks(worker.getPreviousWorks());
         response.setWorkerCode(worker.getWorkerCode());
+        response.setLatitude(worker.getLatitude());
+        response.setLongitude(worker.getLongitude());
+        if (worker.getLastActiveAt() != null) {
+            response.setLastActiveAt(worker.getLastActiveAt().toString());
+        }
 
         if (worker.getPreferredZones() != null) {
             response.setPreferredZoneIds(worker.getPreferredZones().stream().map(Zone::getId).collect(Collectors.toList()));

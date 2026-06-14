@@ -1,5 +1,6 @@
 package com.civic.modules.worker.controller;
 
+import com.civic.modules.worker.dto.LocationUpdateRequest;
 import com.civic.modules.worker.dto.WorkerProfileUpdateRequest;
 import com.civic.modules.worker.dto.WorkerResponse;
 import com.civic.modules.worker.entity.Worker;
@@ -130,6 +131,17 @@ public class WorkerController {
             @PathVariable String id,
             @RequestBody WorkerProfileUpdateRequest request) {
         WorkerResponse response = workerService.updateProfile(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Update worker location.
+     */
+    @PutMapping("/{id}/location")
+    public ResponseEntity<WorkerResponse> updateLocation(
+            @PathVariable String id,
+            @jakarta.validation.Valid @RequestBody LocationUpdateRequest request) {
+        WorkerResponse response = workerService.updateLocation(id, request);
         return ResponseEntity.ok(response);
     }
 }
