@@ -10,7 +10,6 @@ import {
   LineChart, 
   Bell, 
   LogOut,
-  Globe,
   MapPin
 } from 'lucide-react';
 
@@ -43,7 +42,7 @@ interface SidebarProps {
 export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: SidebarProps) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -53,11 +52,6 @@ export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: S
     if (!item.roles) return true;
     return item.roles.includes(user?.role ?? '');
   });
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'hi' : 'en';
-    i18n.changeLanguage(newLang);
-  };
 
   return (
     <aside className="sidebar">

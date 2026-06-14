@@ -4,7 +4,7 @@ import { useAuthStore } from '../store';
 import { apiGet, apiPost, apiPut } from '../services/api/client';
 import { Assignment, Complaint, PagedResponse, ComplaintStatus } from '../types';
 import { PriorityBadge, AssignmentStatusBadge } from '../components/StatusBadge';
-import { Zap, AlertTriangle, GitMerge, XCircle, AlertCircle, CheckCircle2, Clock, X, Check } from 'lucide-react';
+import { Zap, AlertTriangle, GitMerge, XCircle, AlertCircle, CheckCircle2, X, Check } from 'lucide-react';
 
 function formatDate(iso?: string) {
   if (!iso) return '—';
@@ -319,7 +319,7 @@ export default function AssignmentsPage() {
     try {
       // Fetch all assignments from correct endpoint
       const [assignRes, overdueRes, complaintsRes] = await Promise.all([
-        apiGet<{ data?: Assignment[]; totalItems?: number; status?: string }>(`/assignments?page=${page}&size=${PAGE_SIZE}`, accessToken).catch(() => null),
+        apiGet<{ data?: Assignment[]; totalItems?: number; status?: string; content?: Assignment[]; totalElements?: number }>(`/assignments?page=${page}&size=${PAGE_SIZE}`, accessToken).catch(() => null),
         apiGet<{ data?: Assignment[]; count?: number }>('/assignments/overdue', accessToken).catch(() => null),
         apiGet<PagedResponse<Complaint>>('/complaints?page=0&size=50&sort=createdAt,desc', accessToken).catch(() => null),
       ]);

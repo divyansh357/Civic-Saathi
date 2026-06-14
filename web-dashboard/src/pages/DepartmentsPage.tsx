@@ -193,9 +193,9 @@ export default function DepartmentsPage() {
                 try {
                   const { apiPut } = await import('../services/api/client');
                   if (editingDept) {
-                    await apiPut(`/departments/${editingDept.id}`, newDept, accessToken);
+                    await apiPut(`/departments/${editingDept.id}`, newDept, accessToken || undefined);
                   } else {
-                    await apiPost('/departments', newDept, accessToken);
+                    await apiPost('/departments', newDept, accessToken || undefined);
                   }
                   setShowModal(false);
                   fetchDepartments();

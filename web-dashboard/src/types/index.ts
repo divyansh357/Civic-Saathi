@@ -39,7 +39,8 @@ export type ComplaintStatus =
   | 'REOPENED'
   | 'REJECTED'
   | 'ESCALATED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'AI_REJECTED';
 
 export type ComplaintPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'VERY_LOW';
 
@@ -63,6 +64,9 @@ export interface Complaint {
   address?: string;
   city?: string;
   imageUrls?: string[];
+  resolutionImages?: string[];
+  rating?: number;
+  feedback?: string;
   verificationMethod?: string;
   aiSummary?: string;
   slaDeadline?: string;
@@ -119,7 +123,9 @@ export interface Assignment {
   status: 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'ACKNOWLEDGED' | 'ESCALATED';
   priority?: string;
   slaDeadline?: string;
+  createdAt?: string;
   assignedAt?: string;
+  acceptedAt?: string;
   completedAt?: string;
   rejectionReason?: string;
   escalationReason?: string;

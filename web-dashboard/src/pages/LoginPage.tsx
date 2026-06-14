@@ -95,7 +95,7 @@ export default function LoginPage() {
     }
   };
 
-  const pwdInputStyle = (show: boolean): React.CSSProperties => ({
+  const pwdInputStyle = (_show?: boolean): React.CSSProperties => ({
     paddingRight: 40,
   });
 

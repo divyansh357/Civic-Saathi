@@ -362,7 +362,7 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
               <div style={{ marginTop: 16 }}>
                 <div className="form-label" style={{ marginBottom: 8 }}>Proof of Work ({complaint.resolutionImages.length})</div>
                 <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
-                  {complaint.resolutionImages.map((url, i) => (
+                  {complaint.resolutionImages.map((url: string, i: number) => (
                     <a key={i} href={url} target="_blank" rel="noreferrer">
                       {url.toLowerCase().endsWith('.mp4') || url.toLowerCase().includes('video') ? (
                         <div style={{ width: 100, height: 100, background: '#000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
