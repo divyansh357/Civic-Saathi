@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Dimensions, Alert, Share } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Dimensions, Alert } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Complaint } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { API_CONFIG } from '@constants/index';
@@ -18,13 +20,27 @@ export default function CivicBadge({ complaint }: Props) {
 
   const handleShare = async () => {
     try {
-      await Share.share({
-        message: `I just earned a Civic Impact Badge for helping resolve an issue in my city! Check out my achievement: ${badgeUrl}`,
-        url: badgeUrl,
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Sharing Unavailable', 'Your device does not support sharing at this time.');
+        return;
+      }
+
+      const fileUri = `${FileSystem.cacheDirectory}badge-achievement.png`;
+      
+      const { uri } = await FileSystem.downloadAsync(badgeUrl, fileUri, {
+        headers: {
+          'Bypass-Tunnel-Reminder': 'true'
+        }
+      });
+
+      await Sharing.shareAsync(uri, {
+        dialogTitle: 'Share my Civic Impact Badge!',
+        mimeType: 'image/png',
       });
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to share the badge.');
+      Alert.alert('Error', 'Failed to share the badge image.');
     }
   };
 
