@@ -499,3 +499,19 @@ The Hindi/English translation functionality was only partially implemented on th
 |---|---|---|---|
 | 26 | Web | Incomplete translation coverage across dashboard pages | ✅ Fixed |
 
+
+---
+
+## 27. Auto Assignment Silent Failure and Incorrect Fallback
+
+### Issue
+When auto-assignment was triggered and no worker was available in the target department (or if the category didn't match any department), the system silently fell back to assigning the complaint to the first active department (usually ROADS). It then returned a success response (200 OK) without actually assigning a worker, which caused the frontend to incorrectly mark the complaint as ASSIGNED despite no worker actually taking it up.
+
+### Solution Applied
+- Removed the arbitrary fallback that assigned unmatched categories to the first available department in AssignmentService.java.
+- Updated utoAssignComplaint() to explicitly throw a RuntimeException with messages like "No relevant worker found in department..." or "Could not determine appropriate department...".
+- The frontend 	ry...catch blocks in ComplaintsPage.tsx and AssignmentsPage.tsx now correctly intercept these errors and show the error message in a UI alert instead of silently assuming success.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 27 | Backend | Auto Assignment Silent Failure and Incorrect Fallback | ✅ Fixed |
