@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import WorkerProfileScreen from './WorkerProfileScreen';
 import {
@@ -8,9 +8,12 @@ import {
 import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
 import { apiGet, apiPost, apiPut } from '@services/api/client';
+import { WatermarkProcessor, WatermarkProcessorRef } from '@components/WatermarkProcessor';
 import { Assignment, Complaint } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import ComplaintDetailScreen from '../citizen/ComplaintDetailScreen';
+
+type AssignmentStatus = 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 // Extend Assignment type for mobile
 interface WorkerAssignment extends Assignment {
@@ -166,6 +169,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   const [workerLocation, setWorkerLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [workerId, setWorkerId] = useState<string | null>(null);
+  const watermarkProcessorRef = useRef<WatermarkProcessorRef>(null);
   
   // Modal state
   const [selectedAssignment, setSelectedAssignment] = useState<WorkerAssignment | null>(null);
@@ -407,34 +411,86 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
 
   const handleComplete = async (id: string) => {
     if (!accessToken) return;
-    Alert.alert('Complete Task', 'You must provide 2 to 4 photos or videos as proof of resolution.', [
+    Alert.alert('Complete Task', 'You must provide 2 to 4 photos as proof of resolution. Please capture them using your camera.', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Select Proofs', onPress: async () => {
+        text: 'Capture Proofs', onPress: async () => {
           try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
-              Alert.alert('Permission Required', 'Gallery access is needed for proof.');
+              Alert.alert('Permission Required', 'Camera access is needed for proof.');
               return;
             }
-            const result = await ImagePicker.launchImageLibraryAsync({ 
-              mediaTypes: ImagePicker.MediaTypeOptions.All,
-              allowsMultipleSelection: true,
-              selectionLimit: 4,
-              quality: 0.8 
-            });
             
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-              if (result.assets.length < 2) {
-                Alert.alert('Insufficient Proofs', 'Please select at least 2 photos or videos.');
-                return;
+            const capturedAssets: ImagePicker.ImagePickerAsset[] = [];
+            // Loop up to 4 times to let them capture multiple images
+            for (let i = 0; i < 4; i++) {
+              const result = await ImagePicker.launchCameraAsync({ 
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.8,
+                exif: true,
+              });
+              
+              if (!result.canceled && result.assets && result.assets[0]) {
+                capturedAssets.push(result.assets[0]);
+                if (i < 3) {
+                  // Ask if they want to capture another
+                  const captureMore = await new Promise((resolve) => {
+                    Alert.alert('Photo Captured', `You have captured ${capturedAssets.length} photo(s). Do you want to capture another? (Max 4)`, [
+                      { text: 'No, submit now', onPress: () => resolve(false) },
+                      { text: 'Yes, capture another', onPress: () => resolve(true) }
+                    ]);
+                  });
+                  if (!captureMore) break;
+                }
+              } else {
+                break; // They canceled
               }
-              if (result.assets.length > 4) {
-                Alert.alert('Too Many Proofs', 'You can select a maximum of 4 photos or videos.');
+            }
+            
+            if (capturedAssets.length > 0) {
+              if (capturedAssets.length < 2) {
+                Alert.alert('Insufficient Proofs', 'Please capture at least 2 photos.');
                 return;
               }
               setLoading(true);
-              const uploadPromises = result.assets.map(asset => uploadImageToCloudinary(asset.uri));
+              
+              // Watermark logic
+              const processedUris: string[] = [];
+              let locationCoords = null;
+              try {
+                const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+                if (locStatus === 'granted') {
+                  const loc = await Location.getCurrentPositionAsync({});
+                  locationCoords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+                }
+              } catch (e) {
+                console.error("Worker location error:", e);
+              }
+              
+              const userName = useAuthStore.getState().user?.name || 'Worker';
+              const dateStr = require('date-fns').format(new Date(), 'dd-MMM-yyyy');
+              const timeStr = require('date-fns').format(new Date(), 'HH:mm:ss');
+              
+              for (const asset of capturedAssets) {
+                let finalUri = asset.uri;
+                if (watermarkProcessorRef.current) {
+                  try {
+                    finalUri = await watermarkProcessorRef.current.processImage(asset.uri, {
+                      latitude: locationCoords?.lat || asset.exif?.GPSLatitude || null,
+                      longitude: locationCoords?.lng || asset.exif?.GPSLongitude || null,
+                      date: dateStr,
+                      time: timeStr,
+                      userName: userName
+                    });
+                  } catch (e) {
+                    console.error("Watermark error:", e);
+                  }
+                }
+                processedUris.push(finalUri);
+              }
+
+              const uploadPromises = processedUris.map(uri => uploadImageToCloudinary(uri));
               const uploadedUrls = await Promise.all(uploadPromises);
               
               await apiPost(`/assignments/${id}/complete`, { images: uploadedUrls }, accessToken);
@@ -480,6 +536,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -702,6 +759,8 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
       </Modal>
 
     </ScrollView>
+    <WatermarkProcessor ref={watermarkProcessorRef} />
+    </View>
   );
 }
 

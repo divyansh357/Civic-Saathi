@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
   Pressable, ActivityIndicator, Alert, Image
@@ -10,6 +10,8 @@ import { Button } from 'react-native-paper';
 import { useAuthStore } from '@store/index';
 import { apiPost, apiPostWithHeaders } from '@services/api/client';
 import { Ionicons } from '@expo/vector-icons';
+import { WatermarkProcessor, WatermarkProcessorRef } from '@components/WatermarkProcessor';
+import { format } from 'date-fns';
 
 const CATEGORIES = [
   { id: 'ROADS', icon: <Ionicons name="git-network-outline" size={24} color="#64748b" />, label: 'Roads', desc: 'Potholes, damage, cave-ins' },
@@ -40,6 +42,9 @@ interface LocationData {
 
 export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintScreenProps) {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const userName = useAuthStore((s) => s.user?.name) || 'Unknown User';
+  const watermarkProcessorRef = useRef<WatermarkProcessorRef>(null);
+  const [isWatermarking, setIsWatermarking] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -186,6 +191,50 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
     }
   };
 
+  const processAndAddWatermark = async (uri: string, exifData?: any, isCamera: boolean = false) => {
+    try {
+      setIsWatermarking(true);
+      
+      let lat = null;
+      let lng = null;
+      let dateStr = format(new Date(), 'dd-MMM-yyyy');
+      let timeStr = format(new Date(), 'HH:mm:ss');
+
+      if (isCamera) {
+        // Use current device location if it's camera
+        if (location) {
+          lat = location.latitude;
+          lng = location.longitude;
+        }
+      } else {
+        // Use EXIF for gallery if available, otherwise fallback to live location
+        if (exifData && exifData.GPSLatitude && exifData.GPSLongitude) {
+          lat = exifData.GPSLatitude;
+          lng = exifData.GPSLongitude;
+        } else if (location) {
+          lat = location.latitude;
+          lng = location.longitude;
+        }
+      }
+
+      if (!watermarkProcessorRef.current) return uri; // Fallback
+
+      const watermarkedUri = await watermarkProcessorRef.current.processImage(uri, {
+        latitude: lat,
+        longitude: lng,
+        date: dateStr,
+        time: timeStr,
+        userName
+      });
+      return watermarkedUri;
+    } catch (error) {
+      console.error('Watermark error:', error);
+      return uri; // Fallback to original
+    } finally {
+      setIsWatermarking(false);
+    }
+  };
+
   const pickImage = async () => {
     if (images.length >= 5) {
       Alert.alert('Limit Reached', 'You can only upload up to 5 photos.');
@@ -201,16 +250,23 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false, // Disabling to allow multiple selection
+        allowsEditing: false, 
         aspect: [4, 3],
         quality: 0.8,
         allowsMultipleSelection: true,
         selectionLimit: 5 - images.length,
+        exif: true, // Request EXIF
       });
 
       if (!result.canceled && result.assets) {
-        const newUris = result.assets.map(a => a.uri);
-        setImages(prev => [...prev, ...newUris].slice(0, 5));
+        const processedUris: string[] = [];
+        for (const asset of result.assets) {
+          const processed = await processAndAddWatermark(asset.uri, asset.exif, false);
+          if (processed) processedUris.push(processed);
+        }
+        if (processedUris.length > 0) {
+          setImages(prev => [...prev, ...processedUris].slice(0, 5));
+        }
       }
     } catch (error) {
       console.error('Image picker error:', error);
@@ -235,10 +291,14 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
+        exif: true,
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImages(prev => [...prev, result.assets[0].uri]);
+        const processed = await processAndAddWatermark(result.assets[0].uri, result.assets[0].exif, true);
+        if (processed) {
+          setImages(prev => [...prev, processed]);
+        }
       }
     } catch (error) {
       console.error('Camera error:', error);
@@ -676,6 +736,13 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
           Your complaint will be reviewed and assigned to the relevant department within 24 hours.
         </Text>
       </ScrollView>
+      {isWatermarking && (
+        <View style={styles.watermarkOverlay}>
+          <ActivityIndicator size="large" color="#0F766E" />
+          <Text style={styles.watermarkLoadingText}>Processing image...</Text>
+        </View>
+      )}
+      <WatermarkProcessor ref={watermarkProcessorRef} />
     </View>
   );
 }
@@ -786,6 +853,12 @@ const styles = StyleSheet.create({
     width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444',
   },
   recordingText: { fontSize: 12, color: '#EF4444', fontWeight: '500' },
+  watermarkOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+  },
+  watermarkLoadingText: { marginTop: 12, fontSize: 16, color: '#0F766E', fontWeight: '600' },
 
   // AI suggestion banner
   aiBanner: {

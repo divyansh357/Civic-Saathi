@@ -89,6 +89,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     await storageService.clearAuthTokens();
     await storageService.clearUser();
 
+    // Clear global state
+    useComplaintStore.getState().clearComplaints();
+    useNotificationStore.getState().clearNotifications();
+
     set({
       user: null,
       accessToken: null,

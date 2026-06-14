@@ -9,6 +9,7 @@
       "**/*"
     ],
     "splash": {
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#F4F6FA"
     },
