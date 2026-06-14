@@ -85,12 +85,6 @@ export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: S
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-lang-toggle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} onClick={toggleLanguage}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-2)' }}>
-            <Globe size={18} />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{i18n.language === 'hi' ? 'English' : 'हिंदी'}</span>
-          </div>
-        </div>
         <div className="sidebar-user" onClick={() => void logout()}>
           <div className="avatar">{initials}</div>
           <div className="sidebar-user-info">

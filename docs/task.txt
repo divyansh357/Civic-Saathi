@@ -14,7 +14,7 @@
 
 - Language support for Hindi Across web and app : done 
 - Glimpse Of the Worker's on the map for the web dashboard (making a map view on the web to see all the available workers and live position of them on map.)
-- Web UI enhancements completely (dark mode and light both)
+- Web UI enhancements completely (dark mode and light both) : done 
 - A Chatbot on the Web for officials to Chat and gain good insights from the data. (it should be a RAG on the Real actual DATA (vector DB) (It should be really helpful in making critical decision and also to train the new officials about things as it should be like a training module as well ))
 	- the ChatBot will work as a Extremely helpful curated to work as useful and helpful it can be. 
 	- like putting a policies docs and other docs in a tab of docs and then Querying over it. (we have to brainstorm over this so that we can give as best as we can)
