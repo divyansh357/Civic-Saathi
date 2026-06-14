@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
+import './i18n';
 import { civicTheme } from '@theme/index';
 import { useAuthStore, useComplaintStore } from '@store/index';
 import { Complaint } from '@/types';

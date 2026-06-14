@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store';
 import { apiGet, apiPut, apiPost } from '../services/api/client';
 import { Complaint, ComplaintStatus, PagedResponse, ReopenRequest, Worker } from '../types';
@@ -268,7 +269,7 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
                 <div className="form-label">Worker</div>
                 <div style={{ color: 'var(--text)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                   {complaint.assignedWorkerName ?? 'Unassigned'}
-                  {!complaint.assignedWorkerName && (
+                  {!complaint.assignedWorkerName ? (
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-sm" style={{ padding: '2px 8px', fontSize: '0.72rem' }}
                         onClick={() => setShowAssignWorker(true)}>
@@ -277,6 +278,14 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
                       <button className="btn btn-sm btn-outline" style={{ padding: '2px 8px', fontSize: '0.72rem' }}
                         onClick={() => void handleAutoAssign()} disabled={autoAssigning}>
                         {autoAssigning ? '...' : 'Auto Assign'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-sm btn-outline" style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                        onClick={() => setShowAssignWorker(true)}
+                        disabled={['RESOLVED', 'VERIFIED_FOR_CLOSURE', 'CLOSED', 'CANCELLED'].includes(complaint.status)}>
+                        <RefreshCw size={12} className="icon-inline" /> Reassign
                       </button>
                     </div>
                   )}
@@ -478,6 +487,7 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
 
 export default function ComplaintsPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const { t } = useTranslation();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -553,27 +563,27 @@ export default function ComplaintsPage() {
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Complaints & Requests</h1>
-          <p>{total.toLocaleString()} {viewMode === 'all' ? 'total complaints' : 'pending reopen requests'} in the system</p>
+          <h1>{t('complaints.title')}</h1>
+          <p>{t(viewMode === 'all' ? 'complaints.total_in_system' : 'complaints.pending_reopens', { total: total.toLocaleString() })}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, background: 'var(--bg-2)', padding: 4, borderRadius: 8 }}>
           <button 
             className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-ghost'}`} 
             onClick={() => { setViewMode('all'); setPage(0); }}
           >
-            All Complaints
+            {t('complaints.all_complaints')}
           </button>
           <button 
             className={`btn ${viewMode === 'reopens' ? 'btn-primary' : 'btn-ghost'}`} 
             onClick={() => { setViewMode('reopens'); setPage(0); }}
           >
-            Pending Reopens
+            {t('complaints.pending_reopens_btn')}
           </button>
           <button 
             className={`btn ${viewMode === 'ai_queue' ? 'btn-primary' : 'btn-ghost'}`} 
             onClick={() => { setViewMode('ai_queue'); setPage(0); }}
           >
-            Verification Queue
+            {t('complaints.verification_queue')}
           </button>
         </div>
       </div>

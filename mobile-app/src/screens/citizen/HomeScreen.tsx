@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, ActivityIndicator
@@ -78,6 +79,7 @@ interface HomeScreenProps {
 
 export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNavigateToNotifications, onNavigateToProfile }: HomeScreenProps) {
   const user = useAuthStore((s) => s.user);
+  const { t } = useTranslation();
   const { complaints, setComplaints, isLoading, setLoading } = useComplaintStore();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [refreshing, setRefreshing] = useState(false);
@@ -179,7 +181,7 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
           </Text>
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.greetingText}>Hello, {user?.name?.split(' ')[0] ?? 'Citizen'} 👋</Text>
+          <Text style={styles.greetingText}>{t('home.greeting', { name: user?.name?.split(' ')[0] ?? 'Citizen' })} 👋</Text>
           <Text style={styles.greetingSubtext}>Report civic issues in your area</Text>
         </View>
         <Pressable style={styles.notificationBtn} onPress={onNavigateToNotifications}>
@@ -208,14 +210,14 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
       <Pressable style={styles.ctaButton} onPress={onNewComplaint}>
         <Text style={styles.ctaIcon}>+</Text>
         <View>
-          <Text style={styles.ctaTitle}>Report a New Issue</Text>
+          <Text style={styles.ctaTitle}>{t('home.report_issue')}</Text>
           <Text style={styles.ctaSubtitle}>Tap to submit a civic complaint</Text>
         </View>
       </Pressable>
 
       {/* Complaints List */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Complaints</Text>
+        <Text style={styles.sectionTitle}>{t('home.my_complaints')}</Text>
         {isLoading ? (
           <ActivityIndicator color="#0F766E" style={{ marginTop: 24 }} />
         ) : complaints.length === 0 ? (

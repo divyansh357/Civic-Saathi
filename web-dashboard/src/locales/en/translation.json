@@ -1,0 +1,40 @@
+{
+  "sidebar": {
+    "admin_dashboard": "Admin Dashboard",
+    "dashboard": "Dashboard",
+    "complaints": "Complaints",
+    "assignments": "Assignments",
+    "departments": "Departments",
+    "workers": "Workers",
+    "users": "Users",
+    "analytics": "Analytics",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "logout": "Log Out",
+    "language": "Language",
+    "navigation": "Navigation"
+  },
+  "complaints": {
+    "title": "Complaints & Requests",
+    "total_in_system": "{{total}} total complaints in the system",
+    "pending_reopens": "{{total}} pending reopen requests in the system",
+    "all_complaints": "All Complaints",
+    "pending_reopens_btn": "Pending Reopens",
+    "verification_queue": "Verification Queue",
+    "search_placeholder": "Search complaints...",
+    "all_statuses": "All Statuses",
+    "refresh": "Refresh",
+    "no_complaints_found": "No complaints found",
+    "no_complaints_desc": "Try adjusting your filters or search query",
+    "table_id": "ID",
+    "table_title": "Title",
+    "table_category": "Category",
+    "table_status": "Status",
+    "table_priority": "Priority",
+    "table_department": "Department",
+    "table_citizen": "Citizen",
+    "table_created": "Created",
+    "view": "View",
+    "review": "Review"
+  }
+}

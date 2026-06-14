@@ -68,7 +68,9 @@ public class ComplaintWorkflow {
                     Complaint.ComplaintStatus.ACKNOWLEDGED,
                     Complaint.ComplaintStatus.IN_PROGRESS,
                     Complaint.ComplaintStatus.ESCALATED,
-                    Complaint.ComplaintStatus.REJECTED
+                    Complaint.ComplaintStatus.REJECTED,
+                    Complaint.ComplaintStatus.SUBMITTED,
+                    Complaint.ComplaintStatus.VERIFIED
                 );
             case ACKNOWLEDGED:
                 return EnumSet.of(

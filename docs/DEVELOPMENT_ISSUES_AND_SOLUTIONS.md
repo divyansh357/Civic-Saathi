@@ -410,3 +410,48 @@ Aadhar is a 12-digit numeric identifier, but there was no enforcement of this ru
 | # | Area | Issue | Status |
 |---|---|---|---|
 | 20 | All | Aadhar accepted any string — no 12-digit numeric validation | ✅ Fixed |
+
+---
+
+## 21. Backend Connection Pool Exhaustion
+
+### Issue
+The backend was failing to connect to Supabase with a `FATAL: (EMAXCONNSESSION)` error because the default HikariCP connection pool was exceeding the maximum allowed connections on the free tier.
+
+### Solution Applied
+- Adjusted `application.yml` to limit `spring.datasource.hikari.maximum-pool-size` to `3`. This keeps the active connections well under the free tier limit.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 21 | Backend | EMAXCONNSESSION database connection limit reached | ✅ Fixed |
+
+---
+
+## 22. Worker Reassignment & Admin Workflow Bypass
+
+### Issue
+Admins were unable to reassign workers from the web dashboard once a complaint was assigned. Furthermore, attempting to manually revert a complaint's status from `ASSIGNED` to `SUBMITTED` or `VERIFIED` caused an `IllegalStateException` due to strict workflow constraints.
+
+### Solution Applied
+- **Backend**: Updated `AssignmentService.manualAssignComplaint` to fully support reassignment. The old worker's `complaintsAssigned` count is decremented, and an "Assignment Removed" notification is dispatched before assigning the new worker.
+- **Backend**: Updated `ComplaintWorkflow.getValidNextStates` to allow transitioning from `ASSIGNED` to `SUBMITTED` and `VERIFIED`. Additionally, updated `ComplaintService.updateComplaintStatus` to use `forceTransition` instead of `applyTransition`, allowing admins full override control from the dashboard.
+- **Web**: Added a **Reassign** button in `ComplaintsPage.tsx` next to the assigned worker, which opens the assignment modal instead of hiding the action buttons.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 22 | Backend / Web | Missing UI for worker reassignment and overly strict admin state transitions | ✅ Fixed |
+
+---
+
+## 23. Language Support (Hindi & English)
+
+### Issue
+The platform only supported English, but needed to support Hindi across both the web dashboard and mobile app for better accessibility.
+
+### Solution Applied
+- **Web**: Introduced `react-i18next` and `i18next-browser-languagedetector`. Created translation dictionaries (`en.json`, `hi.json`) and successfully translated key components like the Sidebar and Complaints Page. Added a language toggle button to the sidebar footer.
+- **Mobile App**: Integrated `react-i18next` with `expo-localization` to automatically detect the device language on startup, falling back to English. Translated the Home screen and established the foundation for extending translations to all screens. Setup `AsyncStorage` to persist language choices.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 23 | Web / Mobile | No support for Hindi language or internationalization | ✅ Fixed |

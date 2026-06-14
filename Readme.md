@@ -91,10 +91,11 @@ npm run dev
 ```powershell
 cd mobile-app
 npm install
-npm run start
 
 cd mobile-app
 npm run tunnel
+
+// npx expo start -c --tunnel // for fresh restart
 
 # Scan QR code with Expo Go app
 ```

@@ -185,7 +185,26 @@ public class AssignmentService {
                 return assignmentMapper.toResponse(assignment);
             }
             // Reassignment to a different worker
-            logger.info("Reassigning complaint {} to new worker {}", complaint.getId(), worker.getId());
+            logger.info("Reassigning complaint {} from old worker {} to new worker {}", complaint.getId(), assignment.getWorker().getId(), worker.getId());
+            
+            // Decrement old worker statistics
+            Worker oldWorker = assignment.getWorker();
+            if (oldWorker != null) {
+                oldWorker.setComplaintsAssigned(Math.max(0, oldWorker.getComplaintsAssigned() - 1));
+                workerRepository.save(oldWorker);
+                
+                // Also send a notification to the old worker that they have been unassigned
+                if (oldWorker.getUser() != null) {
+                    com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+                    notif.setUser(oldWorker.getUser());
+                    notif.setTitle("Assignment Removed");
+                    notif.setMessage("You have been unassigned from complaint: " + complaint.getTitle());
+                    notif.setType("ASSIGNMENT");
+                    notif.setReferenceId(assignment.getId().toString());
+                    notificationService.sendNotification(notif);
+                }
+            }
+            
             assignment.setWorker(worker);
             assignment.setAssignedBy(assigner);
             assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);

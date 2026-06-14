@@ -1,0 +1,40 @@
+{
+  "sidebar": {
+    "admin_dashboard": "व्यवस्थापक डैशबोर्ड",
+    "dashboard": "डैशबोर्ड",
+    "complaints": "शिकायतें",
+    "assignments": "कार्यभार (असाइनमेंट)",
+    "departments": "विभाग",
+    "workers": "कर्मचारी",
+    "users": "उपयोगकर्ता",
+    "analytics": "विश्लेषण",
+    "notifications": "सूचनाएँ",
+    "settings": "सेटिंग्स",
+    "logout": "लॉग आउट",
+    "language": "भाषा",
+    "navigation": "नेविगेशन"
+  },
+  "complaints": {
+    "title": "शिकायतें और अनुरोध",
+    "total_in_system": "सिस्टम में कुल {{total}} शिकायतें हैं",
+    "pending_reopens": "सिस्टम में {{total}} लंबित रीओपन अनुरोध हैं",
+    "all_complaints": "सभी शिकायतें",
+    "pending_reopens_btn": "लंबित रीओपन",
+    "verification_queue": "सत्यापन कतार",
+    "search_placeholder": "शिकायतें खोजें...",
+    "all_statuses": "सभी स्थितियाँ",
+    "refresh": "रिफ्रेश",
+    "no_complaints_found": "कोई शिकायत नहीं मिली",
+    "no_complaints_desc": "अपने फ़िल्टर या खोज क्वेरी को समायोजित करने का प्रयास करें",
+    "table_id": "आईडी",
+    "table_title": "शीर्षक",
+    "table_category": "श्रेणी",
+    "table_status": "स्थिति",
+    "table_priority": "प्राथमिकता",
+    "table_department": "विभाग",
+    "table_citizen": "नागरिक",
+    "table_created": "बनाया गया",
+    "view": "देखें",
+    "review": "समीक्षा"
+  }
+}

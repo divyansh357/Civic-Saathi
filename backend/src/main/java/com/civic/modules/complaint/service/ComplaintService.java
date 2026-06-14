@@ -161,7 +161,7 @@ public class ComplaintService {
         Complaint complaint = complaintRepository.findById(UUID.fromString(id))
             .orElseThrow(() -> new RuntimeException("Complaint not found: " + id));
 
-        complaintWorkflow.applyTransition(complaint, request.getStatus());
+        complaintWorkflow.forceTransition(complaint, request.getStatus());
 
         // Track timestamps for key transitions
         Complaint.ComplaintStatus newStatus = complaint.getStatus();
