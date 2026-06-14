@@ -118,6 +118,11 @@ public class AuthService {
                 "Admin and Officer accounts require an official @municipal.in email address");
         }
 
+        if ((roleName.equals("ADMIN") || roleName.equals("OFFICER"))
+                && (request.getMunicipalCode() == null || request.getMunicipalCode().isBlank())) {
+            throw new IllegalArgumentException("Municipal code is required for Admin and Officer accounts");
+        }
+
         userRepository.findByEmailIgnoreCase(normalizedEmail)
                 .ifPresent(existing -> {
                     throw new ResourceConflictException("Email is already registered");

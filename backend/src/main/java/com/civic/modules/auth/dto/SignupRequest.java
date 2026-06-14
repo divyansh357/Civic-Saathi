@@ -44,9 +44,8 @@ public class SignupRequest {
 
     /**
      * Municipal code linking the user to a municipality.
-     * Compulsory for profile creation.
+     * Compulsory for ADMIN/OFFICER profile creation.
      */
-    @NotBlank(message = "Municipal code is required")
     @JsonProperty("municipalCode")
     private String municipalCode;
 
