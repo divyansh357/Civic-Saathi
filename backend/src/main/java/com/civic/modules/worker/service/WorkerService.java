@@ -164,7 +164,7 @@ public class WorkerService {
                 .ifPresent(dept -> {
                     worker.setDepartment(dept);
                     if (worker.getUser() != null) {
-                        worker.getUser().setDepartmentCode(dept.getId().toString());
+                        worker.getUser().setMunicipalCode(dept.getId().toString());
                     }
                 });
         }

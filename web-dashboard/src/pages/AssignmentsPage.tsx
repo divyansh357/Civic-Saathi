@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store';
 import { apiGet, apiPost, apiPut } from '../services/api/client';
 import { Assignment, Complaint, PagedResponse, ComplaintStatus } from '../types';
@@ -296,6 +297,7 @@ function TaskReviewModal({ assignment, onClose, onRefresh, onUpdate }: TaskRevie
 /* ── Main Assignments Page ──────────────────────────────────────────── */
 
 export default function AssignmentsPage() {
+  const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [overdue, setOverdue] = useState<Assignment[]>([]);
@@ -373,28 +375,28 @@ export default function AssignmentsPage() {
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Assignments</h1>
-          <p>Track complaint routing, SLA deadlines, and worker assignments</p>
+          <h1>{t('assignments.title')}</h1>
+          <p>{t('assignments.subtitle')}</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {overdue.length > 0 && (
             <button className="btn btn-danger" onClick={() => void handleEscalate()} disabled={escalating}>
               {escalating ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <AlertTriangle size={16} className="icon-inline" />}
-              Escalate Overdue ({overdue.length})
+              {t('assignments.escalate_btn')} ({overdue.length})
             </button>
           )}
           <button className="btn btn-primary" onClick={() => setShowAutoAssign(true)}>
-            <Zap size={16} className="icon-inline" /> Auto-Assign
+            <Zap size={16} className="icon-inline" /> {t('assignments.auto_assign_btn')}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-        {(['all', 'overdue'] as const).map((t) => (
-          <button key={t} className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'} btn-sm`} onClick={() => setTab(t)}>
-            {t === 'all' ? `All Assignments (${total})` : `Overdue (${overdue.length})`}
-            {t === 'overdue' && overdue.length > 0 && (
+        {(['all', 'overdue'] as const).map((tabId) => (
+          <button key={tabId} className={`btn ${tab === tabId ? 'btn-primary' : 'btn-secondary'} btn-sm`} onClick={() => setTab(tabId)}>
+            {tabId === 'all' ? `${t('assignments.all_tab')} (${total})` : `${t('assignments.overdue_tab')} (${overdue.length})`}
+            {tabId === 'overdue' && overdue.length > 0 && (
               <span style={{ background: 'var(--red)', color: '#fff', borderRadius: 10, padding: '0 5px', fontSize: '0.65rem', marginLeft: 4 }}>
                 {overdue.length}
               </span>
@@ -414,8 +416,8 @@ export default function AssignmentsPage() {
         {displayed.length === 0 && !loading ? (
           <div className="empty-state">
             <div className="empty-state-icon"><GitMerge size={32} /></div>
-            <h3>{tab === 'overdue' ? 'No overdue assignments' : 'No assignments found'}</h3>
-            <p>{tab === 'overdue' ? 'All assignments are within SLA' : 'Use Auto-Assign to route complaints to workers'}</p>
+            <h3>{tab === 'overdue' ? t('assignments.empty_overdue_title') : t('assignments.empty_all_title')}</h3>
+            <p>{tab === 'overdue' ? t('assignments.empty_overdue_desc') : t('assignments.empty_all_desc')}</p>
           </div>
         ) : (
           <>
@@ -423,15 +425,15 @@ export default function AssignmentsPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Complaint</th>
-                    <th>Department</th>
-                    <th>Worker</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>SLA Deadline</th>
-                    <th>Assigned</th>
-                    <th>Action</th>
+                    <th>{t('assignments.col_id')}</th>
+                    <th>{t('assignments.col_complaint')}</th>
+                    <th>{t('assignments.col_department')}</th>
+                    <th>{t('assignments.col_worker')}</th>
+                    <th>{t('assignments.col_status')}</th>
+                    <th>{t('assignments.col_priority')}</th>
+                    <th>{t('assignments.col_sla')}</th>
+                    <th>{t('assignments.col_assigned')}</th>
+                    <th>{t('assignments.col_action')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -449,13 +451,13 @@ export default function AssignmentsPage() {
                         )}
                       </td>
                       <td className="text-muted">{a.departmentName ?? '—'}</td>
-                      <td className="text-muted">{a.assignedWorkerName ?? a.workerName ?? 'Unassigned'}</td>
+                      <td className="text-muted">{a.assignedWorkerName ?? a.workerName ?? t('assignments.unassigned')}</td>
                       <td><AssignmentStatusBadge status={a.status} /></td>
                       <td>{a.priority ? <PriorityBadge priority={a.priority} /> : '—'}</td>
                       <td><SlaTimer deadline={a.slaDeadline} /></td>
                       <td className="text-muted" style={{ fontSize: '0.78rem' }}>{formatDate(a.assignedAt)}</td>
                       <td>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedAssignment(a)}>Review</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedAssignment(a)}>{t('assignments.btn_review')}</button>
                       </td>
                     </tr>
                   ))}

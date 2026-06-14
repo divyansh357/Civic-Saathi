@@ -1,0 +1,20 @@
+{
+  "navigation": {
+    "home": "होम",
+    "report": "रिपोर्ट",
+    "map": "नक्शा",
+    "profile": "प्रोफ़ाइल"
+  },
+  "home": {
+    "greeting": "नमस्ते, {{name}}",
+    "report_issue": "समस्या दर्ज करें",
+    "my_complaints": "मेरी शिकायतें",
+    "recent": "हाल की गतिविधि",
+    "view_all": "सभी देखें"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "language": "भाषा",
+    "logout": "लॉग आउट"
+  }
+}

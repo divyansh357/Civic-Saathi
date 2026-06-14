@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
@@ -46,6 +47,7 @@ const CATEGORY_PIE = [
 ];
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [loading, setLoading] = useState(false);
   const [aiInsights, setAiInsights] = useState<string>('');
@@ -77,7 +79,7 @@ export default function AnalyticsPage() {
       setAiInsights(res.insights);
     } catch (e) {
       console.error(e);
-      setAiInsights("Failed to fetch insights. You may have hit rate limits.");
+      setAiInsights(t('analytics.ai_failed'));
     } finally {
       setLoadingInsights(false);
     }
@@ -87,8 +89,8 @@ export default function AnalyticsPage() {
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Analytics</h1>
-          <p>Platform performance metrics and trends</p>
+          <h1>{t('analytics.title')}</h1>
+          <p>{t('analytics.subtitle')}</p>
         </div>
         {loading && <span className="spinner" />}
       </div>
@@ -96,18 +98,18 @@ export default function AnalyticsPage() {
       {/* KPI Row */}
       <div className="stats-grid" style={{ marginBottom: 24 }}>
         {[
-          { label: 'Resolution Rate', value: '83.4%', icon: <CheckCircle2 size={24} color="var(--green)" />, color: 'var(--green)', bg: 'var(--green-bg)', change: '+2.1%', up: true },
-          { label: 'Avg Resolution Time', value: '28.4h', icon: <Clock size={24} color="var(--blue)" />, color: 'var(--blue)', bg: 'var(--blue-bg)', change: '-3.2h', up: true },
-          { label: 'SLA Compliance', value: '87.7%', icon: <ClipboardList size={16} className="icon-inline" />, color: 'var(--accent)', bg: 'var(--accent-glow)', change: '+1.4%', up: true },
-          { label: 'Escalation Rate', value: '12.3%', icon: <AlertTriangle size={16} className="icon-inline" />, color: 'var(--red)', bg: 'var(--red-bg)', change: '+0.8%', up: false },
-          { label: 'Citizen Satisfaction', value: '4.2/5', icon: <Star size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)', change: '+0.3', up: true },
+          { label: t('analytics.resolution_rate'), value: '83.4%', icon: <CheckCircle2 size={24} color="var(--green)" />, color: 'var(--green)', bg: 'var(--green-bg)', change: '+2.1%', up: true },
+          { label: t('analytics.avg_resolution_time'), value: '28.4h', icon: <Clock size={24} color="var(--blue)" />, color: 'var(--blue)', bg: 'var(--blue-bg)', change: '-3.2h', up: true },
+          { label: t('analytics.sla_compliance'), value: '87.7%', icon: <ClipboardList size={16} className="icon-inline" />, color: 'var(--accent)', bg: 'var(--accent-glow)', change: '+1.4%', up: true },
+          { label: t('analytics.escalation_rate'), value: '12.3%', icon: <AlertTriangle size={16} className="icon-inline" />, color: 'var(--red)', bg: 'var(--red-bg)', change: '+0.8%', up: false },
+          { label: t('analytics.citizen_satisfaction'), value: '4.2/5', icon: <Star size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)', change: '+0.3', up: true },
         ].map((s) => (
           <div className="stat-card" key={s.label}>
             <div className="stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
             <div className="stat-value">{s.value}</div>
             <div className="stat-label">{s.label}</div>
             <div className={`stat-change ${s.up ? 'up' : 'down'}`}>
-              {s.up ? <TrendingUp size={14} className="icon-inline" /> : <TrendingDown size={14} className="icon-inline" />} {s.change} vs last month
+              {s.up ? <TrendingUp size={14} className="icon-inline" /> : <TrendingDown size={14} className="icon-inline" />} {s.change} {t('analytics.vs_last_month')}
             </div>
           </div>
         ))}
@@ -118,8 +120,8 @@ export default function AnalyticsPage() {
         <div className="card full">
           <div className="card-header">
             <div>
-              <div className="card-title">Monthly Complaint Trends</div>
-              <div className="card-subtitle">Submitted vs Resolved vs Escalated</div>
+              <div className="card-title">{t('analytics.monthly_trends')}</div>
+              <div className="card-subtitle">{t('analytics.monthly_trends_sub')}</div>
             </div>
           </div>
           <div style={{ height: 260 }}>
@@ -142,8 +144,8 @@ export default function AnalyticsPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Department Resolution Rate</div>
-              <div className="card-subtitle">% of complaints resolved on time</div>
+              <div className="card-title">{t('analytics.dept_resolution')}</div>
+              <div className="card-subtitle">{t('analytics.dept_resolution_sub')}</div>
             </div>
           </div>
           <div style={{ height: 220 }}>
@@ -162,8 +164,8 @@ export default function AnalyticsPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Complaints by Category</div>
-              <div className="card-subtitle">All-time distribution</div>
+              <div className="card-title">{t('analytics.category_dist')}</div>
+              <div className="card-subtitle">{t('analytics.category_dist_sub')}</div>
             </div>
           </div>
           <div style={{ height: 220 }}>
@@ -185,8 +187,8 @@ export default function AnalyticsPage() {
         <div className="card full">
           <div className="card-header">
             <div>
-              <div className="card-title">Department Performance Summary</div>
-              <div className="card-subtitle">SLA compliance and resolution times</div>
+              <div className="card-title">{t('analytics.dept_perf')}</div>
+              <div className="card-subtitle">{t('analytics.dept_perf_sub')}</div>
             </div>
           </div>
           <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
@@ -237,13 +239,13 @@ export default function AnalyticsPage() {
           <div className="card-header">
             <div>
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Bot size={20} className="text-accent" /> AI Insights
+                <Bot size={20} className="text-accent" /> {t('analytics.ai_insights')}
               </div>
-              <div className="card-subtitle">AI-generated analysis of current platform state</div>
+              <div className="card-subtitle">{t('analytics.ai_insights_sub')}</div>
             </div>
             {!aiInsights && (
               <button className="btn btn-primary btn-sm" onClick={() => void fetchAiInsights()} disabled={loadingInsights || !aiStatus?.llmAvailable}>
-                {loadingInsights ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <><Bot size={14} className="icon-inline" /> Generate Insights</>}
+                {loadingInsights ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <><Bot size={14} className="icon-inline" /> {t('analytics.generate_insights')}</>}
               </button>
             )}
           </div>
@@ -259,7 +261,7 @@ export default function AnalyticsPage() {
             </div>
           ) : (
             <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', padding: '8px 0', marginTop: 16 }}>
-              {!aiStatus?.llmAvailable ? 'Configure CEREBRAS_API_KEY for LLM-powered insights.' : 'Click "Generate Insights" to run AI analysis.'}
+              {!aiStatus?.llmAvailable ? t('analytics.ai_unconfigured') : t('analytics.ai_prompt')}
             </div>
           )}
         </div>
@@ -269,8 +271,8 @@ export default function AnalyticsPage() {
           <div className="card full">
             <div className="card-header">
               <div>
-                <div className="card-title">Complaint Heatmap by Ward</div>
-                <div className="card-subtitle">Geographic distribution of complaints</div>
+                <div className="card-title">{t('analytics.heatmap_title')}</div>
+                <div className="card-subtitle">{t('analytics.heatmap_sub')}</div>
               </div>
             </div>
             <div style={{ height: 280 }}>
@@ -328,8 +330,8 @@ export default function AnalyticsPage() {
           <div className="card full">
             <div className="card-header">
               <div>
-                <div className="card-title">Department Ranking</div>
-                <div className="card-subtitle">Ranked by resolution rate — live data</div>
+                <div className="card-title">{t('analytics.dept_ranking')}</div>
+                <div className="card-subtitle">{t('analytics.dept_ranking_sub')}</div>
               </div>
             </div>
             <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>

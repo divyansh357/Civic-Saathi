@@ -221,7 +221,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
 
   // Worker-specific
   const [designation, setDesignation] = useState('');
-  const [departmentCode, setDepartmentCode] = useState('');
+  const [municipalCode, setMunicipalCode] = useState('');
   const [departmentName, setDepartmentName] = useState('');
   const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
 
@@ -277,7 +277,7 @@ export default function SignupScreen({ onGoToLogin }: Props) {
 
     if (selectedRole === 'worker') {
       payload.designation = designation.trim();
-      if (departmentCode.trim()) payload.departmentCode = departmentCode.trim().toUpperCase();
+      if (municipalCode.trim()) payload.municipalCode = municipalCode.trim().toUpperCase();
     }
 
     try {
@@ -489,9 +489,9 @@ export default function SignupScreen({ onGoToLogin }: Props) {
       <DepartmentPickerModal
         visible={showDepartmentPicker}
         onClose={() => setShowDepartmentPicker(false)}
-        selectedDepartmentId={departmentCode}
+        selectedDepartmentId={municipalCode}
         onSelect={(dept) => {
-          setDepartmentCode(dept.id);
+          setMunicipalCode(dept.id);
           setDepartmentName(dept.name);
           setShowDepartmentPicker(false);
         }}

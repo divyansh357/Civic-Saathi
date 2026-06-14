@@ -100,30 +100,19 @@ public class AssignmentService {
         // Find appropriate department based on category
         Department department = findDepartmentByCategory(category, cityName);
         if (department == null) {
-            // Fallback: use complaint's existing department or first available
+            // Fallback: use complaint's existing department
             department = complaint.getDepartment();
         }
         if (department == null) {
-            department = departmentRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 1))
-                    .stream().findFirst()
-                    .orElseThrow(() -> new RuntimeException("No departments available in the system"));
+            throw new RuntimeException("Could not determine appropriate department for complaint category");
         }
 
         // Find best available worker in the department
         Worker assignedWorker = findBestAvailableWorker(department.getUuid(), lat, lng);
 
         if (assignedWorker == null) {
-            logger.info("No available workers in department {}. Complaint {} will remain unassigned (ROUTED).", department.getUuid(), complaint.getId());
-            complaint.setStatus(Complaint.ComplaintStatus.ROUTED);
-            complaint.setDepartment(department);
-            complaint.setUpdatedAt(LocalDateTime.now());
-            complaintRepository.save(complaint);
-            
-            AssignmentResponse response = new AssignmentResponse();
-            response.setComplaintId(complaint.getId().toString());
-            response.setDepartmentId(department.getId());
-            response.setDepartmentName(department.getName());
-            return response;
+            logger.info("No available workers in department {}. Auto-assignment failed.", department.getUuid());
+            throw new RuntimeException("No relevant worker found in department: " + department.getName());
         }
 
         Assignment assignment = new Assignment();
@@ -185,7 +174,26 @@ public class AssignmentService {
                 return assignmentMapper.toResponse(assignment);
             }
             // Reassignment to a different worker
-            logger.info("Reassigning complaint {} to new worker {}", complaint.getId(), worker.getId());
+            logger.info("Reassigning complaint {} from old worker {} to new worker {}", complaint.getId(), assignment.getWorker().getId(), worker.getId());
+            
+            // Decrement old worker statistics
+            Worker oldWorker = assignment.getWorker();
+            if (oldWorker != null) {
+                oldWorker.setComplaintsAssigned(Math.max(0, oldWorker.getComplaintsAssigned() - 1));
+                workerRepository.save(oldWorker);
+                
+                // Also send a notification to the old worker that they have been unassigned
+                if (oldWorker.getUser() != null) {
+                    com.civic.modules.notification.entity.Notification notif = new com.civic.modules.notification.entity.Notification();
+                    notif.setUser(oldWorker.getUser());
+                    notif.setTitle("Assignment Removed");
+                    notif.setMessage("You have been unassigned from complaint: " + complaint.getTitle());
+                    notif.setType("ASSIGNMENT");
+                    notif.setReferenceId(assignment.getId().toString());
+                    notificationService.sendNotification(notif);
+                }
+            }
+            
             assignment.setWorker(worker);
             assignment.setAssignedBy(assigner);
             assignment.setStatus(Assignment.AssignmentStatus.ASSIGNED);
@@ -585,12 +593,6 @@ public class AssignmentService {
             // Try city-agnostic fallback
             List<Department> byType = departmentRepository.findByCategoryTypeIgnoreCase(deptType, org.springframework.data.domain.PageRequest.of(0, 1)).getContent();
             if (!byType.isEmpty()) return byType.get(0);
-        }
-
-        // Fallback to any active department in the city
-        if (city != null && !city.isBlank()) {
-            List<Department> departments = departmentRepository.findByActiveAndCity(true, city);
-            if (!departments.isEmpty()) return departments.get(0);
         }
 
         return null;

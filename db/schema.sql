@@ -73,6 +73,7 @@ CREATE TABLE users (
     city_id UUID REFERENCES cities(id),
     ward_id UUID REFERENCES wards(id),
     zone_id UUID REFERENCES zones(id),
+    municipal_code TEXT,
     language_preference TEXT,
     profile_picture_url TEXT,
     verified BOOLEAN NOT NULL DEFAULT FALSE,

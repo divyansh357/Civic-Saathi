@@ -1,0 +1,20 @@
+{
+  "navigation": {
+    "home": "Home",
+    "report": "Report",
+    "map": "Map",
+    "profile": "Profile"
+  },
+  "home": {
+    "greeting": "Hello, {{name}}",
+    "report_issue": "Report Issue",
+    "my_complaints": "My Complaints",
+    "recent": "Recent Activity",
+    "view_all": "View All"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "logout": "Log Out"
+  }
+}

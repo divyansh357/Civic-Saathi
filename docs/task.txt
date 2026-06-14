@@ -1,0 +1,32 @@
+--- Latest Issue on the main branch ---
+
+- On web there are no notification are coming. : 
+- add a feature to change the worker of an ongoing complain after even it is assigned So that if a worker is assigned but not accepting the task so we can assign it to a diff one. : done 
+- Invalid complaint status transition from ASSIGNED to SUBMITTED : done 
+- Invalid complaint status transition from ASSIGNED to VERIFIED : done 
+
+
+
+
+
+
+--- New features to Add/ Plan to Add ---
+
+- Language support for Hindi Across web and app : done 
+- Glimpse Of the Worker's on the map for the web dashboard (making a map view on the web to see all the available workers and live position of them on map.)
+- Web UI enhancements completely (dark mode and light both) : done 
+- A Chatbot on the Web for officials to Chat and gain good insights from the data. (it should be a RAG on the Real actual DATA (vector DB) (It should be really helpful in making critical decision and also to train the new officials about things as it should be like a training module as well ))
+	- the ChatBot will work as a Extremely helpful curated to work as useful and helpful it can be. 
+	- like putting a policies docs and other docs in a tab of docs and then Querying over it. (we have to brainstorm over this so that we can give as best as we can)
+
+- Providing a certificate feature to the user like when a user submits a complaint then after successful completion of it (when it gets closed Like see it like when it verified that was a actual issues and after fixing it) then the user will get a Badge of Proof like they Solved A real issue (Thankyou for contributing to Make the City even more better) like kind of this. 
+- Assest of the badge (we have to make it using Nano banana) the design should be like a Proper DIgital (bright in color so that it looks good) Badge With also a date.
+- suggest innovative features.
+- Worker's rating system by the user's and there past work like By calculating the worker they had done and by the time and other factors.
+- Deduplication identify by AI.
+- complaints near me and whole indore
+- maps integration(in Ui) In complain submission so that the user can see there location(optional)
+
+- complain history on citizen side. 
+- Major alerts of overall city. (specific area or city wise)
+- web announcement page to give notification overall (or zone wise)

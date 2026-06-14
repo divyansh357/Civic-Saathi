@@ -26,8 +26,9 @@ public class WorkerSignupRequest {
     @JsonProperty("password")
     private String password;
 
-    @JsonProperty("departmentCode")
-    private String departmentCode;
+    @NotBlank(message = "Municipal code is required")
+    @JsonProperty("municipalCode")
+    private String municipalCode;
 
     @NotBlank(message = "Designation is required")
     @JsonProperty("designation")
@@ -48,8 +49,8 @@ public class WorkerSignupRequest {
     public void setPhone(String phone) { this.phone = phone; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
-    public String getDepartmentCode() { return departmentCode; }
-    public void setDepartmentCode(String departmentCode) { this.departmentCode = departmentCode; }
+    public String getMunicipalCode() { return municipalCode; }
+    public void setMunicipalCode(String municipalCode) { this.municipalCode = municipalCode; }
     public String getDesignation() { return designation; }
     public void setDesignation(String designation) { this.designation = designation; }
     public String getAddress() { return address; }

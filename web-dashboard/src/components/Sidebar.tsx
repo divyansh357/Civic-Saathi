@@ -1,4 +1,5 @@
 import { useAuthStore } from '../store';
+import { useTranslation } from 'react-i18next';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -8,8 +9,8 @@ import {
   Users, 
   LineChart, 
   Bell, 
-  Building,
-  LogOut
+  LogOut,
+  Globe
 } from 'lucide-react';
 
 interface NavItem {
@@ -40,6 +41,7 @@ interface SidebarProps {
 export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: SidebarProps) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { t, i18n } = useTranslation();
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -50,18 +52,23 @@ export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: S
     return item.roles.includes(user?.role ?? '');
   });
 
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'hi' : 'en';
+    i18n.changeLanguage(newLang);
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
         <img src="/logo.png" alt="Civic Saathi" style={{ width: 40, height: 40, objectFit: 'contain', marginRight: 10 }} />
         <div>
           <div className="sidebar-logo-text">Civic Saathi</div>
-          <div className="sidebar-logo-sub">Admin Dashboard</div>
+          <div className="sidebar-logo-sub">{t('sidebar.admin_dashboard')}</div>
         </div>
       </div>
 
       <nav className="sidebar-nav">
-        <div className="nav-section-label">Navigation</div>
+        <div className="nav-section-label">{t('sidebar.navigation')}</div>
         {visibleItems.map((item) => (
           <button
             key={item.page}
@@ -69,7 +76,7 @@ export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: S
             onClick={() => onNavigate(item.page)}
           >
             <span className="nav-item-icon">{item.icon}</span>
-            {item.label}
+            {t(`sidebar.${item.label.toLowerCase()}`)}
             {item.page === 'assignments' && overdueCount > 0 && (
               <span className="nav-item-badge">{overdueCount}</span>
             )}

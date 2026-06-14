@@ -410,3 +410,108 @@ Aadhar is a 12-digit numeric identifier, but there was no enforcement of this ru
 | # | Area | Issue | Status |
 |---|---|---|---|
 | 20 | All | Aadhar accepted any string — no 12-digit numeric validation | ✅ Fixed |
+
+---
+
+## 21. Backend Connection Pool Exhaustion
+
+### Issue
+The backend was failing to connect to Supabase with a `FATAL: (EMAXCONNSESSION)` error because the default HikariCP connection pool was exceeding the maximum allowed connections on the free tier.
+
+### Solution Applied
+- Adjusted `application.yml` to limit `spring.datasource.hikari.maximum-pool-size` to `3`. This keeps the active connections well under the free tier limit.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 21 | Backend | EMAXCONNSESSION database connection limit reached | ✅ Fixed |
+
+---
+
+## 22. Worker Reassignment & Admin Workflow Bypass
+
+### Issue
+Admins were unable to reassign workers from the web dashboard once a complaint was assigned. Furthermore, attempting to manually revert a complaint's status from `ASSIGNED` to `SUBMITTED` or `VERIFIED` caused an `IllegalStateException` due to strict workflow constraints.
+
+### Solution Applied
+- **Backend**: Updated `AssignmentService.manualAssignComplaint` to fully support reassignment. The old worker's `complaintsAssigned` count is decremented, and an "Assignment Removed" notification is dispatched before assigning the new worker.
+- **Backend**: Updated `ComplaintWorkflow.getValidNextStates` to allow transitioning from `ASSIGNED` to `SUBMITTED` and `VERIFIED`. Additionally, updated `ComplaintService.updateComplaintStatus` to use `forceTransition` instead of `applyTransition`, allowing admins full override control from the dashboard.
+- **Web**: Added a **Reassign** button in `ComplaintsPage.tsx` next to the assigned worker, which opens the assignment modal instead of hiding the action buttons.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 22 | Backend / Web | Missing UI for worker reassignment and overly strict admin state transitions | ✅ Fixed |
+
+---
+
+## 23. Language Support (Hindi & English)
+
+### Issue
+The platform only supported English, but needed to support Hindi across both the web dashboard and mobile app for better accessibility.
+
+### Solution Applied
+- **Web**: Introduced `react-i18next` and `i18next-browser-languagedetector`. Created translation dictionaries (`en.json`, `hi.json`) and successfully translated key components like the Sidebar and Complaints Page. Added a language toggle button to the sidebar footer.
+- **Mobile App**: Integrated `react-i18next` with `expo-localization` to automatically detect the device language on startup, falling back to English. Translated the Home screen and established the foundation for extending translations to all screens. Setup `AsyncStorage` to persist language choices.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 23 | Web / Mobile | No support for Hindi language or internationalization | ✅ Fixed |
+
+---
+
+## 24. React TypeError: `t is not a function` on Login Page
+
+### Issue
+During the extensive rollout of translations across the web dashboard, the `LoginPage.tsx` crashed with an `Uncaught TypeError: t is not a function`. This happened because the local `map` iteration variable `t` (used for iterating tab names `['login', 'signup'].map((t) => ...)`) shadowed the `const { t } = useTranslation()` function from `react-i18next`.
+
+### Solution Applied
+- Renamed the array map variable from `t` to `tabKey` inside `LoginPage.tsx` to prevent it from overriding the translation hook function. This restored normal functionality to the tabs while allowing the dynamic text to be properly translated.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 24 | Web | Variable shadowing causing `t is not a function` crash during translation | ✅ Fixed |
+
+---
+
+## 25. Rename Department Code to Municipal Code & Make Mandatory at Signup
+
+### Issue
+The platform used `departmentCode` to identify user municipality/department affiliations. This needed to be renamed to `municipalCode` across the entire stack to accurately reflect its meaning. Additionally, it needed to be enforced as a mandatory field during registration to ensure all officers and admins are properly linked to a municipality upon creation.
+
+### Solution Applied
+- **Backend**: Renamed `departmentCode` to `municipalCode` in `User` entity, mapped to `municipal_code` DB column. Updated all `SignupRequest`, `UserResponse`, and `ProfileUpdateRequest` DTOs. Added `@NotBlank(message = "Municipal code is required")`. Updated `UserService`, `AuthService`, and `WorkerService` logic.
+- **Web Dashboard**: Updated `LoginPage.tsx` state and UI to enforce the `municipalCode` input before allowing form submission. Renamed references in `UsersPage.tsx` and the Zustand auth store. Updated English and Hindi translation JSON files.
+- **Mobile App**: Updated `SignupScreen.tsx` to strictly enforce the selection of a Municipal Code. Refactored `ProfileScreen.tsx` and global types to match the new backend schema.
+
+| 25 | Backend / Web / Mobile | Renaming `departmentCode` to `municipalCode` and enforcing it at signup | ✅ Fixed |
+
+---
+
+## 26. Dashboard Translation Incomplete
+
+### Issue
+The Hindi/English translation functionality was only partially implemented on the dashboard, covering the Sidebar and Complaints Page but missing all other core pages (Assignments, Departments, Workers, Notifications, Users). Additionally, a variable shadowing bug `t === 'overdue'` caused badges to disappear after translation.
+
+### Solution Applied
+- **Web Dashboard**: Fully translated `AssignmentsPage.tsx`, `DepartmentsPage.tsx`, `WorkersPage.tsx`, `NotificationsPage.tsx`, and `UsersPage.tsx`. Extracted all hardcoded strings into `en/translation.json` and `hi/translation.json`.
+- Fixed the variable shadowing bug in `AssignmentsPage.tsx` where the `(t) => ...` array map callback conflicted with the `t` function from `useTranslation`.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 26 | Web | Incomplete translation coverage across dashboard pages | ✅ Fixed |
+
+
+---
+
+## 27. Auto Assignment Silent Failure and Incorrect Fallback
+
+### Issue
+When auto-assignment was triggered and no worker was available in the target department (or if the category didn't match any department), the system silently fell back to assigning the complaint to the first active department (usually ROADS). It then returned a success response (200 OK) without actually assigning a worker, which caused the frontend to incorrectly mark the complaint as ASSIGNED despite no worker actually taking it up.
+
+### Solution Applied
+- Removed the arbitrary fallback that assigned unmatched categories to the first available department in AssignmentService.java.
+- Updated utoAssignComplaint() to explicitly throw a RuntimeException with messages like "No relevant worker found in department..." or "Could not determine appropriate department...".
+- The frontend 	ry...catch blocks in ComplaintsPage.tsx and AssignmentsPage.tsx now correctly intercept these errors and show the error message in a UI alert instead of silently assuming success.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 27 | Backend | Auto Assignment Silent Failure and Incorrect Fallback | ✅ Fixed |

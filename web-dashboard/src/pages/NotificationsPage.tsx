@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore, useNotificationStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { Notification } from '../types';
@@ -37,6 +38,7 @@ function formatDate(iso?: string) {
 }
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
   const { notifications, setNotifications, markRead, markAllRead } = useNotificationStore();
@@ -72,13 +74,13 @@ export default function NotificationsPage() {
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Notifications</h1>
-          <p>{unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up'}</p>
+          <h1>{t('notifications.title')}</h1>
+          <p>{unreadCount > 0 ? `${unreadCount} ${t('notifications.unread_count')}` : t('notifications.all_caught_up')}</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {unreadCount > 0 && (
             <button className="btn btn-secondary" onClick={markAllRead}>
-              <Check size={16} className="icon-inline" />  Mark all read
+              <Check size={16} className="icon-inline" /> {t('notifications.mark_all_read')}
             </button>
           )}
         </div>
@@ -92,7 +94,7 @@ export default function NotificationsPage() {
             className={`btn ${filter === f ? 'btn-primary' : 'btn-secondary'} btn-sm`}
             onClick={() => setFilter(f)}
           >
-            {f === 'all' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
+            {f === 'all' ? `${t('notifications.tab_all')} (${notifications.length})` : `${t('notifications.tab_unread')} (${unreadCount})`}
           </button>
         ))}
         {loading && <span className="spinner" style={{ marginLeft: 8 }} />}
@@ -108,8 +110,8 @@ export default function NotificationsPage() {
         {displayed.length === 0 && !loading ? (
           <div className="empty-state">
             <div className="empty-state-icon"><Bell size={32} /></div>
-            <h3>No notifications</h3>
-            <p>{filter === 'unread' ? 'All notifications have been read' : 'No notifications yet'}</p>
+            <h3>{t('notifications.empty_title')}</h3>
+            <p>{filter === 'unread' ? t('notifications.empty_desc_unread') : t('notifications.empty_desc_all')}</p>
           </div>
         ) : (
           <div>
