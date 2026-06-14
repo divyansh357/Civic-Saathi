@@ -32,8 +32,8 @@ public class ProfileUpdateRequest {
     @JsonProperty("profilePictureUrl")
     private String profilePictureUrl;
 
-    @JsonProperty("departmentCode")
-    private String departmentCode;
+    @JsonProperty("municipalCode")
+    private String municipalCode;
 
     @JsonProperty("cityId")
     private String cityId;
@@ -56,8 +56,8 @@ public class ProfileUpdateRequest {
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
-    public String getDepartmentCode() { return departmentCode; }
-    public void setDepartmentCode(String departmentCode) { this.departmentCode = departmentCode; }
+    public String getMunicipalCode() { return municipalCode; }
+    public void setMunicipalCode(String municipalCode) { this.municipalCode = municipalCode; }
 
     public String getCityId() { return cityId; }
     public void setCityId(String cityId) { this.cityId = cityId; }

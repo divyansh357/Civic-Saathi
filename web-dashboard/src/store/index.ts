@@ -20,7 +20,7 @@ interface MeResponse {
   address?: string;
   aadharNumber?: string;
   zoneNumber?: number;
-  departmentCode?: string;
+  municipalCode?: string;
   profileComplete?: boolean;
   verified?: boolean;
 }
@@ -63,7 +63,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: me.userId, name: me.name, email: me.email,
           role: (me.role ?? 'CITIZEN') as User['role'],
           phone: me.phone, address: me.address, aadharNumber: me.aadharNumber,
-          zoneNumber: me.zoneNumber, departmentCode: me.departmentCode,
+          zoneNumber: me.zoneNumber, municipalCode: me.municipalCode,
           profileComplete: me.profileComplete, verified: me.verified,
         },
         accessToken, refreshToken, isAuthenticated: true, isLoading: false
@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               id: me.userId, name: me.name, email: me.email,
               role: (me.role ?? 'CITIZEN') as User['role'],
               phone: me.phone, address: me.address, aadharNumber: me.aadharNumber,
-              zoneNumber: me.zoneNumber, departmentCode: me.departmentCode,
+              zoneNumber: me.zoneNumber, municipalCode: me.municipalCode,
               profileComplete: me.profileComplete, verified: me.verified,
             },
             accessToken: newToken, refreshToken: r.refreshToken ?? refreshToken,
@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: me.userId, name: me.name, email: me.email,
           role: (me.role ?? 'CITIZEN') as User['role'],
           phone: me.phone, address: me.address, aadharNumber: me.aadharNumber,
-          zoneNumber: me.zoneNumber, departmentCode: me.departmentCode,
+          zoneNumber: me.zoneNumber, municipalCode: me.municipalCode,
           profileComplete: me.profileComplete, verified: me.verified,
         },
         accessToken, refreshToken: auth.refreshToken ?? null,

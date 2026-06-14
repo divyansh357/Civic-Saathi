@@ -36,8 +36,8 @@ public class UserResponse {
     @JsonProperty("zoneNumber")
     private Integer zoneNumber;
 
-    @JsonProperty("departmentCode")
-    private String departmentCode;
+    @JsonProperty("municipalCode")
+    private String municipalCode;
 
     @JsonProperty("verified")
     private boolean verified;
@@ -87,8 +87,8 @@ public class UserResponse {
     public Integer getZoneNumber() { return zoneNumber; }
     public void setZoneNumber(Integer zoneNumber) { this.zoneNumber = zoneNumber; }
 
-    public String getDepartmentCode() { return departmentCode; }
-    public void setDepartmentCode(String departmentCode) { this.departmentCode = departmentCode; }
+    public String getMunicipalCode() { return municipalCode; }
+    public void setMunicipalCode(String municipalCode) { this.municipalCode = municipalCode; }
 
     public boolean isVerified() { return verified; }
     public void setVerified(boolean verified) { this.verified = verified; }

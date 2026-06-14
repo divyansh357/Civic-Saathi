@@ -9,16 +9,16 @@ interface UserProfile extends User {
   address?: string;
   aadharNumber?: string;
   zoneNumber?: number;
-  departmentCode?: string;
+  municipalCode?: string;
   profileComplete?: boolean;
 }
 
 const MOCK: UserProfile[] = [
   { id: 'u1', name: 'Rahul Sharma',  email: 'rahul@example.com',      phone: '9876543210', role: 'CITIZEN', city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2026-01-15T10:00:00', zoneNumber: 3 },
   { id: 'u2', name: 'Priya Patel',   email: 'priya@example.com',       phone: '9876543211', role: 'CITIZEN', city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2026-02-10T10:00:00', zoneNumber: 2 },
-  { id: 'u3', name: 'Rajesh Nair',   email: 'rajesh@municipal.in',     phone: '9876543212', role: 'OFFICER', city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2025-12-01T10:00:00', departmentCode: 'ROADS', zoneNumber: 1 },
-  { id: 'u4', name: 'Admin User',    email: 'admin@municipal.in',      phone: '9876543213', role: 'ADMIN',   city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2025-11-01T10:00:00', departmentCode: 'ADMIN', zoneNumber: 1 },
-  { id: 'u5', name: 'Suresh Kumar',  email: 'suresh@municipal.in',     phone: '9876543214', role: 'WORKER',  city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2026-01-20T10:00:00', departmentCode: 'WATER', zoneNumber: 3 },
+  { id: 'u3', name: 'Rajesh Nair',   email: 'rajesh@municipal.in',     phone: '9876543212', role: 'OFFICER', city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2025-12-01T10:00:00', municipalCode: 'ROADS', zoneNumber: 1 },
+  { id: 'u4', name: 'Admin User',    email: 'admin@municipal.in',      phone: '9876543213', role: 'ADMIN',   city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2025-11-01T10:00:00', municipalCode: 'ADMIN', zoneNumber: 1 },
+  { id: 'u5', name: 'Suresh Kumar',  email: 'suresh@municipal.in',     phone: '9876543214', role: 'WORKER',  city: 'Bengaluru', verified: true,  status: 'ACTIVE',   createdAt: '2026-01-20T10:00:00', municipalCode: 'WATER', zoneNumber: 3 },
   { id: 'u6', name: 'Meena Iyer',    email: 'meena@example.com',       phone: '9876543215', role: 'CITIZEN', city: 'Bengaluru', verified: false, status: 'INACTIVE', createdAt: '2026-03-05T10:00:00', zoneNumber: 4 },
 ];
 
@@ -51,7 +51,7 @@ function ProfileModal({ user, accessToken, onClose, onSaved }: ProfileModalProps
   const [address, setAddress] = useState(user.address ?? '');
   const [aadharNumber, setAadharNumber] = useState(user.aadharNumber ?? '');
   const [zoneNumber, setZoneNumber] = useState(user.zoneNumber != null ? String(user.zoneNumber) : '');
-  const [departmentCode, setDepartmentCode] = useState(user.departmentCode ?? '');
+  const [municipalCode, setMunicipalCode] = useState(user.municipalCode ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -68,7 +68,7 @@ function ProfileModal({ user, accessToken, onClose, onSaved }: ProfileModalProps
         phone: phone.trim() || undefined,
         address: address.trim() || undefined,
         zoneNumber: zoneNumber ? parseInt(zoneNumber, 10) : undefined,
-        departmentCode: departmentCode.trim() || undefined,
+        municipalCode: municipalCode.trim() || undefined,
       };
       if (!aadharLocked && aadharNumber) payload.aadharNumber = aadharNumber;
 
@@ -136,7 +136,7 @@ function ProfileModal({ user, accessToken, onClose, onSaved }: ProfileModalProps
             { label: 'Phone', value: phone, set: setPhone, placeholder: '10-digit number' },
             { label: 'Address', value: address, set: setAddress, placeholder: 'House No., Street, City' },
             { label: 'Zone Number', value: zoneNumber, set: setZoneNumber, placeholder: 'e.g. 4', type: 'number' },
-            { label: 'Department Code', value: departmentCode, set: setDepartmentCode, placeholder: 'e.g. ROADS' },
+            { label: 'Municipal Code', value: municipalCode, set: setMunicipalCode, placeholder: 'e.g. ROADS' },
           ].map(({ label, value, set, placeholder, type }) => (
             <div className="form-group" key={label} style={{ margin: 0 }}>
               <label className="form-label">{label}</label>
@@ -324,7 +324,7 @@ export default function UsersPage() {
                       <td className="text-muted">{u.phone ?? '—'}</td>
                       <td><span className={`badge ${ROLE_COLORS[u.role] ?? 'badge-submitted'}`}>{u.role}</span></td>
                       <td className="text-muted">{u.zoneNumber ?? '—'}</td>
-                      <td className="text-muted">{u.departmentCode ?? '—'}</td>
+                      <td className="text-muted">{u.municipalCode ?? '—'}</td>
                       <td>
                         <span style={{ color: u.verified ? 'var(--green)' : 'var(--text-3)' }}>
                           {u.verified ? '✓ Verified' : '○ Pending'}

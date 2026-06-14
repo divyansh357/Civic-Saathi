@@ -140,8 +140,8 @@ public class AuthService {
         user.setUpdatedAt(LocalDateTime.now());
         user.setLastLoginAt(LocalDateTime.now());
         if (request.getZoneNumber() != null) user.setZoneNumber(request.getZoneNumber());
-        if (request.getDepartmentCode() != null && !request.getDepartmentCode().isBlank()) {
-            user.setDepartmentCode(request.getDepartmentCode().trim().toUpperCase());
+        if (request.getMunicipalCode() != null && !request.getMunicipalCode().isBlank()) {
+            user.setMunicipalCode(request.getMunicipalCode().trim().toUpperCase());
         }
         if (request.getCityId() != null && !request.getCityId().isBlank()) {
             cityRepository.findById(UUID.fromString(request.getCityId()))
@@ -209,8 +209,8 @@ public class AuthService {
         worker.setCreatedAt(LocalDateTime.now());
         worker.setUpdatedAt(LocalDateTime.now());
 
-        if (request.getDepartmentCode() != null && !request.getDepartmentCode().isEmpty()) {
-            Department dept = departmentRepository.findById(UUID.fromString(request.getDepartmentCode()))
+        if (request.getMunicipalCode() != null && !request.getMunicipalCode().isEmpty()) {
+            Department dept = departmentRepository.findById(UUID.fromString(request.getMunicipalCode()))
                 .orElseThrow(() -> new RuntimeException("Department not found"));
             worker.setDepartment(dept);
         } else {

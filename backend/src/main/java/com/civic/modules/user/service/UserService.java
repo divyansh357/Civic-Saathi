@@ -102,13 +102,13 @@ public class UserService {
         }
         if (updateData.getZoneNumber() != null) user.setZoneNumber(updateData.getZoneNumber());
         if (updateData.getProfilePictureUrl() != null) user.setProfilePictureUrl(updateData.getProfilePictureUrl());
-        if (updateData.getDepartmentCode() != null && !updateData.getDepartmentCode().isBlank()) {
-            user.setDepartmentCode(updateData.getDepartmentCode().trim().toUpperCase());
+        if (updateData.getMunicipalCode() != null && !updateData.getMunicipalCode().isBlank()) {
+            user.setMunicipalCode(updateData.getMunicipalCode().trim().toUpperCase());
             // If user is a WORKER, also update the worker entity's department
             if (user.getRoles().stream().anyMatch(r -> r.getName().equals("WORKER"))) {
                 workerRepository.findByUserId(user.getUuid()).ifPresent(worker -> {
                     try {
-                        departmentRepository.findById(UUID.fromString(updateData.getDepartmentCode()))
+                        departmentRepository.findById(UUID.fromString(updateData.getMunicipalCode()))
                             .ifPresent(worker::setDepartment);
                         workerRepository.save(worker);
                     } catch (Exception e) {

@@ -34,7 +34,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('ADMIN');
   const [zoneNumber, setZoneNumber] = useState('');
-  const [departmentCode, setDepartmentCode] = useState('');
+  const [municipalCode, setMunicipalCode] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showSignupPwd, setShowSignupPwd] = useState(false);
@@ -56,6 +56,7 @@ export default function LoginPage() {
     emailEndsWithMunicipal &&
     phoneOk &&
     zoneOk &&
+    municipalCode.trim().length > 0 &&
     signupPassword.length >= 8 &&
     signupPassword === confirmPassword;
 
@@ -81,7 +82,7 @@ export default function LoginPage() {
         password: signupPassword,
         role,
         zoneNumber: parseInt(zoneNumber, 10),
-        departmentCode: departmentCode.trim() || undefined,
+        municipalCode: municipalCode.trim(),
       });
       setSignupSuccess(t('login.success_msg'));
       setTab('login');
@@ -293,16 +294,16 @@ export default function LoginPage() {
               </select>
             </div>
 
-            {/* Department Code */}
+            {/* Municipal Code */}
             <div className="form-group">
               <label className="form-label" htmlFor="su-dept">
-                {t('login.dept_label')}
-                <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: 6 }}>{t('login.optional')}</span>
+                {t('login.municipal_label')}
               </label>
               <input id="su-dept" type="text" className="form-input"
-                value={departmentCode}
-                onChange={(e) => setDepartmentCode(e.target.value.toUpperCase())}
-                placeholder="e.g. ROADS, WATER"
+                value={municipalCode}
+                onChange={(e) => setMunicipalCode(e.target.value.toUpperCase())}
+                placeholder="e.g. BENGALURU-01"
+                style={municipalCode.trim().length === 0 ? { borderColor: 'var(--red)' } : {}}
               />
             </div>
 

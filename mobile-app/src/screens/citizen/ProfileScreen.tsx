@@ -29,8 +29,8 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
     user?.zoneNumber != null ? String(user.zoneNumber) : ''
   );
   
-  const [departmentCode, setDepartmentCode] = useState(user?.departmentCode ?? '');
-  const [departmentName, setDepartmentName] = useState(user?.departmentCode ? 'Current Department' : ''); // Ideal to fetch actual name but for now we set a placeholder
+  const [municipalCode, setMunicipalCode] = useState(user?.municipalCode ?? '');
+  const [departmentName, setDepartmentName] = useState(user?.municipalCode ? 'Current Municipality' : ''); // Ideal to fetch actual name but for now we set a placeholder
   const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
 
   const [saving, setSaving] = useState(false);
@@ -57,7 +57,7 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           aadharNumber: aadharNumber.trim() || undefined,
           zoneNumber: zoneNumber ? parseInt(zoneNumber, 10) : undefined,
           cityId: cityId || undefined,
-          departmentCode: departmentCode || undefined,
+          municipalCode: municipalCode || undefined,
         },
         accessToken,
         { 'User-Id': user.id }
@@ -285,9 +285,9 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
       <DepartmentPickerModal
         visible={showDepartmentPicker}
         onClose={() => setShowDepartmentPicker(false)}
-        selectedDepartmentId={departmentCode}
+        selectedDepartmentId={municipalCode}
         onSelect={(dept) => {
-          setDepartmentCode(dept.id);
+          setMunicipalCode(dept.id);
           setDepartmentName(dept.name);
           setShowDepartmentPicker(false);
         }}

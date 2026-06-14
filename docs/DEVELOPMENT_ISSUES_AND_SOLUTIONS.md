@@ -469,3 +469,19 @@ During the extensive rollout of translations across the web dashboard, the `Logi
 | # | Area | Issue | Status |
 |---|---|---|---|
 | 24 | Web | Variable shadowing causing `t is not a function` crash during translation | ✅ Fixed |
+
+---
+
+## 25. Rename Department Code to Municipal Code & Make Mandatory at Signup
+
+### Issue
+The platform used `departmentCode` to identify user municipality/department affiliations. This needed to be renamed to `municipalCode` across the entire stack to accurately reflect its meaning. Additionally, it needed to be enforced as a mandatory field during registration to ensure all officers and admins are properly linked to a municipality upon creation.
+
+### Solution Applied
+- **Backend**: Renamed `departmentCode` to `municipalCode` in `User` entity, mapped to `municipal_code` DB column. Updated all `SignupRequest`, `UserResponse`, and `ProfileUpdateRequest` DTOs. Added `@NotBlank(message = "Municipal code is required")`. Updated `UserService`, `AuthService`, and `WorkerService` logic.
+- **Web Dashboard**: Updated `LoginPage.tsx` state and UI to enforce the `municipalCode` input before allowing form submission. Renamed references in `UsersPage.tsx` and the Zustand auth store. Updated English and Hindi translation JSON files.
+- **Mobile App**: Updated `SignupScreen.tsx` to strictly enforce the selection of a Municipal Code. Refactored `ProfileScreen.tsx` and global types to match the new backend schema.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 25 | Backend / Web / Mobile | Renaming `departmentCode` to `municipalCode` and enforcing it at signup | ✅ Fixed |

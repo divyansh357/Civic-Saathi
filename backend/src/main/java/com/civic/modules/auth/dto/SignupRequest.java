@@ -43,11 +43,12 @@ public class SignupRequest {
     private Integer zoneNumber;
 
     /**
-     * Department code for ADMIN and OFFICER roles.
-     * Optional — admins/officers can set this later via profile update.
+     * Municipal code linking the user to a municipality.
+     * Compulsory for profile creation.
      */
-    @JsonProperty("departmentCode")
-    private String departmentCode;
+    @NotBlank(message = "Municipal code is required")
+    @JsonProperty("municipalCode")
+    private String municipalCode;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -70,6 +71,6 @@ public class SignupRequest {
     public Integer getZoneNumber() { return zoneNumber; }
     public void setZoneNumber(Integer zoneNumber) { this.zoneNumber = zoneNumber; }
 
-    public String getDepartmentCode() { return departmentCode; }
-    public void setDepartmentCode(String departmentCode) { this.departmentCode = departmentCode; }
+    public String getMunicipalCode() { return municipalCode; }
+    public void setMunicipalCode(String municipalCode) { this.municipalCode = municipalCode; }
 }
