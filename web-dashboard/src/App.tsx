@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore, useThemeStore } from './store';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
@@ -10,20 +11,21 @@ import WorkersPage from './pages/WorkersPage';
 import UsersPage from './pages/UsersPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
-import { Building2, Sun, Moon, Bell } from 'lucide-react';
+import { Building2, Sun, Moon, Bell, Globe } from 'lucide-react';
 
 const PAGE_TITLES: Record<string, string> = {
-  dashboard: 'Dashboard',
-  complaints: 'Complaints',
-  assignments: 'Assignments',
-  departments: 'Departments',
-  workers: 'Workers',
-  users: 'Users',
-  analytics: 'Analytics',
-  notifications: 'Notifications',
+  dashboard: 'topbar.dashboard',
+  complaints: 'topbar.complaints',
+  assignments: 'topbar.assignments',
+  departments: 'topbar.departments',
+  workers: 'topbar.workers',
+  users: 'topbar.users',
+  analytics: 'topbar.analytics',
+  notifications: 'topbar.notifications',
 };
 
 export default function App() {
+  const { t, i18n } = useTranslation();
   const hydrate = useAuthStore((s) => s.hydrate);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -76,12 +78,21 @@ export default function App() {
       <Sidebar currentPage={page} onNavigate={setPage} />
       <main className="main">
         <div className="topbar">
-          <span className="topbar-title">{PAGE_TITLES[page] ?? 'Civic Saathi'}</span>
+          <span className="topbar-title">{PAGE_TITLES[page] ? t(PAGE_TITLES[page]) : 'Civic Saathi'}</span>
           <div className="topbar-actions">
             <button
               className="btn btn-ghost btn-sm"
+              onClick={() => i18n.changeLanguage(i18n.language === 'hi' ? 'en' : 'hi')}
+              title={i18n.language === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
+              style={{ fontSize: '0.85rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
+            >
+              <Globe size={18} />
+              {i18n.language === 'hi' ? 'EN' : 'HI'}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
               onClick={toggleTheme}
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={isDark ? t('topbar.switch_light') : t('topbar.switch_dark')}
               style={{ fontSize: '1rem', padding: '6px 10px' }}
             >
               {isDark ? <Sun size={20} /> : <Moon size={20} />}

@@ -482,6 +482,20 @@ The platform used `departmentCode` to identify user municipality/department affi
 - **Web Dashboard**: Updated `LoginPage.tsx` state and UI to enforce the `municipalCode` input before allowing form submission. Renamed references in `UsersPage.tsx` and the Zustand auth store. Updated English and Hindi translation JSON files.
 - **Mobile App**: Updated `SignupScreen.tsx` to strictly enforce the selection of a Municipal Code. Refactored `ProfileScreen.tsx` and global types to match the new backend schema.
 
+| 25 | Backend / Web / Mobile | Renaming `departmentCode` to `municipalCode` and enforcing it at signup | ✅ Fixed |
+
+---
+
+## 26. Dashboard Translation Incomplete
+
+### Issue
+The Hindi/English translation functionality was only partially implemented on the dashboard, covering the Sidebar and Complaints Page but missing all other core pages (Assignments, Departments, Workers, Notifications, Users). Additionally, a variable shadowing bug `t === 'overdue'` caused badges to disappear after translation.
+
+### Solution Applied
+- **Web Dashboard**: Fully translated `AssignmentsPage.tsx`, `DepartmentsPage.tsx`, `WorkersPage.tsx`, `NotificationsPage.tsx`, and `UsersPage.tsx`. Extracted all hardcoded strings into `en/translation.json` and `hi/translation.json`.
+- Fixed the variable shadowing bug in `AssignmentsPage.tsx` where the `(t) => ...` array map callback conflicted with the `t` function from `useTranslation`.
+
 | # | Area | Issue | Status |
 |---|---|---|---|
-| 25 | Backend / Web / Mobile | Renaming `departmentCode` to `municipalCode` and enforcing it at signup | ✅ Fixed |
+| 26 | Web | Incomplete translation coverage across dashboard pages | ✅ Fixed |
+

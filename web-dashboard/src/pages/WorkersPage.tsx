@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
 import { PagedResponse, Worker } from '../types';
 import { XCircle, CheckCircle2, HardHat, Search, BarChart3, AlertTriangle } from 'lucide-react';
 
 export default function WorkersPage() {
+  const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,8 +55,8 @@ export default function WorkersPage() {
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Workers</h1>
-          <p>Field workers and their current workload</p>
+          <h1>{t('workers.title')}</h1>
+          <p>{t('workers.subtitle')}</p>
         </div>
       </div>
 
@@ -62,22 +64,22 @@ export default function WorkersPage() {
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}><HardHat size={16} className="icon-inline" /></div>
           <div className="stat-value">{total}</div>
-          <div className="stat-label">Total Workers</div>
+          <div className="stat-label">{t('workers.stat_total')}</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}><CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" /></div>
           <div className="stat-value">{available}</div>
-          <div className="stat-label">Available</div>
+          <div className="stat-label">{t('workers.stat_available')}</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /></div>
           <div className="stat-value">{total - available}</div>
-          <div className="stat-label">Unavailable</div>
+          <div className="stat-label">{t('workers.stat_unavailable')}</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--yellow-bg)', color: 'var(--yellow)' }}><BarChart3 size={16} className="icon-inline" /></div>
           <div className="stat-value">{avgLoad}</div>
-          <div className="stat-label">Avg Workload</div>
+          <div className="stat-label">{t('workers.stat_avg_load')}</div>
         </div>
       </div>
 
@@ -87,7 +89,7 @@ export default function WorkersPage() {
             <span className="search-icon"><Search size={16} className="icon-inline" /></span>
             <input
               className="search-input"
-              placeholder="Search workers..."
+              placeholder={t('workers.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -98,7 +100,7 @@ export default function WorkersPage() {
             value={deptFilter}
             onChange={(e) => setDeptFilter(e.target.value)}
           >
-            <option value="">All Departments</option>
+            <option value="">{t('workers.filter_all_dept')}</option>
             {departments.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
           {loading && <span className="spinner" />}
@@ -113,8 +115,8 @@ export default function WorkersPage() {
         {filtered.length === 0 && !loading ? (
           <div className="empty-state">
             <div className="empty-state-icon"><HardHat size={32} /></div>
-            <h3>No workers found</h3>
-            <p>{error ? 'Check backend connection' : 'No workers match your filters'}</p>
+            <h3>{t('workers.empty_title')}</h3>
+            <p>{error ? t('workers.empty_desc_error') : t('workers.empty_desc_filter')}</p>
           </div>
         ) : (
           <>
@@ -122,12 +124,12 @@ export default function WorkersPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Worker</th>
-                    <th>Designation</th>
-                    <th>Department</th>
-                    <th>Status</th>
-                    <th>Assigned Tasks</th>
-                    <th>Workload</th>
+                    <th>{t('workers.col_worker')}</th>
+                    <th>{t('workers.col_designation')}</th>
+                    <th>{t('workers.col_department')}</th>
+                    <th>{t('workers.col_status')}</th>
+                    <th>{t('workers.col_assigned')}</th>
+                    <th>{t('workers.col_workload')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,8 +151,8 @@ export default function WorkersPage() {
                               )}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{w.name ?? 'Unknown Worker'}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{w.email ?? 'No email'}</div>
+                              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{w.name ?? t('workers.unknown_worker')}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>{w.email ?? t('workers.no_email')}</div>
                             </div>
                           </div>
                         </td>
@@ -158,12 +160,12 @@ export default function WorkersPage() {
                         <td className="text-muted">{w.departmentName ?? '—'}</td>
                         <td>
                           <span className={`badge ${isAvailable ? 'badge-resolved' : 'badge-closed'}`}>
-                            {isAvailable ? <><CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" /> Active</> : <><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /> Inactive</>}
+                            {isAvailable ? <><CheckCircle2 size={16} style={{ color: 'var(--green)' }} className="icon-inline" /> {t('workers.badge_active')}</> : <><XCircle size={16} style={{ color: 'var(--red)' }} className="icon-inline" /> {t('workers.badge_inactive')}</>}
                           </span>
                         </td>
                         <td>
                           <span style={{ fontWeight: 600, color: loadColor }}>{load}</span>
-                          <span className="text-muted"> tasks</span>
+                          <span className="text-muted"> {t('workers.tasks_label')}</span>
                         </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

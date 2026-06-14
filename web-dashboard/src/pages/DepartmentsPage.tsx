@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store';
 import { apiGet, apiPost } from '../services/api/client';
 import { Department } from '../types';
@@ -13,6 +14,7 @@ const MOCK: Department[] = [
 ];
 
 export default function DepartmentsPage() {
+  const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,31 +48,31 @@ export default function DepartmentsPage() {
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Departments</h1>
-          <p>{departments.length} government departments configured</p>
+          <h1>{t('departments.title')}</h1>
+          <p>{departments.length} {t('departments.subtitle')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => {
           setEditingDept(null);
           setNewDept(defaultDept);
           setShowModal(true);
-        }}>+ Add Department</button>
+        }}>+ {t('departments.add_btn')}</button>
       </div>
 
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 20 }}>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}><Building2 size={20} /></div>
           <div className="stat-value">{departments.length}</div>
-          <div className="stat-label">Total Departments</div>
+          <div className="stat-label">{t('departments.stat_total')}</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}><CheckCircle2 size={20} /></div>
           <div className="stat-value">{departments.filter((d) => d.active).length}</div>
-          <div className="stat-label">Active</div>
+          <div className="stat-label">{t('departments.stat_active')}</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}><PauseCircle size={20} /></div>
           <div className="stat-value">{departments.filter((d) => !d.active).length}</div>
-          <div className="stat-label">Inactive</div>
+          <div className="stat-label">{t('departments.stat_inactive')}</div>
         </div>
       </div>
 
@@ -80,7 +82,7 @@ export default function DepartmentsPage() {
             <span className="search-icon"><Search size={16} className="icon-inline" /></span>
             <input
               className="search-input"
-              placeholder="Search departments..."
+              placeholder={t('departments.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -91,20 +93,20 @@ export default function DepartmentsPage() {
         {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><Building size={48} /></div>
-            <h3>No departments found</h3>
+            <h3>{t('departments.empty_title')}</h3>
           </div>
         ) : (
           <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
             <table>
               <thead>
                 <tr>
-                  <th>Department</th>
-                  <th>Code</th>
-                  <th>Category</th>
-                  <th>City</th>
-                  <th>Head</th>
-                  <th>Contact</th>
-                  <th>Status</th>
+                  <th>{t('departments.col_department')}</th>
+                  <th>{t('departments.col_code')}</th>
+                  <th>{t('departments.col_category')}</th>
+                  <th>{t('departments.col_city')}</th>
+                  <th>{t('departments.col_head')}</th>
+                  <th>{t('departments.col_contact')}</th>
+                  <th>{t('departments.col_status')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -123,7 +125,7 @@ export default function DepartmentsPage() {
                     <td className="text-muted" style={{ fontSize: '0.78rem' }}>{d.email}</td>
                     <td>
                       <span className={`badge ${d.active ? 'badge-resolved' : 'badge-closed'}`}>
-                        {d.active ? 'Active' : 'Inactive'}
+                        {d.active ? t('departments.badge_active') : t('departments.badge_inactive')}
                       </span>
                     </td>
                     <td>
@@ -138,7 +140,7 @@ export default function DepartmentsPage() {
                           phone: d.phone || ''
                         });
                         setShowModal(true);
-                      }}>Edit</button>
+                      }}>{t('departments.btn_edit')}</button>
                     </td>
                   </tr>
                 ))}
@@ -153,39 +155,39 @@ export default function DepartmentsPage() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">{editingDept ? 'Edit Department' : 'Add Department'}</span>
+              <span className="modal-title">{editingDept ? t('departments.modal_edit_title') : t('departments.modal_add_title')}</span>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}>✕</button>
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label className="form-label">Department Name</label>
+                <label className="form-label">{t('departments.field_name')}</label>
                 <input className="form-input" value={newDept.name} onChange={e => setNewDept({...newDept, name: e.target.value})} placeholder="e.g., Roads & Infrastructure" />
               </div>
               <div className="form-group">
-                <label className="form-label">Code</label>
+                <label className="form-label">{t('departments.field_code')}</label>
                 <input className="form-input" value={newDept.code} onChange={e => setNewDept({...newDept, code: e.target.value.toUpperCase()})} placeholder="e.g., ROADS" />
               </div>
               <div className="form-group">
-                <label className="form-label">Category</label>
+                <label className="form-label">{t('departments.field_category')}</label>
                 <input className="form-input" value={newDept.categoryType} onChange={e => setNewDept({...newDept, categoryType: e.target.value})} placeholder="e.g., ROADS" />
               </div>
               <div className="form-group">
-                <label className="form-label">Head of Department</label>
+                <label className="form-label">{t('departments.field_head')}</label>
                 <input className="form-input" value={newDept.headName} onChange={e => setNewDept({...newDept, headName: e.target.value})} placeholder="Name of Head" />
               </div>
               <div className="form-group" style={{ display: 'flex', gap: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <label className="form-label">Email</label>
+                  <label className="form-label">{t('departments.field_email')}</label>
                   <input className="form-input" value={newDept.email} onChange={e => setNewDept({...newDept, email: e.target.value})} placeholder="Email" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label className="form-label">Phone</label>
+                  <label className="form-label">{t('departments.field_phone')}</label>
                   <input className="form-input" value={newDept.phone} onChange={e => setNewDept({...newDept, phone: e.target.value})} placeholder="Phone" />
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>{t('departments.btn_cancel')}</button>
               <button className="btn btn-primary" disabled={saving} onClick={async () => {
                 setSaving(true);
                 try {
@@ -203,7 +205,7 @@ export default function DepartmentsPage() {
                   setSaving(false);
                 }
               }}>
-                {saving ? 'Saving...' : (editingDept ? 'Save Changes' : 'Add Department')}
+                {saving ? t('departments.btn_saving') : (editingDept ? t('departments.btn_save_changes') : t('departments.modal_add_title'))}
               </button>
             </div>
           </div>
