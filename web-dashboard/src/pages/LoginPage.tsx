@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore, useThemeStore } from '../store';
-import { Building2, Sun, Moon, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Building2, Sun, Moon, AlertTriangle, Eye, EyeOff, Globe } from 'lucide-react';
 
 // Country codes for the phone field
 const COUNTRY_CODES = [
@@ -12,6 +13,7 @@ const COUNTRY_CODES = [
 ];
 
 export default function LoginPage() {
+  const { t, i18n } = useTranslation();
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
@@ -81,12 +83,12 @@ export default function LoginPage() {
         zoneNumber: parseInt(zoneNumber, 10),
         departmentCode: departmentCode.trim() || undefined,
       });
-      setSignupSuccess('Account created! You can now sign in.');
+      setSignupSuccess(t('login.success_msg'));
       setTab('login');
       setSignupPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setSignupError(err instanceof Error ? err.message : 'Registration failed');
+      setSignupError(err instanceof Error ? err.message : t('login.fail_msg'));
     } finally {
       setSignupLoading(false);
     }
@@ -98,25 +100,40 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page">
-      <button
-        onClick={toggleTheme}
-        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        style={{
-          position: 'fixed', top: 16, right: 16,
-          background: 'var(--bg-3)', border: '1px solid var(--border)',
-          borderRadius: 8, padding: '6px 10px',
-          cursor: 'pointer', zIndex: 10, color: 'var(--text-2)',
-        }}
-      >
-        {isDark ? <Sun size={20} /> : <Moon size={20} />}
-      </button>
+      <div style={{ position: 'fixed', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 10 }}>
+        <button
+          onClick={() => i18n.changeLanguage(i18n.language === 'hi' ? 'en' : 'hi')}
+          title={i18n.language === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'var(--bg-3)', border: '1px solid var(--border)',
+            borderRadius: 8, padding: '6px 12px',
+            cursor: 'pointer', color: 'var(--text-2)',
+            fontWeight: 500, fontSize: '0.85rem'
+          }}
+        >
+          <Globe size={18} />
+          {i18n.language === 'hi' ? 'EN' : 'HI'}
+        </button>
+        <button
+          onClick={toggleTheme}
+          title={isDark ? t('login.switch_light') : t('login.switch_dark')}
+          style={{
+            background: 'var(--bg-3)', border: '1px solid var(--border)',
+            borderRadius: 8, padding: '6px 10px',
+            cursor: 'pointer', color: 'var(--text-2)',
+          }}
+        >
+          {isDark ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </div>
 
       <div className="auth-card">
         <div className="auth-logo">
           <div className="auth-logo-icon"><Building2 size={32} /></div>
           <div className="auth-logo-text">
             <h1>Civic Saathi</h1>
-            <p>Government Issue Management Platform</p>
+            <p>{t('login.subtitle')}</p>
           </div>
         </div>
 
@@ -125,19 +142,19 @@ export default function LoginPage() {
           display: 'flex', gap: 4, marginBottom: 24,
           background: 'var(--bg-3)', borderRadius: 10, padding: 4,
         }}>
-          {(['login', 'signup'] as const).map((t) => (
+          {(['login', 'signup'] as const).map((tabKey) => (
             <button
-              key={t}
-              onClick={() => { setTab(t); clearError(); setSignupError(''); setSignupSuccess(''); }}
+              key={tabKey}
+              onClick={() => { setTab(tabKey); clearError(); setSignupError(''); setSignupSuccess(''); }}
               style={{
                 flex: 1, padding: '8px 0', borderRadius: 7, border: 'none',
-                background: tab === t ? 'var(--accent)' : 'transparent',
-                color: tab === t ? '#fff' : 'var(--text-3)',
+                background: tab === tabKey ? 'var(--accent)' : 'transparent',
+                color: tab === tabKey ? '#fff' : 'var(--text-3)',
                 fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
             >
-              {t === 'login' ? 'Sign In' : 'Create Account'}
+              {tabKey === 'login' ? t('login.tab_signin') : t('login.tab_signup')}
             </button>
           ))}
         </div>
@@ -145,7 +162,7 @@ export default function LoginPage() {
         {/* ── Login Form ── */}
         {tab === 'login' && (
           <form className="auth-form" onSubmit={(e) => void handleLogin(e)}>
-            <div><h2>Welcome back</h2><p>Sign in to your account</p></div>
+            <div><h2>{t('login.welcome_back')}</h2><p>{t('login.signin_prompt')}</p></div>
 
             {signupSuccess && (
               <div style={{
@@ -156,7 +173,7 @@ export default function LoginPage() {
             )}
 
             <div className="form-group">
-              <label className="form-label" htmlFor="login-email">Email address</label>
+              <label className="form-label" htmlFor="login-email">{t('login.email_label')}</label>
               <input
                 id="login-email" type="email" className="form-input"
                 value={email} onChange={(e) => setEmail(e.target.value)}
@@ -165,14 +182,14 @@ export default function LoginPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="login-password">Password</label>
+              <label className="form-label" htmlFor="login-password">{t('login.pwd_label')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   id="login-password"
                   type={showLoginPwd ? 'text' : 'password'}
                   className="form-input"
                   value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder={t('login.pwd_placeholder')}
                   autoComplete="current-password"
                   style={pwdInputStyle(showLoginPwd)}
                 />
@@ -197,7 +214,7 @@ export default function LoginPage() {
               style={{ justifyContent: 'center', padding: '11px' }}
               disabled={!canLogin || isLoading}
             >
-              {isLoading ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Signing in...</> : 'Sign In'}
+              {isLoading ? <><span className="spinner" style={{ width: 16, height: 16 }} /> {t('login.signing_in')}</> : t('login.tab_signin')}
             </button>
           </form>
         )}
@@ -205,11 +222,11 @@ export default function LoginPage() {
         {/* ── Signup Form ── */}
         {tab === 'signup' && (
           <form className="auth-form" onSubmit={(e) => void handleSignup(e)}>
-            <div><h2>Create account</h2><p>Admin / Officer registration</p></div>
+            <div><h2>{t('login.signup_title')}</h2><p>{t('login.signup_subtitle')}</p></div>
 
             {/* Name */}
             <div className="form-group">
-              <label className="form-label" htmlFor="su-name">Full Name</label>
+              <label className="form-label" htmlFor="su-name">{t('login.name_label')}</label>
               <input id="su-name" type="text" className="form-input"
                 value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="Rajesh Kumar" autoFocus />
@@ -218,9 +235,9 @@ export default function LoginPage() {
             {/* Email — must end with @municipal.in */}
             <div className="form-group">
               <label className="form-label" htmlFor="su-email">
-                Email address
+                {t('login.email_label')}
                 <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: 6 }}>
-                  (must end with @municipal.in)
+                  {t('login.email_hint')}
                 </span>
               </label>
               <input id="su-email" type="email" className="form-input"
@@ -232,14 +249,14 @@ export default function LoginPage() {
               />
               {signupEmail && !emailEndsWithMunicipal && (
                 <span style={{ fontSize: '0.75rem', color: 'var(--red)', marginTop: 4, display: 'block' }}>
-                  Must end with @municipal.in
+                  {t('login.email_error')}
                 </span>
               )}
             </div>
 
             {/* Phone with country code */}
             <div className="form-group">
-              <label className="form-label" htmlFor="su-phone">Phone number (10 digits)</label>
+              <label className="form-label" htmlFor="su-phone">{t('login.phone_label')}</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <select
                   className="form-input"
@@ -262,25 +279,25 @@ export default function LoginPage() {
               </div>
               {phone && !phoneOk && (
                 <span style={{ fontSize: '0.75rem', color: 'var(--red)', marginTop: 4, display: 'block' }}>
-                  Enter exactly 10 digits
+                  {t('login.phone_error')}
                 </span>
               )}
             </div>
 
             {/* Role */}
             <div className="form-group">
-              <label className="form-label" htmlFor="su-role">Role</label>
+              <label className="form-label" htmlFor="su-role">{t('login.role_label')}</label>
               <select id="su-role" className="form-input" value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value="ADMIN">Admin</option>
-                <option value="OFFICER">Officer</option>
+                <option value="ADMIN">{t('login.role_admin')}</option>
+                <option value="OFFICER">{t('login.role_officer')}</option>
               </select>
             </div>
 
             {/* Department Code */}
             <div className="form-group">
               <label className="form-label" htmlFor="su-dept">
-                Department Code
-                <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: 6 }}>(optional)</span>
+                {t('login.dept_label')}
+                <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: 6 }}>{t('login.optional')}</span>
               </label>
               <input id="su-dept" type="text" className="form-input"
                 value={departmentCode}
@@ -291,7 +308,7 @@ export default function LoginPage() {
 
             {/* Zone Number */}
             <div className="form-group">
-              <label className="form-label" htmlFor="su-zone">Zone Number</label>
+              <label className="form-label" htmlFor="su-zone">{t('login.zone_label')}</label>
               <input id="su-zone" type="number" min="1" className="form-input"
                 value={zoneNumber}
                 onChange={(e) => setZoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
@@ -303,14 +320,14 @@ export default function LoginPage() {
             {/* Password */}
             <div className="form-group">
               <label className="form-label" htmlFor="su-pwd">
-                Password <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(min 8 chars)</span>
+                {t('login.pwd_label')} <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>{t('login.pwd_hint')}</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <input id="su-pwd"
                   type={showSignupPwd ? 'text' : 'password'}
                   className="form-input"
                   value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)}
-                  placeholder="Create a strong password"
+                  placeholder={t('login.pwd_create_placeholder')}
                   autoComplete="new-password"
                   style={pwdInputStyle(showSignupPwd)}
                 />
@@ -324,13 +341,13 @@ export default function LoginPage() {
 
             {/* Confirm Password */}
             <div className="form-group">
-              <label className="form-label" htmlFor="su-confirm">Confirm Password</label>
+              <label className="form-label" htmlFor="su-confirm">{t('login.confirm_label')}</label>
               <div style={{ position: 'relative' }}>
                 <input id="su-confirm"
                   type={showConfirmPwd ? 'text' : 'password'}
                   className="form-input"
                   value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repeat your password"
+                  placeholder={t('login.confirm_placeholder')}
                   autoComplete="new-password"
                   style={{
                     ...pwdInputStyle(showConfirmPwd),
@@ -346,7 +363,7 @@ export default function LoginPage() {
               </div>
               {confirmPassword && confirmPassword !== signupPassword && (
                 <span style={{ fontSize: '0.75rem', color: 'var(--red)', marginTop: 4, display: 'block' }}>
-                  Passwords do not match
+                  {t('login.confirm_error')}
                 </span>
               )}
             </div>
@@ -357,7 +374,7 @@ export default function LoginPage() {
               style={{ justifyContent: 'center', padding: '11px' }}
               disabled={!canSignup || signupLoading}
             >
-              {signupLoading ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Creating account...</> : 'Create Account'}
+              {signupLoading ? <><span className="spinner" style={{ width: 16, height: 16 }} /> {t('login.creating')}</> : t('login.tab_signup')}
             </button>
           </form>
         )}

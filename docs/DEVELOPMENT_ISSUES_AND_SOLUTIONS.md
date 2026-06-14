@@ -455,3 +455,17 @@ The platform only supported English, but needed to support Hindi across both the
 | # | Area | Issue | Status |
 |---|---|---|---|
 | 23 | Web / Mobile | No support for Hindi language or internationalization | ✅ Fixed |
+
+---
+
+## 24. React TypeError: `t is not a function` on Login Page
+
+### Issue
+During the extensive rollout of translations across the web dashboard, the `LoginPage.tsx` crashed with an `Uncaught TypeError: t is not a function`. This happened because the local `map` iteration variable `t` (used for iterating tab names `['login', 'signup'].map((t) => ...)`) shadowed the `const { t } = useTranslation()` function from `react-i18next`.
+
+### Solution Applied
+- Renamed the array map variable from `t` to `tabKey` inside `LoginPage.tsx` to prevent it from overriding the translation hook function. This restored normal functionality to the tabs while allowing the dynamic text to be properly translated.
+
+| # | Area | Issue | Status |
+|---|---|---|---|
+| 24 | Web | Variable shadowing causing `t is not a function` crash during translation | ✅ Fixed |

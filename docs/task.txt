@@ -1,9 +1,9 @@
 --- Latest Issue on the main branch ---
 
-- On web there are no notification are coming. 
-- add a feature to change the worker of an ongoing complain after even it is assigned So that if a worker is assigned but not accepting the task so we can assign it to a diff one.
-- Invalid complaint status transition from ASSIGNED to SUBMITTED
-- Invalid complaint status transition from ASSIGNED to VERIFIED
+- On web there are no notification are coming. : 
+- add a feature to change the worker of an ongoing complain after even it is assigned So that if a worker is assigned but not accepting the task so we can assign it to a diff one. : done 
+- Invalid complaint status transition from ASSIGNED to SUBMITTED : done 
+- Invalid complaint status transition from ASSIGNED to VERIFIED : done 
 
 
 
@@ -12,7 +12,7 @@
 
 --- New features to Add/ Plan to Add ---
 
-- Language support for Hindi Across web and app
+- Language support for Hindi Across web and app : done 
 - Glimpse Of the Worker's on the map for the web dashboard (making a map view on the web to see all the available workers and live position of them on map.)
 - Web UI enhancements completely (dark mode and light both)
 - A Chatbot on the Web for officials to Chat and gain good insights from the data. (it should be a RAG on the Real actual DATA (vector DB) (It should be really helpful in making critical decision and also to train the new officials about things as it should be like a training module as well ))

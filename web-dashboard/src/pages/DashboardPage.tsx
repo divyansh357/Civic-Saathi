@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
@@ -23,6 +24,7 @@ function formatDate(iso?: string) {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
   const [analytics, setAnalytics] = useState<AnalyticsDashboard>({});
@@ -53,20 +55,20 @@ export default function DashboardPage() {
     .map(([name, value]) => ({ name, value }));
 
   const statCards = [
-    { label: 'Total Complaints', value: analytics.totalComplaints ?? 0, icon: <ClipboardList size={24} color="var(--blue)" />, color: 'var(--blue)', bg: 'var(--blue-bg)' },
-    { label: 'Open / Active', value: analytics.openComplaints ?? 0, icon: <RefreshCw size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
-    { label: 'Resolved', value: analytics.resolvedComplaints ?? 0, icon: <CheckCircle2 size={24} color="var(--green)" />, color: 'var(--green)', bg: 'var(--green-bg)' },
-    { label: 'Escalated', value: analytics.escalatedComplaints ?? 0, icon: <AlertTriangle size={24} color="var(--red)" />, color: 'var(--red)', bg: 'var(--red-bg)' },
-    { label: 'Avg Resolution', value: `${analytics.averageResolutionTime ?? analytics.avgResolutionHours ?? 0}h`, icon: <Clock size={24} color="var(--purple)" />, color: 'var(--purple)', bg: 'var(--purple-bg)' },
-    { label: 'SLA Breach Rate', value: `${analytics.slaBreachRate ?? 0}%`, icon: <AlertTriangle size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
+    { label: t('dashboard.stat_total_complaints'), value: analytics.totalComplaints ?? 0, icon: <ClipboardList size={24} color="var(--blue)" />, color: 'var(--blue)', bg: 'var(--blue-bg)' },
+    { label: t('dashboard.stat_open_active'), value: analytics.openComplaints ?? 0, icon: <RefreshCw size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
+    { label: t('dashboard.stat_resolved'), value: analytics.resolvedComplaints ?? 0, icon: <CheckCircle2 size={24} color="var(--green)" />, color: 'var(--green)', bg: 'var(--green-bg)' },
+    { label: t('dashboard.stat_escalated'), value: analytics.escalatedComplaints ?? 0, icon: <AlertTriangle size={24} color="var(--red)" />, color: 'var(--red)', bg: 'var(--red-bg)' },
+    { label: t('dashboard.stat_avg_resolution'), value: `${analytics.averageResolutionTime ?? analytics.avgResolutionHours ?? 0}h`, icon: <Clock size={24} color="var(--purple)" />, color: 'var(--purple)', bg: 'var(--purple-bg)' },
+    { label: t('dashboard.stat_sla_breach'), value: `${analytics.slaBreachRate ?? 0}%`, icon: <AlertTriangle size={24} color="var(--yellow)" />, color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
   ];
 
   return (
     <div className="page-content">
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Dashboard</h1>
-          <p>Welcome back, {user?.name}. Here's what's happening today.</p>
+          <h1>{t('dashboard.title')}</h1>
+          <p>{t('dashboard.welcome', { name: user?.name?.split(' ')[0] ?? 'Admin' })}</p>
         </div>
         {loading && <span className="spinner" />}
       </div>
@@ -91,8 +93,8 @@ export default function DashboardPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Complaints by Category</div>
-              <div className="card-subtitle">Distribution across departments</div>
+              <div className="card-title">{t('dashboard.card_category_title')}</div>
+              <div className="card-subtitle">{t('dashboard.card_category_subtitle')}</div>
             </div>
           </div>
           <div className="chart-container">
@@ -107,7 +109,7 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-3)' }}>
-                No category data yet
+                {t('dashboard.no_category_data')}
               </div>
             )}
           </div>
@@ -116,8 +118,8 @@ export default function DashboardPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Status Breakdown</div>
-              <div className="card-subtitle">Current complaint states</div>
+              <div className="card-title">{t('dashboard.card_status_title')}</div>
+              <div className="card-subtitle">{t('dashboard.card_status_subtitle')}</div>
             </div>
           </div>
           <div className="chart-container">
@@ -135,7 +137,7 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-3)' }}>
-                No status data yet
+                {t('dashboard.no_status_data')}
               </div>
             )}
           </div>
@@ -144,8 +146,8 @@ export default function DashboardPage() {
         <div className="card full">
           <div className="card-header">
             <div>
-              <div className="card-title">Recent Complaints</div>
-              <div className="card-subtitle">Latest submissions across the city</div>
+              <div className="card-title">{t('dashboard.card_recent_title')}</div>
+              <div className="card-subtitle">{t('dashboard.card_recent_subtitle')}</div>
             </div>
           </div>
           {recent.length > 0 ? (
@@ -153,13 +155,13 @@ export default function DashboardPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Citizen</th>
-                    <th>Submitted</th>
+                    <th>{t('complaints.table_id')}</th>
+                    <th>{t('complaints.table_title')}</th>
+                    <th>{t('complaints.table_category')}</th>
+                    <th>{t('complaints.table_status')}</th>
+                    <th>{t('complaints.table_priority')}</th>
+                    <th>{t('complaints.table_citizen')}</th>
+                    <th>{t('complaints.table_created')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,7 +181,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-3)' }}>
-              {loading ? 'Loading...' : 'No complaints yet'}
+              {loading ? t('dashboard.loading') : t('dashboard.no_complaints')}
             </div>
           )}
         </div>
