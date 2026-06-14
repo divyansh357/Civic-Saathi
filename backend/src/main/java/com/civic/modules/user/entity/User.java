@@ -85,7 +85,6 @@ public class User {
     @Column(name = "zone_number")
     private Integer zoneNumber;
 
-    @Column(name = "department_code", length = 50)
     @Column(name = "municipal_code", length = 50)
     private String municipalCode;
 
