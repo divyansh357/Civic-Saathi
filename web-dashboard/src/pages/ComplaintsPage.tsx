@@ -166,12 +166,13 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
       .then((data) => setReopenRequests(Array.isArray(data) ? data : []));
   }, [complaint.id, accessToken]);
 
-  const handleUpdate = async () => {
-    if (newStatus === complaint.status) { onClose(); return; }
+  const handleUpdate = async (targetStatus?: ComplaintStatus) => {
+    const statusToSave = targetStatus || newStatus;
+    if (statusToSave === complaint.status) { onClose(); return; }
     setSaving(true);
     try {
-      await apiPut(`/complaints/${complaint.id}/status`, { status: newStatus }, accessToken ?? undefined);
-      onStatusUpdate(complaint.id, newStatus);
+      await apiPut(`/complaints/${complaint.id}/status`, { status: statusToSave }, accessToken ?? undefined);
+      onStatusUpdate(complaint.id, statusToSave);
       onClose();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Update failed');
@@ -429,21 +430,35 @@ function DetailModal({ complaint, onClose, onStatusUpdate, onRefresh }: DetailMo
           </div>
           <div className="modal-footer">
             <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            {!complaint.assignedWorkerName && (
+            {!complaint.assignedWorkerName && complaint.status !== 'AI_REJECTED' && (
               <button className="btn btn-sm" style={{ background: 'var(--blue-bg)', color: 'var(--blue)', border: 'none' }}
                 onClick={() => setShowAssignWorker(true)}>
                 <UserPlus size={16} className="icon-inline" /> Assign Worker
               </button>
             )}
-            {!['RESOLVED', 'CLOSED', 'ESCALATED'].includes(complaint.status) && (
+            {complaint.status === 'AI_REJECTED' && (
+              <>
+                <button className="btn btn-sm" style={{ background: 'var(--green-bg)', color: 'var(--green)', border: 'none' }}
+                  onClick={() => void handleUpdate('VERIFIED')} disabled={saving}>
+                  <Check size={16} className="icon-inline" /> Approve (Verify)
+                </button>
+                <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
+                  onClick={() => void handleUpdate('REJECTED')} disabled={saving}>
+                  <X size={16} className="icon-inline" /> Reject (Invalid)
+                </button>
+              </>
+            )}
+            {!['RESOLVED', 'CLOSED', 'ESCALATED', 'AI_REJECTED'].includes(complaint.status) && (
               <button className="btn btn-sm" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none' }}
                 onClick={() => void handleEscalate()} disabled={escalating}>
                 {escalating ? '...' : <><AlertTriangle size={16} className="icon-inline" /> Escalate</>}
               </button>
             )}
-            <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={saving}>
-              {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Saving...</> : 'Update Status'}
-            </button>
+            {complaint.status !== 'AI_REJECTED' && (
+              <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={saving}>
+                {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} /> Saving...</> : 'Update Status'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -473,8 +488,9 @@ export default function ComplaintsPage() {
   const [error, setError] = useState('');
   const PAGE_SIZE = 15;
 
-  const [viewMode, setViewMode] = useState<'all' | 'reopens'>('all');
+  const [viewMode, setViewMode] = useState<'all' | 'reopens' | 'ai_queue'>('all');
   const [pendingReopens, setPendingReopens] = useState<ReopenRequest[]>([]);
+  const [aiQueue, setAiQueue] = useState<Complaint[]>([]);
 
   const fetchComplaints = useCallback(async () => {
     if (!accessToken) return;
@@ -496,15 +512,29 @@ export default function ComplaintsPage() {
         );
         setComplaints(res.content ?? []);
         setTotal(res.totalElements ?? 0);
-      } else {
+      } else if (viewMode === 'reopens') {
         const res = await apiGet<ReopenRequest[]>('/reopen-requests/pending', accessToken);
         setPendingReopens(res ?? []);
         setTotal(res?.length ?? 0);
+      } else if (viewMode === 'ai_queue') {
+        const params = new URLSearchParams({
+          page: String(page),
+          size: String(PAGE_SIZE),
+          sort: 'createdAt,desc',
+          status: 'AI_REJECTED'
+        });
+        const res = await apiGet<PagedResponse<Complaint>>(
+          `/complaints?${params.toString()}`,
+          accessToken
+        );
+        setAiQueue(res.content ?? []);
+        setTotal(res.totalElements ?? 0);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load data');
       if (viewMode === 'all') setComplaints([]);
-      else setPendingReopens([]);
+      else if (viewMode === 'reopens') setPendingReopens([]);
+      else setAiQueue([]);
       setTotal(0);
     } finally {
       setLoading(false);
@@ -538,6 +568,12 @@ export default function ComplaintsPage() {
             onClick={() => { setViewMode('reopens'); setPage(0); }}
           >
             Pending Reopens
+          </button>
+          <button 
+            className={`btn ${viewMode === 'ai_queue' ? 'btn-primary' : 'btn-ghost'}`} 
+            onClick={() => { setViewMode('ai_queue'); setPage(0); }}
+          >
+            Verification Queue
           </button>
         </div>
       </div>
@@ -595,12 +631,18 @@ export default function ComplaintsPage() {
             <h3>No Pending Reopen Requests</h3>
             <p>All reopen requests have been addressed.</p>
           </div>
+        ) : viewMode === 'ai_queue' && aiQueue.length === 0 && !loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon"><Check size={32} /></div>
+            <h3>No AI-Flagged Complaints</h3>
+            <p>The verification queue is currently empty.</p>
+          </div>
         ) : (
           <>
             <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
               <table>
                 <thead>
-                  {viewMode === 'all' ? (
+                  {viewMode === 'all' || viewMode === 'ai_queue' ? (
                     <tr>
                       <th>ID</th>
                       <th>Title</th>
@@ -624,7 +666,7 @@ export default function ComplaintsPage() {
                   )}
                 </thead>
                 <tbody>
-                  {viewMode === 'all' ? complaints.map((c) => (
+                  {(viewMode === 'all' ? complaints : viewMode === 'ai_queue' ? aiQueue : []).map((c) => (
                     <tr key={c.id}>
                       <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{c.complaintNumber ?? c.id.substring(0, 8)}</span></td>
                       <td>
@@ -644,11 +686,12 @@ export default function ComplaintsPage() {
                       <td className="text-muted" style={{ fontSize: '0.78rem' }}>{formatDate(c.createdAt)}</td>
                       <td>
                         <button className="btn btn-ghost btn-sm" onClick={() => setSelected(c)}>
-                          View
+                          {viewMode === 'ai_queue' ? 'Review' : 'View'}
                         </button>
                       </td>
                     </tr>
-                  )) : pendingReopens.map((r) => (
+                  ))}
+                  {viewMode === 'reopens' && pendingReopens.map((r) => (
                     <tr key={r.id}>
                       <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{r.id.substring(0, 8)}</span></td>
                       <td><span className="mono text-accent" style={{ fontSize: '0.75rem' }}>{r.complaintId?.substring(0, 8)}</span></td>
@@ -675,7 +718,7 @@ export default function ComplaintsPage() {
               </table>
             </div>
 
-            {viewMode === 'all' && (
+            {(viewMode === 'all' || viewMode === 'ai_queue') && (
               <div className="pagination">
                 <span>Showing {Math.min(page * PAGE_SIZE + 1, total)}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}</span>
                 <div className="pagination-controls">

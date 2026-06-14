@@ -583,7 +583,7 @@ public class AssignmentService {
             if (department.isPresent()) return department.get();
 
             // Try city-agnostic fallback
-            List<Department> byType = departmentRepository.findByCategoryType(deptType, org.springframework.data.domain.PageRequest.of(0, 1)).getContent();
+            List<Department> byType = departmentRepository.findByCategoryTypeIgnoreCase(deptType, org.springframework.data.domain.PageRequest.of(0, 1)).getContent();
             if (!byType.isEmpty()) return byType.get(0);
         }
 

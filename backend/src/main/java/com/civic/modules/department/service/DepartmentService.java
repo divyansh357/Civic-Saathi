@@ -50,7 +50,7 @@ public class DepartmentService {
      * Get departments by category type.
      */
     public Page<DepartmentResponse> getDepartmentsByCategory(String categoryType, Pageable pageable) {
-        return departmentRepository.findByCategoryType(categoryType, pageable)
+        return departmentRepository.findByCategoryTypeIgnoreCase(categoryType, pageable)
                 .map(departmentMapper::toResponse);
     }
 

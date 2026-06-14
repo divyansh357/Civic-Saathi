@@ -91,7 +91,7 @@ public class ComplaintService {
 
         // Call AI Layer for Auto-Verification
         AiVerificationService.AiVerificationResult aiResult = aiVerificationService.verifyComplaint(
-            request.getTitle(), request.getDescription(), request.getCategory()
+            request.getTitle(), request.getDescription(), request.getCategory(), request.getImageUrls()
         );
 
         complaint.setAiSummary(aiResult.summary);
@@ -105,9 +105,16 @@ public class ComplaintService {
             // Save the complaint and wait for manual assignment or admin-triggered auto-assignment
             complaint = complaintRepository.save(complaint);
         } else {
+            // Flagged for manual review
             complaint.setStatus(Complaint.ComplaintStatus.SUBMITTED);
             complaint.setVerificationMethod("PENDING");
-            logger.info("Complaint requires manual verification. AI Confidence: {}", aiResult.confidenceScore);
+            // If explicitly marked invalid, we can use a special status or just log it
+            if (!aiResult.isValid) {
+                logger.warn("Complaint flagged as INVALID by AI. Confidence: {}", aiResult.confidenceScore);
+                complaint.setStatus(Complaint.ComplaintStatus.AI_REJECTED);
+            } else {
+                logger.info("Complaint requires manual verification. AI Confidence: {}", aiResult.confidenceScore);
+            }
             complaint = complaintRepository.save(complaint);
         }
 
