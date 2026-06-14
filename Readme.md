@@ -371,15 +371,13 @@ sequenceDiagram
 
 ## 📸 SCREENSHOTS
 
-> *Note: Replace the placeholder URLs below with actual project screenshots!*
-
 | **Citizen Dashboard** | **Report an Issue** | **Worker Map View** |
 |:---:|:---:|:---:|
-| <img src="https://via.placeholder.com/250x500.png?text=Citizen+Home" alt="Citizen App Dashboard" width="250"/> | <img src="https://via.placeholder.com/250x500.png?text=Complaint+Form" alt="Complaint Form" width="250"/> | <img src="https://via.placeholder.com/250x500.png?text=Worker+Map+View" alt="Worker Map View" width="250"/> |
+| <img src="https://res.cloudinary.com/du1jntwiw/image/upload/v1781465256/lg0psdhbn63hl7zhuizb.jpg" alt="Citizen App Dashboard" width="250"/> | <img src="https://res.cloudinary.com/du1jntwiw/image/upload/v1781465276/vqeqzv225ax2c3pbihxp.jpg" alt="Complaint Form" width="250"/> | <img src="https://res.cloudinary.com/du1jntwiw/image/upload/v1781465294/g4ojqfdjstkcqtmqgooc.jpg" alt="Worker Map View" width="250"/> |
 
-| **Officer Analytics Dashboard** | **Task Assignment View** |
+| **Admin Analytics Dashboard** | **Task Assignment View** |
 |:---:|:---:|
-| <img src="https://via.placeholder.com/400x250.png?text=Web+Dashboard" alt="Web Dashboard" width="400"/> | <img src="https://via.placeholder.com/400x250.png?text=Kanban+Board" alt="Task Assignment" width="400"/> |
+| <img src="https://res.cloudinary.com/du1jntwiw/image/upload/v1781465376/qogfvbi4wdufujfebwrp.jpg" alt="Admin Analytics View" width="400"/> | <img src="https://res.cloudinary.com/du1jntwiw/image/upload/v1781465342/sa11jm5grnt1xq0ffvvd.jpg" alt="Admin Complaint View" width="400"/> |
 
 ---
 
