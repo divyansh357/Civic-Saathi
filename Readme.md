@@ -1,229 +1,552 @@
-# Civic Saathi 🏙️
+<div align="center">
 
-A role-based civic issue reporting and resolution platform connecting citizens with government departments and field workers.
-
-## Platform Overview
-
-| Layer | Technology | Status |
-|---|---|---|
-| Backend API | Spring Boot 3.3.6 + Java 17 | ✅ Production Ready |
-| Mobile App | React Native 0.81.5 + Expo 54 | ✅ Level A–C Complete |
-| Web Dashboard | React 18 + Vite + TypeScript | ✅ Level A–C Complete |
-| Database | PostgreSQL 16 + PostGIS 3.4 + pgvector | ✅ 26 tables |
-| AI Layer | Cerebras LLM + Rule-based fallback | ✅ Functional |
-
-## Features Implemented
-
-### Level A — Core Workflow ✅
-- JWT authentication with role-based access (Citizen, Worker, Officer, Admin)
-- Complaint creation with images, voice notes, and GPS location
-- Auto-assignment and manual assignment to workers
-- Full complaint lifecycle (15 states: SUBMITTED → CLOSED)
-- Real-time notifications
-- Role-specific dashboards
-- Comprehensive audit logging
-
-### Level B — Operational Hardening ✅
-- SLA deadline tracking with auto-escalation
-- Feedback and star ratings for resolved complaints
-- Reopen request workflow with officer approval
-- Duplicate detection and linking
-- Department and worker management with availability toggle
-- Real analytics from live database queries
-
-### Level C — AI Intelligence ✅
-- AI complaint classification (6 categories, rule-based + optional LLM)
-- Duplicate detection using text similarity (Jaccard)
-- AI-generated dashboard insights
-- Priority scoring and resolution time prediction
-- Ward-level heatmap analytics
-- Department performance ranking
-
-## Quick Start
-
-### Prerequisites
-- Java 17+
-- Node.js 18+
-- Docker Desktop
-
-### 1. Clone and configure
-
-```bash
-git clone https://github.com/divyansh357/Civic-Saathi.git
-cd Civic-Saathi
-cp .env.example .env
-# Edit .env with your values
+```ascii
+╔═══════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                   ║
+║   ██████╗██╗██╗   ██╗██╗ ██████╗    ███████╗ █████╗  █████╗ ████████╗██╗  ██╗██╗  ║
+║  ██╔════╝██║██║   ██║██║██╔════╝    ██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██║  ██║██║  ║
+║  ██║     ██║██║   ██║██║██║         ███████╗███████║███████║   ██║   ███████║██║  ║
+║  ██║     ██║╚██╗ ██╔╝██║██║         ╚════██║██╔══██║██╔══██║   ██║   ██╔══██║██║  ║
+║  ╚██████╗██║ ╚████╔╝ ██║╚██████╗    ███████║██║  ██║██║  ██║   ██║   ██║  ██║██║  ║
+║   ╚═════╝╚═╝  ╚═══╝  ╚═╝ ╚═════╝    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ║
+║                                                                                   ║
+║                         CIVIC SAATHI • EMPOWERING CITIZENS                        ║
+║                                                                                   ║
+╚═══════════════════════════════════════════════════════════════════════════════════╝
 ```
 
-### 2. Start the database
+### *A Comprehensive Role-Based Civic Issue Reporting and Resolution Platform*
 
-```bash
-cd infra
-docker compose up -d postgres
-```
-
-Wait for the health check to pass, then apply the schema:
-
-```powershell
-# Connect to the running container and apply schema
-Get-Content ..\db\schema.sql | docker exec -i civic_postgres psql -U postgres -d Civic
-```
-
-### 3. Start the backend
-
-```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
-# API available at http://localhost:8080
-```
-
-### 4. Start the web dashboard
-
-```powershell
-cd web-dashboard
-npm install
-npm run dev
-# Dashboard at http://localhost:5173
-```
-
-### 5. Start the mobile app
-
-```powershell
-cd mobile-app
-npm install
-npm run start
-
-cd mobile-app
-npm run tunnel
-
-# Scan QR code with Expo Go app
-```
-
-## Docker (Full Stack)
-
-```bash
-cd infra
-docker compose up --build
-```
-
-## Production Deployment
-
-```bash
-cd infra
-docker compose -f docker-compose.prod.yml up --build -d
-```
-
-## Environment Variables
-
-Copy `.env.example` to `.env` and fill in:
-
-| Variable | Description | Required |
-|---|---|---|
-| `DB_URL` | PostgreSQL JDBC URL | ✅ |
-| `DB_USERNAME` | Database username | ✅ |
-| `DB_PASSWORD` | Database password | ✅ |
-| `JWT_SECRET` | JWT signing secret (32+ chars) | ✅ |
-| `CEREBRAS_API_KEY` | Cerebras LLM API key | Optional |
-| `VITE_API_URL` | Backend URL for web dashboard | ✅ |
-
-## API Reference
-
-Base URL: `http://localhost:8080/api/v1`
-
-### Authentication
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/auth/signup` | Register new user |
-| POST | `/auth/login` | Login, returns JWT |
-| POST | `/auth/refresh` | Refresh access token |
-| POST | `/auth/logout` | Invalidate tokens |
-| GET | `/auth/me` | Get current user |
-
-### Complaints
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/complaints` | List all (officer/admin) |
-| GET | `/complaints/public` | Public complaints (no auth) |
-| GET | `/complaints/search?q=` | Search by keyword |
-| POST | `/complaints` | Create complaint |
-| GET | `/complaints/{id}` | Get by ID |
-| PUT | `/complaints/{id}/status` | Update status |
-| POST | `/complaints/{id}/escalate` | Escalate complaint |
-| GET | `/complaints/{id}/comments` | Get comments |
-| POST | `/complaints/{id}/comments` | Add comment |
-| POST | `/complaints/{id}/vote` | Toggle support vote |
-
-### Assignments
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/assignments` | All assignments |
-| POST | `/assignments/auto-assign` | Auto-assign complaint |
-| POST | `/assignments/manual-assign` | Manual assignment |
-| POST | `/assignments/{id}/acknowledge` | Worker acknowledges |
-| POST | `/assignments/{id}/start` | Worker starts work |
-| POST | `/assignments/{id}/complete` | Worker completes |
-| POST | `/assignments/{id}/reject` | Worker rejects |
-| GET | `/assignments/overdue` | SLA-breached assignments |
-
-### AI
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/ai/classify` | Classify complaint category |
-| GET | `/ai/summary/{id}` | Generate complaint summary |
-| GET | `/ai/insights` | Dashboard AI insights |
-| POST | `/ai/duplicate-check` | Check for duplicates |
-| GET | `/ai/predict-resolution?category=` | Predict resolution time |
-| GET | `/ai/status` | AI provider status |
-
-### Analytics
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/analytics/dashboard` | Full dashboard metrics |
-| GET | `/analytics/heatmap` | Ward-level complaint heatmap |
-| GET | `/analytics/departments/ranking` | Department performance ranking |
-| GET | `/analytics/resolution-time` | Resolution time analytics |
-
-## Architecture
-
-```
-Civic-Saathi/
-├── backend/          # Spring Boot modular monolith
-│   └── src/main/java/com/civic/
-│       ├── modules/  # Domain modules (auth, complaint, assignment, ...)
-│       ├── config/   # Security, WebSocket configuration
-│       └── infrastructure/  # AI, storage, messaging clients
-├── mobile-app/       # React Native + Expo
-│   └── src/
-│       ├── screens/  # citizen/, worker/ screens
-│       ├── services/ # API client, notifications
-│       └── store/    # Zustand state management
-├── web-dashboard/    # React + Vite admin dashboard
-│   └── src/
-│       ├── pages/    # Dashboard, Complaints, Assignments, ...
-│       └── store/    # Auth, complaint, notification stores
-├── db/               # PostgreSQL schema and migration scripts
-└── infra/            # Docker Compose (dev + prod)
-```
-
-## User Roles
-
-| Role | Access |
-|---|---|
-| **Citizen** | Submit complaints, track status, give feedback, request reopen |
-| **Worker** | View assigned tasks, accept/complete/reject, update progress |
-| **Officer** | Assign complaints, manage workers, approve reopens, view analytics |
-| **Admin** | Full system access, user management, configuration |
-
-## Tech Stack
-
-- **Backend**: Spring Boot 3.3.6, Spring Security, Spring Data JPA, Hibernate Spatial
-- **Database**: PostgreSQL 16, PostGIS 3.4, pgvector
-- **Auth**: JWT (jjwt 0.12.6), BCrypt
-- **Mobile**: React Native 0.81.5, Expo 54, TypeScript, Zustand, Axios
-- **Web**: React 18, Vite, TypeScript, Recharts, Zustand
-- **AI**: Cerebras LLM API (optional), rule-based fallback
-- **Infrastructure**: Docker, Docker Compose
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.6-brightgreen?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
+[![React Native](https://img.shields.io/badge/React_Native-0.81.5-blue?style=flat-square&logo=react)](https://reactnative.dev/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![PostGIS](https://img.shields.io/badge/PostGIS-3.4-4169E1?style=flat-square&logo=postgis&logoColor=white)](https://postgis.net/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ---
 
-Built with ❤️ for civic governance
+### 🌟 *"Bridging the gap between citizens, municipal field workers, and department officers"*
+
+---
+
+</div>
+
+## 📖 Table of Contents
+- [🎯 Project Vision](#-project-vision)
+- [⚡ The Problem We Solve](#-the-problem-we-solve)
+- [🚀 Key Features](#-key-features)
+- [🏗️ System Architecture](#️-system-architecture)
+- [🔄 Technical Workflows](#-technical-workflows)
+- [💻 Tech Stack](#-tech-stack)
+- [📸 Screenshots](#-screenshots)
+- [🛠️ Getting Started](#️-getting-started)
+- [⚙️ Environment Variables](#️-environment-variables)
+- [🌐 API Reference](#-api-reference)
+- [🗄️ Database Schema](#-database-schema)
+- [🤝 Contributing](#-contributing)
+- [🏆 Contributors](#-contributors)
+
+---
+
+<div align="center">
+
+## 🎯 PROJECT VISION
+
+**"Transforming Civic Issues from Unresolved Complaints into Transparent Actions"**
+
+</div>
+
+**Civic Saathi** is an advanced, modular monolith platform aimed at solving urban management challenges. Using cutting-edge technologies including **Spring Boot 3.3.6**, **PostGIS** for precise spatial data, **React Native**, and **React**, it enables real-time issue reporting, intelligent routing, and strict SLA enforcement.
+
+<table>
+<tr>
+<td align="center" width="25%">
+<img src="https://img.icons8.com/color/96/000000/city-buildings.png" width="64"/>
+<br><b>15+</b>
+<br><sub>Civic Categories</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://img.icons8.com/color/96/000000/map-marker.png" width="64"/>
+<br><b>PostGIS</b>
+<br><sub>Spatial Auto-Routing</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://img.icons8.com/color/96/000000/time-machine.png" width="64"/>
+<br><b>Real-Time</b>
+<br><sub>SLA Tracking</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://img.icons8.com/color/96/000000/group-task.png" width="64"/>
+<br><b>4 Roles</b>
+<br><sub>RBAC Ecosystem</sub>
+</td>
+</tr>
+</table>
+
+---
+
+## ⚡ THE PROBLEM WE SOLVE
+
+### 📉 The Trilemma of Inefficiency
+
+```mermaid
+graph TD
+    A[Urban Civic Management] --> B[Manual Reporting Bottleneck]
+    A --> C[Routing Void]
+    A --> D[Accountability Gap]
+    
+    B --> E[Fragmented complaint channels]
+    B --> F[Unsearchable records]
+    
+    C --> G[Workers dispatched incorrectly]
+    C --> H[High resolution times]
+    
+    D --> I[No SLA enforcement]
+    D --> J[Citizens left in the dark]
+    
+    style A fill:#FF6B35,stroke:#333,stroke-width:4px,color:#fff
+    style B fill:#FFD700,stroke:#333,stroke-width:2px
+    style C fill:#FFD700,stroke:#333,stroke-width:2px
+    style D fill:#FFD700,stroke:#333,stroke-width:2px
+```
+
+---
+
+## 🚀 KEY FEATURES
+
+<div align="center">
+
+### 🌟 Three Pillars of Innovation
+
+</div>
+
+```mermaid
+mindmap
+  root((Civic Saathi))
+    Core Operations
+      Role Based Dashboards
+      Rich Multimedia Reports
+      Lifecycle Management
+      FCM Push Notifications
+    Operational Hardening
+      SLA Deadline Tracking
+      Worker Trust Scores
+      Reopen and Feedback
+      Availability Toggles
+    AI and Analytics
+      LLM Classification
+      Semantic Deduplication
+      Spatial Heatmaps
+      Resolution Predictions
+```
+
+### 🎯 Core Capabilities
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+#### 📱 **Citizen Empowerment**
+- 📝 **Rich Media**: Image and Voice Note integration
+- 🧠 **Auto-Location**: Precise GPS capture
+- 🌐 **Transparency**: Live status tracking
+- ⚡ **Feedback Loop**: Rate workers and reopen issues
+
+</td>
+<td width="33%" valign="top">
+
+#### 🛰️ **Geospatial Intelligence**
+- 🌍 **PostGIS**: Radius-based task assignment
+- 📊 **Heatmaps**: Ward-level insights
+- 🗺️ **Proximity Sorting**: Nearest tasks for workers
+- ⏰ **Geofencing**: Task boundary validation
+
+</td>
+<td width="33%" valign="top">
+
+#### 📍 **Automated Enforcement**
+- 🎯 **Algorithmic Routing**: Match category + location
+- 📱 **SLA Management**: Auto-escalation of delays
+- 🔒 **Duplicate Detection**: Prevent redundant dispatch
+- 🔄 **Analytics Engine**: Macro-level admin charts
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🏗️ SYSTEM ARCHITECTURE
+
+<div align="center">
+
+### 🎨 High-Level Architecture
+
+</div>
+
+```mermaid
+graph TB
+    subgraph Users[User Layer]
+        A1[Admins]
+        A2[Officers]
+        A3[Field Workers]
+        A4[Citizens]
+    end
+    
+    subgraph Apps[Application Layer]
+        B1[Web Dashboard]
+        B2[Mobile App]
+    end
+    
+    subgraph API[API Gateway Spring Boot]
+        C1[Auth Module]
+        C2[Complaint Module]
+        C3[Assignment Module]
+    end
+    
+    subgraph Intel[Intelligence Layer]
+        D1[Analytics Engine]
+        D2[PostGIS Spatial]
+        D3[AI Deduplication]
+    end
+    
+    subgraph Data[Data Layer]
+        E1[PostgreSQL 16]
+        E2[Cloudinary Storage]
+    end
+    
+    A1 --> B1
+    A2 --> B1
+    A3 --> B2
+    A4 --> B2
+    
+    B1 --> C1
+    B2 --> C1
+    
+    C1 --> C2
+    C1 --> C3
+    
+    C2 --> D1
+    C3 --> D2
+    C2 --> D3
+    
+    C2 --> E1
+    C3 --> E1
+    C2 --> E2
+    
+    style B1 fill:#61DAFB,stroke:#333,stroke-width:2px,color:#000
+    style B2 fill:#61DAFB,stroke:#333,stroke-width:2px,color:#000
+    style C1 fill:#8bc34a,stroke:#333,stroke-width:2px,color:#000
+    style C2 fill:#8bc34a,stroke:#333,stroke-width:2px,color:#000
+    style C3 fill:#8bc34a,stroke:#333,stroke-width:2px,color:#000
+    style E1 fill:#336791,stroke:#333,stroke-width:2px,color:#fff
+```
+
+### 🔄 Technical Workflows
+
+### 📝 Complaint Lifecycle Flow
+
+```mermaid
+sequenceDiagram
+    participant Citizen
+    participant MobileApp as Mobile App
+    participant Backend as API Gateway
+    participant Worker
+    participant Officer
+
+    Citizen->>MobileApp: Submits Issue via App
+    MobileApp->>Backend: POST /complaints
+    Backend->>Backend: Check Duplicates
+    Backend-->>Backend: Store Location PostGIS
+    
+    alt Auto-Assign enabled
+        Backend->>Backend: Find nearest Worker
+        Backend->>Worker: Notify Worker via FCM
+    else Manual Assignment
+        Backend->>Officer: Alert Officer
+        Officer->>Backend: Manual Dispatch
+        Backend->>Worker: Notify Worker
+    end
+
+    Worker->>Backend: Accept Task
+    Worker->>Backend: Complete Task Upload Image
+    Backend->>Citizen: Notify Completion
+    Citizen->>MobileApp: Leave Feedback
+```
+
+---
+
+## 💻 TECH STACK
+
+<div align="center">
+
+### 🎨 Frontend Technologies
+
+</div>
+
+<table>
+<tr>
+<td align="center" width="25%">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="60"/>
+<br><b>React 18</b>
+<br><sub>Web UI Framework</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="60"/>
+<br><b>TypeScript</b>
+<br><sub>Type Safety</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://avatars.githubusercontent.com/u/139895814?s=200&v=4" width="60"/>
+<br><b>React Native</b>
+<br><sub>Mobile Apps</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://raw.githubusercontent.com/pmndrs/zustand/main/docs/bear.jpg" width="60"/>
+<br><b>Zustand</b>
+<br><sub>State Management</sub>
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+### ⚙️ Backend Technologies
+
+</div>
+
+<table>
+<tr>
+<td align="center" width="25%">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" width="60"/>
+<br><b>Java 17</b>
+<br><sub>Core Language</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spring/spring-original.svg" width="60"/>
+<br><b>Spring Boot</b>
+<br><sub>API Framework</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="60"/>
+<br><b>PostgreSQL</b>
+<br><sub>Database</sub>
+</td>
+<td align="center" width="25%">
+<img src="https://postgis.net/brand/postgis-logo.png" width="60"/>
+<br><b>PostGIS</b>
+<br><sub>Spatial Extension</sub>
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+### 🔧 DevOps & Infrastructure
+
+</div>
+
+<table>
+<tr>
+<td align="center" width="33%">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="60"/>
+<br><b>Docker</b>
+<br><sub>Containerization</sub>
+</td>
+<td align="center" width="33%">
+<img src="https://cloudinary-res.cloudinary.com/image/upload/website/cloudinary_logo.svg" width="60"/>
+<br><b>Cloudinary</b>
+<br><sub>Asset Storage</sub>
+</td>
+<td align="center" width="33%">
+<img src="https://firebase.google.com/downloads/brand-guidelines/PNG/logo-logomark.png" width="60"/>
+<br><b>Firebase</b>
+<br><sub>Push Notifications</sub>
+</td>
+</tr>
+</table>
+
+---
+
+## 📸 SCREENSHOTS
+
+> *Note: Replace the placeholder URLs below with actual project screenshots!*
+
+| **Citizen Dashboard** | **Report an Issue** | **Worker Map View** |
+|:---:|:---:|:---:|
+| <img src="https://via.placeholder.com/250x500.png?text=Citizen+Home" alt="Citizen App Dashboard" width="250"/> | <img src="https://via.placeholder.com/250x500.png?text=Complaint+Form" alt="Complaint Form" width="250"/> | <img src="https://via.placeholder.com/250x500.png?text=Worker+Map+View" alt="Worker Map View" width="250"/> |
+
+| **Officer Analytics Dashboard** | **Task Assignment View** |
+|:---:|:---:|
+| <img src="https://via.placeholder.com/400x250.png?text=Web+Dashboard" alt="Web Dashboard" width="400"/> | <img src="https://via.placeholder.com/400x250.png?text=Kanban+Board" alt="Task Assignment" width="400"/> |
+
+---
+
+## 🛠️ GETTING STARTED
+
+### Prerequisites
+Make sure you have the following installed on your machine:
+- **Java 17 (JDK)**
+- **Node.js 18+** & npm 9+
+- **Docker Desktop** (highly recommended for Postgres/PostGIS)
+- **Git**
+
+### Installation & Setup
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/divyansh357/Civic-Saathi.git
+   cd Civic-Saathi
+   ```
+
+2. **Configure Environment Variables**
+   The project requires a root `.env` file and a separate `.env` file for the mobile app.
+   ```bash
+   # Root environment (Used by Backend, Dashboard, and Docker)
+   cp .env.example .env
+   
+   # Mobile App environment (Expo requires its own env file)
+   cd mobile-app && cp .env.example .env && cd ..
+   ```
+
+3. **Start the Database Infrastructure (Docker)**
+   This spins up PostgreSQL along with the vital PostGIS and pgvector extensions.
+   ```bash
+   cd infra
+   docker compose up -d postgres
+   ```
+   *Note: The `infra/docker/init.sql` script runs automatically to seed the extensions.*
+
+4. **Launch the Backend API**
+   ```bash
+   cd backend
+   # Linux/Mac
+   ./mvnw clean spring-boot:run
+   # Windows
+   .\mvnw.cmd clean spring-boot:run
+   ```
+   *Verify it's running by checking the health endpoint: `http://localhost:8080/actuator/health`*
+
+5. **Start the Web Dashboard**
+   ```bash
+   cd web-dashboard
+   npm install
+   npm run dev
+   ```
+   *Dashboard will be accessible at `http://localhost:5173`*
+
+6. **Start the Mobile App (Expo)**
+   ```bash
+   cd mobile-app
+   npm install
+   npm run start
+   ```
+   *Press `a` for Android Emulator, `i` for iOS simulator, or scan the QR code using the Expo Go app on your physical device.*
+
+---
+
+## 🛠️ USEFUL COMMANDS & TROUBLESHOOTING
+
+### Common Commands
+- **Run Backend Tests:** `cd backend && ./mvnw test`
+- **Build Backend Jar:** `cd backend && ./mvnw clean package`
+- **Dashboard Typecheck:** `cd web-dashboard && npm run typecheck`
+- **Full Docker Stack (Backend + DB):** `cd infra && docker compose up --build`
+
+### Troubleshooting Checklist
+- ❌ **Port Conflict (5432/8080/5173):** Check if another Postgres or Tomcat instance is running on your host machine.
+- ❌ **Mobile App cannot connect to API:** If using a physical phone, replace `localhost` in `EXPO_PUBLIC_API_URL` with your computer's local Wi-Fi IP address (e.g., `192.168.1.15`).
+- ❌ **Backend fails to connect to DB:** Ensure the Docker container is healthy (`docker ps`) and credentials in `.env` match `docker-compose.yml`.
+
+---
+
+## ⚙️ ENVIRONMENT VARIABLES
+
+| Variable | Location | Description | Default / Example |
+|---|---|---|---|
+| `SERVER_PORT` | Root `.env` | Port for Spring Boot backend | `8080` |
+| `DB_URL` | Root `.env` | PostgreSQL connection URL | `jdbc:postgresql://localhost:5432/Civic` |
+| `DB_USERNAME` | Root `.env` | Postgres username | `postgres` |
+| `DB_PASSWORD` | Root `.env` | Postgres password | `root` |
+| `JPA_DDL_AUTO`| Root `.env` | Hibernate schema management | `update` |
+| `VITE_API_URL` | Root `.env` | Web Dashboard Base API URL | `http://localhost:8080/api/v1` |
+| `EXPO_PUBLIC_API_URL`| `mobile-app/.env` | Mobile App Base API URL | `http://localhost:8080/api/v1` |
+
+---
+
+## 🌐 API REFERENCE
+
+**Base API Path:** `http://localhost:8080/api/v1`
+*(Note: All endpoints except `/auth/**` require a valid JWT `Authorization: Bearer <token>` header)*
+
+### 🔐 Authentication (`/auth`)
+| Endpoint | Method | Description |
+|---|:---:|---|
+| `/auth/signup` | `POST` | Register a new user (Citizen, Worker, Officer, Admin) |
+| `/auth/login` | `POST` | Authenticate and retrieve JWT access token |
+| `/auth/profile` | `GET` | Retrieve the currently authenticated user's profile and RBAC roles |
+
+### 📝 Complaints (`/complaints`)
+| Endpoint | Method | Description |
+|---|:---:|---|
+| `/complaints` | `POST` | Submit a new civic issue (Supports multipart form data for image/voice uploads) |
+| `/complaints` | `GET` | Retrieve a paginated list of complaints (Supports filtering by status, ward, category) |
+| `/complaints/{id}` | `GET` | Fetch detailed information, timeline, and audit history of a specific complaint |
+| `/complaints/{id}/status` | `PATCH` | Transition the lifecycle state (e.g., `OPEN` → `IN_PROGRESS` → `RESOLVED`) |
+
+### 📍 Assignments & Routing (`/assignments`)
+| Endpoint | Method | Description |
+|---|:---:|---|
+| `/assignments/auto-assign` | `POST` | Trigger PostGIS proximity routing algorithm to dispatch nearest available worker |
+| `/assignments/worker/tasks`| `GET` | Fetch active geographic tasks assigned to the authenticated field worker |
+| `/assignments/{id}/accept` | `POST` | Worker acknowledges and accepts an assigned task to start the SLA timer |
+
+### 📊 Analytics & Admin (`/analytics`)
+| Endpoint | Method | Description |
+|---|:---:|---|
+| `/analytics/heatmap` | `GET` | Fetch aggregated `GEOGRAPHY` spatial points for rendering UI heatmaps |
+| `/analytics/department-sla`| `GET` | View resolution time metrics, completion rates, and SLA breaches per department |
+
+> **Interactive Docs:** A complete OpenAPI / Swagger UI specification is automatically generated when running the backend locally. Visit `http://localhost:8080/swagger-ui.html` to interactively test all endpoints.
+
+---
+
+## 🗄️ DATABASE SCHEMA
+
+The platform uses **PostgreSQL 16** with **PostGIS 3.4**:
+- **Geography Hierarchy**: `City` → `Zone` → `Ward` mapping.
+- **RBAC**: Many-to-Many User/Roles architecture.
+- **Spatial Features**: `GEOGRAPHY(Point, 4326)` for radius routing.
+- **Audit Logging**: `ComplaintStatusHistory`, `ComplaintVersion`, ensuring compliance.
+
+---
+
+## 🤝 CONTRIBUTING
+
+We welcome contributions from the community!
+
+1. **Fork the Repository**
+2. **Create a Feature Branch** (`git checkout -b feature/AmazingFeature`)
+3. **Commit Your Changes** (`git commit -m 'Add AmazingFeature'`)
+4. **Push to the Branch** (`git push origin feature/AmazingFeature`)
+5. **Open a Pull Request**
+
+---
+
+## 🏆 CONTRIBUTORS
+
+A massive thank you to our team for making urban governance smarter!
+
+| Name | Role | GitHub Profile |
+|:---|:---|:---|
+| **Harshit Goud** | Lead Developer & Architect | [@harshitgour1](https://github.com/harshitgour1) |
+| **Divyansh Gupta** | Lead Developer & Architect | [@divyansh357](https://github.com/divyansh357) |
+| **Asmi Gupta** | UI/UX Designer & Front-end Developer | [@asmi1074](https://github.com/asmi1074) |
+| **Kavin Raj Singh** | Documentation & Planning | [@2wizArd9](https://github.com/2wizard9) |
+
+---
+
+<div align="center">
+  <b>Built with ❤️ for Civic Governance</b>
+</div>
