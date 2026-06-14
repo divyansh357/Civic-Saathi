@@ -11,6 +11,8 @@ import com.civic.modules.worker.entity.Worker;
 import com.civic.modules.worker.repository.WorkerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.civic.modules.notification.entity.Notification;
+import com.civic.modules.notification.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -169,6 +171,14 @@ public class ComplaintService {
             complaint.setResolvedAt(LocalDateTime.now());
         } else if (newStatus == Complaint.ComplaintStatus.CLOSED) {
             complaint.setClosedAt(LocalDateTime.now());
+            
+            // Send gamification badge notification
+            Notification badgeNotif = new Notification();
+            badgeNotif.setUser(complaint.getCreatedBy());
+            badgeNotif.setTitle("Civic Impact Badge Unlocked!");
+            badgeNotif.setMessage("Your complaint #" + complaint.getId().toString().substring(0,8) + " has been successfully resolved and you've earned a new badge!");
+            badgeNotif.setType("BADGE_AWARDED");
+            notificationService.sendNotification(badgeNotif);
         } else if (newStatus == Complaint.ComplaintStatus.ESCALATED) {
             complaint.setEscalatedAt(LocalDateTime.now());
         }

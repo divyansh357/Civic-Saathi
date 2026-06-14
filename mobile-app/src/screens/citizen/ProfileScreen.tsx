@@ -10,9 +10,10 @@ import DepartmentPickerModal from '@components/DepartmentPickerModal';
 
 interface ProfileScreenProps {
   onBack: () => void;
+  onNavigateToBadges?: () => void;
 }
 
-export default function ProfileScreen({ onBack }: ProfileScreenProps) {
+export default function ProfileScreen({ onBack, onNavigateToBadges }: ProfileScreenProps) {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const setUser = useAuthStore((s) => s.setUser);
@@ -256,6 +257,20 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
             <Text style={styles.infoValue}>{user?.city ?? 'Not set'}</Text>
           </View>
         </View>
+
+        {/* Badges Link */}
+        {user?.role === 'CITIZEN' && (
+          <Pressable 
+            style={[styles.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 20 }]}
+            onPress={() => onNavigateToBadges?.()}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ fontSize: 24 }}>🎖️</Text>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0F172A' }}>My Civic Badges</Text>
+            </View>
+            <Text style={{ fontSize: 18, color: '#94A3B8' }}>→</Text>
+          </Pressable>
+        )}
 
         {/* Sign out */}
         <Pressable

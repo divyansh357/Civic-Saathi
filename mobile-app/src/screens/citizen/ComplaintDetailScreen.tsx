@@ -7,6 +7,7 @@ import { useAuthStore } from '@store/index';
 import { apiPostWithHeaders } from '@services/api/client';
 import { Complaint } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
+import CivicBadge from '../../components/CivicBadge';
 
 const STATUS_COLORS: Record<string, string> = {
   SUBMITTED: '#60a5fa', VERIFIED: '#a78bfa', ASSIGNED: '#fbbf24',
@@ -304,6 +305,11 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
               </View>
             )}
           </View>
+        )}
+
+        {/* Gamification Badge */}
+        {isCitizen && complaint.status === 'CLOSED' && (
+          <CivicBadge complaint={complaint} />
         )}
       </ScrollView>
     </View>

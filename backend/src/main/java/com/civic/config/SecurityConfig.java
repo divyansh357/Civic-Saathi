@@ -46,6 +46,7 @@ public class SecurityConfig {
 								"/api/v1/auth/validate",
 								"/api/v1/geography/cities",
 								"/api/v1/departments",
+								"/api/v1/complaints/*/badge",
 								"/actuator/**").permitAll()
 						.requestMatchers("/api/v1/**").authenticated()
 						.anyRequest().permitAll())
