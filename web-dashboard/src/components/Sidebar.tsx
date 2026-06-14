@@ -53,7 +53,7 @@ export default function Sidebar({ currentPage, onNavigate, overdueCount = 0 }: S
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon"><Building size={24} /></div>
+        <img src="/logo.png" alt="Civic Saathi" style={{ width: 40, height: 40, objectFit: 'contain', marginRight: 10 }} />
         <div>
           <div className="sidebar-logo-text">Civic Saathi</div>
           <div className="sidebar-logo-sub">Admin Dashboard</div>

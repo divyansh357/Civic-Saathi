@@ -60,3 +60,8 @@ ai:
     api-key: ${CEREBRAS_API_KEY:}
     model: ${CEREBRAS_MODEL:llama3.1-8b}
     max-tokens: ${CEREBRAS_MAX_TOKENS:512}
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    vision-model: ${OPENROUTER_VISION_MODEL:google/gemma-4-26b-a4b-it}
+    fallback-model: ${OPENROUTER_FALLBACK_MODEL:nemotron-nano-12b-v2-vl}
+    max-tokens: ${OPENROUTER_MAX_TOKENS:512}

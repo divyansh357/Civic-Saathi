@@ -10,14 +10,15 @@ import { Complaint } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 
 const STATUS_COLORS: Record<string, string> = {
-  SUBMITTED: '#60a5fa',
-  VERIFIED: '#a78bfa',
+  SUBMITTED: '#94a3b8',
+  VERIFIED: '#60a5fa',
   ASSIGNED: '#fbbf24',
   IN_PROGRESS: '#fb923c',
   RESOLVED: '#34d399',
   CLOSED: '#64748b',
   ESCALATED: '#f87171',
   REOPENED: '#fbbf24',
+  AI_REJECTED: '#fbbf24',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -29,6 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
   CLOSED: 'Closed',
   ESCALATED: 'Escalated',
   REOPENED: 'Reopened',
+  AI_REJECTED: 'Verification Pending',
 };
 
 function formatDate(iso?: string) {
@@ -90,7 +92,7 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
     if (!silent) setLoading(true);
     try {
       const res = await apiGet<{ content: Complaint[] }>(
-        '/complaints?page=0&size=20&sortBy=createdAt&sortDir=DESC',
+        '/complaints/user/my-complaints?page=0&size=20&sortBy=createdAt&sortDir=DESC',
         accessToken
       );
       setComplaints(res.content ?? []);

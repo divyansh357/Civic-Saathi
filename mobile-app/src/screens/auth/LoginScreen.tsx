@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet,
   KeyboardAvoidingView, Platform,
-  ScrollView,
+  ScrollView, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from 'react-native-paper';
@@ -46,7 +46,7 @@ export default function LoginScreen({ onGoToSignup, successMessage, onClearSucce
       >
         {/* Logo & Header */}
         <View style={styles.headerSection}>
-          <Text style={styles.logoEmoji}><Ionicons name="business" size={20} color="#64748b" /></Text>
+          <Image source={require('../../../assets/logo.png')} style={styles.logoImage} />
           <Text style={styles.headerTitle}>Welcome back</Text>
           <Text style={styles.headerSubtitle}>Sign in to your account</Text>
         </View>
@@ -145,9 +145,11 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     marginTop: 20
   },
-  logoEmoji: { 
-    fontSize: 48, 
-    marginBottom: 16 
+  logoImage: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+    resizeMode: 'contain',
   },
   headerTitle: { 
     fontSize: 24, 

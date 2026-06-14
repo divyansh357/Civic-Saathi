@@ -11,7 +11,13 @@ import { Ionicons } from '@expo/vector-icons';
 const STATUS_COLORS: Record<string, string> = {
   SUBMITTED: '#60a5fa', VERIFIED: '#a78bfa', ASSIGNED: '#fbbf24',
   IN_PROGRESS: '#fb923c', RESOLVED: '#34d399', CLOSED: '#64748b',
-  ESCALATED: '#f87171', REOPENED: '#fbbf24',
+  ESCALATED: '#f87171', REOPENED: '#fbbf24', AI_REJECTED: '#fbbf24',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  SUBMITTED: 'Submitted', VERIFIED: 'Verified', ASSIGNED: 'Assigned',
+  IN_PROGRESS: 'In Progress', RESOLVED: 'Resolved', CLOSED: 'Closed',
+  ESCALATED: 'Escalated', REOPENED: 'Reopened', AI_REJECTED: 'Verification Pending',
 };
 
 const TIMELINE_STEPS = [
@@ -94,7 +100,7 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
         <View style={[styles.statusBanner, { backgroundColor: `${color}15`, borderColor: `${color}40` }]}>
           <View style={[styles.statusDot, { backgroundColor: color }]} />
           <Text style={[styles.statusLabel, { color }]}>
-            {complaint.status.replace(/_/g, ' ')}
+            {STATUS_LABELS[complaint.status] ?? complaint.status.replace(/_/g, ' ')}
           </Text>
         </View>
 
@@ -208,6 +214,18 @@ export default function ComplaintDetailScreen({ complaint, onBack, onFeedback }:
             </View>
           )}
         </View>
+
+        {/* Rejection Reason */}
+        {complaint.status === 'REJECTED' && complaint.aiSummary && (
+          <View style={[styles.card, { borderColor: '#fca5a5', backgroundColor: '#fef2f2' }]}>
+            <Text style={[styles.cardTitle, { color: '#b91c1c' }]}>
+              <Ionicons name="close-circle-outline" size={18} /> Rejection Reason
+            </Text>
+            <Text style={{ fontSize: 14, color: '#991b1b', lineHeight: 20 }}>
+              {complaint.aiSummary}
+            </Text>
+          </View>
+        )}
 
         {canRequestFeedback && (
           <View style={[styles.card, styles.resolvedCard]}>

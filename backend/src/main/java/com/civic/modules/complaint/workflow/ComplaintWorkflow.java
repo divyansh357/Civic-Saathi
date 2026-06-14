@@ -108,6 +108,11 @@ public class ComplaintWorkflow {
                     Complaint.ComplaintStatus.SUBMITTED,
                     Complaint.ComplaintStatus.VERIFIED
                 );
+            case AI_REJECTED:
+                return EnumSet.of(
+                    Complaint.ComplaintStatus.VERIFIED,
+                    Complaint.ComplaintStatus.REJECTED
+                );
             case CLOSED:
             case CANCELLED:
                 // Terminal states — no further transitions
