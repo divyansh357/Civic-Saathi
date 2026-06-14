@@ -58,6 +58,15 @@ public class WorkerResponse {
     @JsonProperty("workerCode")
     private String workerCode;
 
+    @JsonProperty("latitude")
+    private Double latitude;
+
+    @JsonProperty("longitude")
+    private Double longitude;
+
+    @JsonProperty("lastActiveAt")
+    private String lastActiveAt;
+
     public WorkerResponse() {
     }
 
@@ -96,4 +105,10 @@ public class WorkerResponse {
     public void setPreviousWorks(String previousWorks) { this.previousWorks = previousWorks; }
     public String getWorkerCode() { return workerCode; }
     public void setWorkerCode(String workerCode) { this.workerCode = workerCode; }
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public String getLastActiveAt() { return lastActiveAt; }
+    public void setLastActiveAt(String lastActiveAt) { this.lastActiveAt = lastActiveAt; }
 }

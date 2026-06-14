@@ -100,6 +100,9 @@ export interface Worker {
   complaintsResolved?: number;
   profileImageUrl?: string;
   previousWorks?: string;
+  latitude?: number;
+  longitude?: number;
+  lastActiveAt?: string;
 }
 
 export interface Assignment {

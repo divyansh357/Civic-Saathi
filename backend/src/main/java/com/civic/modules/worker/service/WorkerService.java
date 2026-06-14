@@ -1,7 +1,8 @@
 package com.civic.modules.worker.service;
 
-import com.civic.modules.worker.dto.WorkerResponse;
+import com.civic.modules.worker.dto.LocationUpdateRequest;
 import com.civic.modules.worker.dto.WorkerProfileUpdateRequest;
+import com.civic.modules.worker.dto.WorkerResponse;
 import com.civic.modules.worker.entity.Worker;
 import com.civic.modules.worker.mapper.WorkerMapper;
 import com.civic.modules.worker.repository.WorkerRepository;
@@ -175,6 +176,21 @@ public class WorkerService {
         }
 
         worker.setUpdatedAt(LocalDateTime.now());
+        return workerMapper.toResponse(workerRepository.save(worker));
+    }
+
+    /**
+     * Update worker location.
+     */
+    public WorkerResponse updateLocation(String id, LocationUpdateRequest request) {
+        Worker worker = workerRepository.findById(UUID.fromString(id))
+            .orElseThrow(() -> new RuntimeException("Worker not found: " + id));
+            
+        worker.setLatitude(request.getLatitude());
+        worker.setLongitude(request.getLongitude());
+        worker.setLastActiveAt(LocalDateTime.now());
+        worker.setUpdatedAt(LocalDateTime.now());
+        
         return workerMapper.toResponse(workerRepository.save(worker));
     }
 

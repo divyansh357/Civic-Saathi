@@ -10,7 +10,8 @@ import {
   LineChart, 
   Bell, 
   LogOut,
-  Globe
+  Globe,
+  MapPin
 } from 'lucide-react';
 
 interface NavItem {
@@ -25,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: <LayoutDashboard size={18} />, label: 'Dashboard', page: 'dashboard' },
   { icon: <ClipboardList size={18} />, label: 'Complaints', page: 'complaints' },
   { icon: <GitMerge size={18} />, label: 'Assignments', page: 'assignments' },
+  { icon: <MapPin size={18} />, label: 'Livemap', page: 'livemap', roles: ['ADMIN', 'SUPERADMIN', 'DEPARTMENT_ADMIN', 'MUNICIPAL_OFFICER'] },
   { icon: <Building2 size={18} />, label: 'Departments', page: 'departments', roles: ['ADMIN', 'SUPERADMIN', 'MUNICIPAL_OFFICER'] },
   { icon: <HardHat size={18} />, label: 'Workers', page: 'workers' },
   { icon: <Users size={18} />, label: 'Users', page: 'users', roles: ['ADMIN', 'SUPERADMIN', 'MUNICIPAL_OFFICER'] },
