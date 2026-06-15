@@ -12,6 +12,14 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://civic-saathi-backend-production.up.railway.app/api/v1",
+        "EXPO_PUBLIC_API_TIMEOUT": "30000",
+        "EXPO_PUBLIC_LOG_LEVEL": "debug",
+        "EXPO_PUBLIC_ENABLE_NOTIFICATIONS": "true",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "du1jntwiw",
+        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "ml_default"
       }
     },
     "production": {
