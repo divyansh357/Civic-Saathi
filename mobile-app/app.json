@@ -18,6 +18,15 @@
     },
     "ios": {
       "bundleIdentifier": "com.civic.saathi"
+    },
+    "plugins": [
+      "expo-localization",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b63ce05d-1a56-4b1c-8cd6-e8bbc544a061"
+      }
     }
   }
 }
