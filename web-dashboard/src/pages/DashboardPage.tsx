@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+
 import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
+import { useQuery } from '@tanstack/react-query';
 import { AnalyticsDashboard, Complaint, PagedResponse } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/StatusBadge';
 import { AlertTriangle, ClipboardList, RefreshCw, CheckCircle2, Clock } from 'lucide-react';
@@ -27,25 +28,21 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
-  const [analytics, setAnalytics] = useState<AnalyticsDashboard>({});
-  const [recent, setRecent] = useState<Complaint[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { data: analytics = {}, isLoading: analyticsLoading, error: queryError } = useQuery({
+    queryKey: ['analytics-dashboard'],
+    queryFn: () => apiGet<AnalyticsDashboard>('/analytics/dashboard', accessToken!),
+    enabled: !!accessToken,
+  });
 
-  useEffect(() => {
-    if (!accessToken) return;
-    setLoading(true);
-    setError('');
-    Promise.all([
-      apiGet<AnalyticsDashboard>('/analytics/dashboard', accessToken).catch(() => null),
-      apiGet<PagedResponse<Complaint>>('/complaints?page=0&size=5&sort=createdAt,desc', accessToken).catch(() => null),
-    ]).then(([analyticsRes, complaintsRes]) => {
-      if (analyticsRes) setAnalytics(analyticsRes);
-      if (complaintsRes?.content) setRecent(complaintsRes.content);
-    }).catch((e) => {
-      setError(e instanceof Error ? e.message : 'Failed to load dashboard');
-    }).finally(() => setLoading(false));
-  }, [accessToken]);
+  const { data: complaintsRes, isLoading: complaintsLoading } = useQuery({
+    queryKey: ['recent-complaints'],
+    queryFn: () => apiGet<PagedResponse<Complaint>>('/complaints?page=0&size=5&sort=createdAt,desc', accessToken!),
+    enabled: !!accessToken,
+  });
+
+  const recent = complaintsRes?.content ?? [];
+  const loading = analyticsLoading || complaintsLoading;
+  const error = queryError ? (queryError as Error).message : '';
 
   const statusData = Object.entries(analytics.complaintsByStatus ?? {})
     .filter(([, v]) => v > 0)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuthStore } from '../store';
 import { apiGet } from '../services/api/client';
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ClipboardList , CheckCircle2, Clock, Star, TrendingUp, TrendingDown, Bot } from 'lucide-react';
 
 const TOOLTIP_STYLE = {
@@ -49,27 +50,27 @@ const CATEGORY_PIE = [
 export default function AnalyticsPage() {
   const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
-  const [loading, setLoading] = useState(false);
+  const { data: heatmapData = [], isLoading: heatmapLoading } = useQuery({
+    queryKey: ['heatmapData'],
+    queryFn: () => apiGet<HeatmapPoint[]>('/analytics/heatmap', accessToken!),
+    enabled: !!accessToken,
+  });
+
+  const { data: deptRanking = [], isLoading: rankingLoading } = useQuery({
+    queryKey: ['deptRanking'],
+    queryFn: () => apiGet<DeptRanking[]>('/analytics/departments/ranking', accessToken!),
+    enabled: !!accessToken,
+  });
+
+  const { data: aiStatus, isLoading: statusLoading } = useQuery({
+    queryKey: ['aiStatus'],
+    queryFn: () => apiGet<{ llmAvailable: boolean; provider: string }>('/ai/status', accessToken!),
+    enabled: !!accessToken,
+  });
+
   const [aiInsights, setAiInsights] = useState<string>('');
-  const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
-  const [deptRanking, setDeptRanking] = useState<DeptRanking[]>([]);
-  const [aiStatus, setAiStatus] = useState<{ llmAvailable: boolean; provider: string } | null>(null);
-
   const [loadingInsights, setLoadingInsights] = useState(false);
-
-  useEffect(() => {
-    if (!accessToken) return;
-    setLoading(true);
-    Promise.allSettled([
-      apiGet<HeatmapPoint[]>('/analytics/heatmap', accessToken),
-      apiGet<DeptRanking[]>('/analytics/departments/ranking', accessToken),
-      apiGet<{ llmAvailable: boolean; provider: string }>('/ai/status', accessToken),
-    ]).then(([heatmapRes, rankingRes, statusRes]) => {
-      if (heatmapRes.status === 'fulfilled') setHeatmapData(heatmapRes.value);
-      if (rankingRes.status === 'fulfilled') setDeptRanking(rankingRes.value);
-      if (statusRes.status === 'fulfilled') setAiStatus(statusRes.value);
-    }).finally(() => setLoading(false));
-  }, [accessToken]);
+  const loading = heatmapLoading || rankingLoading || statusLoading;
 
   const fetchAiInsights = async () => {
     if (!accessToken) return;
