@@ -45,6 +45,7 @@ public class BadgeController {
     }
 
     @GetMapping("/{id}/badge")
+    @org.springframework.cache.annotation.Cacheable(value = "staticData", key = "'badge_' + #id", cacheManager = "staticDataCacheManager")
     public ResponseEntity<byte[]> getBadgeForComplaint(@PathVariable String id) {
         Optional<Complaint> complaintOpt = complaintRepository.findById(UUID.fromString(id));
         
@@ -64,10 +65,8 @@ public class BadgeController {
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_PNG);
-            // Ensure the image isn't aggressively cached while we are testing coordinates
-            headers.setCacheControl("no-cache, no-store, must-revalidate");
-            headers.setPragma("no-cache");
-            headers.setExpires(0L);
+            // Allow long-term caching on the client side since badges for closed complaints don't change
+            headers.setCacheControl("public, max-age=31536000");
 
             return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
         } catch (IOException e) {

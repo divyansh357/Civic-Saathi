@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 /**
  * REST Controller for user management endpoints.
@@ -23,6 +25,7 @@ public class UserController {
     /**
      * Get current user's own profile (identity derived from JWT token).
      */
+    @Cacheable(value = "userData", key = "'myProfile_' + #principal.name")
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getMyProfile(java.security.Principal principal) {
         UserResponse response = userService.getUserById(principal.getName());
@@ -32,6 +35,7 @@ public class UserController {
     /**
      * Update current user's own profile (identity derived from JWT token).
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateMyProfile(
             java.security.Principal principal,
@@ -52,6 +56,7 @@ public class UserController {
     /**
      * Get user by ID.
      */
+    @Cacheable(value = "userData", key = "'user_' + #id")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         UserResponse response = userService.getUserById(id);
@@ -79,6 +84,7 @@ public class UserController {
     /**
      * Update user profile.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> updateUserProfile(@PathVariable String id, @RequestBody User updateData) {
         UserResponse response = userService.updateUserProfile(id, updateData);
@@ -88,6 +94,7 @@ public class UserController {
     /**
      * Delete user.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);

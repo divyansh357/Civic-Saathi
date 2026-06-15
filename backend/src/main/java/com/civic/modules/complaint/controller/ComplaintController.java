@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 /**
  * REST Controller for complaint management endpoints.
@@ -24,6 +26,7 @@ public class ComplaintController {
     /**
      * Get public complaints (transparency module — no auth required).
      */
+    @Cacheable(value = "complaintData", key = "'public_complaints_page_' + #pageable.pageNumber")
     @GetMapping("/public")
     public ResponseEntity<Page<ComplaintResponse>> getPublicComplaints(Pageable pageable) {
         Page<ComplaintResponse> complaints = complaintService.getComplaintsByStatus("SUBMITTED", pageable);
@@ -56,6 +59,7 @@ public class ComplaintController {
     /**
      * Create a new complaint.
      */
+    @CacheEvict(value = {"complaintData", "analyticsData"}, allEntries = true)
     @PostMapping
     public ResponseEntity<ComplaintResponse> createComplaint(
             @RequestBody CreateComplaintRequest request,
@@ -67,6 +71,7 @@ public class ComplaintController {
     /**
      * Get complaint by ID.
      */
+    @Cacheable(value = "complaintData", key = "'complaint_' + #id")
     @GetMapping("/{id}")
     public ResponseEntity<ComplaintResponse> getComplaintById(@PathVariable String id) {
         ComplaintResponse response = complaintService.getComplaintById(id);
@@ -109,6 +114,7 @@ public class ComplaintController {
     /**
      * Update complaint status.
      */
+    @CacheEvict(value = {"complaintData", "analyticsData"}, allEntries = true)
     @PutMapping("/{id}/status")
     public ResponseEntity<ComplaintResponse> updateComplaintStatus(
             @PathVariable String id,
@@ -120,6 +126,7 @@ public class ComplaintController {
     /**
      * Escalate a complaint manually.
      */
+    @CacheEvict(value = {"complaintData", "analyticsData"}, allEntries = true)
     @PostMapping("/{id}/escalate")
     public ResponseEntity<ComplaintResponse> escalateComplaint(
             @PathVariable String id,
@@ -132,6 +139,7 @@ public class ComplaintController {
     /**
      * Trigger auto-escalation of SLA-breached complaints (admin/scheduler).
      */
+    @CacheEvict(value = {"complaintData", "analyticsData"}, allEntries = true)
     @PostMapping("/escalate/sla-breached")
     public ResponseEntity<java.util.Map<String, Object>> autoEscalateSlaBreached() {
         int count = complaintService.autoEscalateSlaBreached();
@@ -141,6 +149,7 @@ public class ComplaintController {
     /**
      * Submit feedback for a complaint.
      */
+    @CacheEvict(value = {"complaintData", "analyticsData"}, allEntries = true)
     @PostMapping("/{id}/feedback")
     public ResponseEntity<ComplaintResponse> submitFeedback(
             @PathVariable String id,
@@ -153,6 +162,7 @@ public class ComplaintController {
     /**
      * Delete a complaint.
      */
+    @CacheEvict(value = {"complaintData", "analyticsData"}, allEntries = true)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteComplaint(@PathVariable String id) {
         complaintService.deleteComplaint(id);

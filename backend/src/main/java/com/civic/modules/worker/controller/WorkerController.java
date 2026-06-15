@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 /**
  * REST Controller for worker management endpoints.
@@ -34,6 +36,7 @@ public class WorkerController {
     /**
      * Get worker by ID.
      */
+    @Cacheable(value = "userData", key = "'worker_' + #id")
     @GetMapping("/{id}")
     public ResponseEntity<WorkerResponse> getWorkerById(@PathVariable String id) {
         WorkerResponse response = workerService.getWorkerById(id);
@@ -43,6 +46,7 @@ public class WorkerController {
     /**
      * Get worker by User ID.
      */
+    @Cacheable(value = "userData", key = "'worker_user_' + #userId")
     @GetMapping("/user/{userId}")
     public ResponseEntity<WorkerResponse> getWorkerByUserId(@PathVariable String userId) {
         WorkerResponse response = workerService.getWorkerByUserId(userId);
@@ -74,6 +78,7 @@ public class WorkerController {
     /**
      * Create a new worker.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PostMapping
     public ResponseEntity<WorkerResponse> createWorker(@RequestBody Worker worker) {
         WorkerResponse response = workerService.createWorker(worker);
@@ -83,6 +88,7 @@ public class WorkerController {
     /**
      * Update a worker.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PutMapping("/{id}")
     public ResponseEntity<WorkerResponse> updateWorker(
             @PathVariable String id,
@@ -94,6 +100,7 @@ public class WorkerController {
     /**
      * Toggle worker availability.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PostMapping("/{id}/availability")
     public ResponseEntity<WorkerResponse> toggleAvailability(@PathVariable String id) {
         WorkerResponse response = workerService.toggleAvailability(id);
@@ -103,6 +110,7 @@ public class WorkerController {
     /**
      * Delete a worker.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWorker(@PathVariable String id) {
         workerService.deleteWorker(id);
@@ -112,6 +120,7 @@ public class WorkerController {
     /**
      * Update worker Aadhar number.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PutMapping("/{id}/aadhar")
     public ResponseEntity<WorkerResponse> updateAadhar(
             @PathVariable String id,
@@ -126,6 +135,7 @@ public class WorkerController {
     /**
      * Update worker profile.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PutMapping("/{id}/profile")
     public ResponseEntity<WorkerResponse> updateProfile(
             @PathVariable String id,
@@ -137,6 +147,7 @@ public class WorkerController {
     /**
      * Update worker location.
      */
+    @CacheEvict(value = "userData", allEntries = true)
     @PutMapping("/{id}/location")
     public ResponseEntity<WorkerResponse> updateLocation(
             @PathVariable String id,

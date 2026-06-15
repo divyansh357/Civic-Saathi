@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ public class GeographyController {
     @Autowired
     private CityRepository cityRepository;
 
+    @Cacheable(value = "staticData", key = "'cities'")
     @GetMapping("/cities")
     public ResponseEntity<Map<String, Object>> getCities() {
         List<Map<String, Object>> cities = cityRepository.findAll().stream().map(city -> 
