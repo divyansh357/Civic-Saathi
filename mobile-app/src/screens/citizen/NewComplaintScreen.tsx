@@ -197,8 +197,8 @@ export default function NewComplaintScreen({ onBack, onSuccess }: NewComplaintSc
       
       let lat = null;
       let lng = null;
-      let dateStr = format(new Date(), 'dd-MMM-yyyy');
-      let timeStr = format(new Date(), 'HH:mm:ss');
+      const dateStr = format(new Date(), 'dd-MMM-yyyy');
+      const timeStr = format(new Date(), 'HH:mm:ss');
 
       if (isCamera) {
         // Use current device location if it's camera

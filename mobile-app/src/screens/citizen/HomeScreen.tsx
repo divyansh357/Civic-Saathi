@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, ActivityIndicator
@@ -80,7 +81,7 @@ interface HomeScreenProps {
 export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNavigateToNotifications, onNavigateToProfile }: HomeScreenProps) {
   const user = useAuthStore((s) => s.user);
   const { t } = useTranslation();
-  const { complaints, setComplaints, isLoading, setLoading } = useComplaintStore();
+  const { complaints, setComplaints, isLoading: storeLoading } = useComplaintStore();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [refreshing, setRefreshing] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -89,32 +90,31 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchComplaints = async (silent = false) => {
-    if (!accessToken) return;
-    if (!silent) setLoading(true);
-    try {
-      const res = await apiGet<{ content: Complaint[] }>(
-        '/complaints/user/my-complaints?page=0&size=20&sortBy=createdAt&sortDir=DESC',
-        accessToken
-      );
-      setComplaints(res.content ?? []);
-      
-      // Fetch unread notifications
-      try {
-        const count = await apiGet<number>('/notifications/unread/count', accessToken);
-        setUnreadCount(count);
-      } catch (e) {
-        console.error('Failed to fetch unread notifications', e);
-      }
-    } catch {
-      // keep existing data
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const { data: complaintsData, isLoading: complaintsLoading, refetch: refetchComplaints } = useQuery({
+    queryKey: ['my-complaints'],
+    queryFn: () => apiGet<{ content: Complaint[] }>('/complaints/user/my-complaints?page=0&size=20&sortBy=createdAt&sortDir=DESC', accessToken!),
+    enabled: !!accessToken,
+  });
 
-  useEffect(() => { void fetchComplaints(); }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { data: unreadQueryCount, refetch: refetchUnread } = useQuery({
+    queryKey: ['unread-notifications'],
+    queryFn: () => apiGet<number>('/notifications/unread/count', accessToken!),
+    enabled: !!accessToken,
+  });
+
+  const isLoading = storeLoading || complaintsLoading;
+
+  useEffect(() => {
+    if (complaintsData?.content) {
+      setComplaints(complaintsData.content);
+    }
+  }, [complaintsData, setComplaints]);
+
+  useEffect(() => {
+    if (unreadQueryCount !== undefined) {
+      setUnreadCount(unreadQueryCount);
+    }
+  }, [unreadQueryCount]);
 
   // Effect 1: Request location permission & get coordinates (runs once on mount)
   useEffect(() => {
@@ -156,9 +156,13 @@ export default function HomeScreen({ onNewComplaint, onComplaintDetail, onNaviga
     }
   }, [userCoords, complaints]);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    void fetchComplaints(true);
+    try {
+      await Promise.all([refetchComplaints(), refetchUnread()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const stats = {

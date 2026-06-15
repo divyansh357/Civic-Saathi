@@ -5,6 +5,7 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, ActivityIndicator, Alert, Platform, Modal, TextInput, Switch, Linking
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useAuthStore } from '@store/index';
 import { apiGet, apiPost, apiPut } from '@services/api/client';
@@ -225,51 +226,60 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     });
   };
 
-  const fetchAssignments = async (silent = false) => {
-    if (!accessToken || !user) return;
-    if (!silent) setLoading(true);
-    try {
-      let currentWorkerId = workerId;
-      if (!currentWorkerId) {
-        const workerRes = await apiGet<any>(`/workers/user/${user.id}`, accessToken);
-        currentWorkerId = workerRes.id;
-        setWorkerId(currentWorkerId);
-        setIsAvailable(workerRes.status === 'ACTIVE');
-      }
-      if (!currentWorkerId) return;
+  const { data: workerData, isLoading: workerLoading } = useQuery({
+    queryKey: ['worker-profile', user?.id],
+    queryFn: () => apiGet<any>(`/workers/user/${user?.id}`, accessToken!),
+    enabled: !!accessToken && !!user?.id,
+  });
 
-      const endpoint = activeTab === 'active' 
-        ? `/assignments/worker/${currentWorkerId}?page=0&size=20`
-        : `/assignments/worker/${currentWorkerId}/completed?page=0&size=20`;
+  const resolvedWorkerId = workerData?.id || workerId;
 
-      const res = await apiGet<{ data: WorkerAssignment[] }>(endpoint, accessToken);
-      
-      if (activeTab === 'active') {
-        const assignmentsWithDistance = calculateAssignmentDistances(res.data ?? []);
-        setAssignments(assignmentsWithDistance);
-      } else {
-        setAssignments(res.data ?? []);
-      }
-      // Fetch unread notifications
-      try {
-        const count = await apiGet<number>('/notifications/unread/count', accessToken);
-        setUnreadCount(count);
-      } catch (e) {
-        console.error('Failed to fetch unread notifications', e);
-      }
-    } catch (err) {
-      console.error(err);
-      setAssignments([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  useEffect(() => {
+    if (workerData) {
+      setWorkerId(workerData.id);
+      setIsAvailable(workerData.status === 'ACTIVE');
     }
-  };
+  }, [workerData]);
+
+  const endpoint = activeTab === 'active' 
+    ? `/assignments/worker/${resolvedWorkerId}?page=0&size=20`
+    : `/assignments/worker/${resolvedWorkerId}/completed?page=0&size=20`;
+
+  const { data: assignmentsData, isLoading: assignmentsLoading, refetch: refetchAssignments } = useQuery({
+    queryKey: ['worker-assignments', resolvedWorkerId, activeTab],
+    queryFn: () => apiGet<{ data: WorkerAssignment[] }>(endpoint, accessToken!),
+    enabled: !!accessToken && !!resolvedWorkerId,
+  });
+
+  useEffect(() => {
+    if (assignmentsData?.data) {
+      if (activeTab === 'active') {
+        setAssignments(calculateAssignmentDistances(assignmentsData.data));
+      } else {
+        setAssignments(assignmentsData.data);
+      }
+    } else {
+      setAssignments([]);
+    }
+  }, [assignmentsData, activeTab]);
+
+  const { data: unreadQueryCount, refetch: refetchUnread } = useQuery({
+    queryKey: ['unread-notifications'],
+    queryFn: () => apiGet<number>('/notifications/unread/count', accessToken!),
+    enabled: !!accessToken,
+  });
+
+  useEffect(() => {
+    if (unreadQueryCount !== undefined) {
+      setUnreadCount(unreadQueryCount);
+    }
+  }, [unreadQueryCount]);
 
   useEffect(() => { 
     void getCurrentLocation();
-    void fetchAssignments(); 
-  }, [accessToken, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isLoading = loading || workerLoading || assignmentsLoading;
 
   // Recalculate distances when worker location changes
   useEffect(() => {
@@ -289,10 +299,14 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
     }
   }, [workerLocation, workerId, accessToken]);
 
-  const onRefresh = () => { 
+  const onRefresh = async () => { 
     setRefreshing(true); 
-    void getCurrentLocation();
-    void fetchAssignments(true); 
+    try {
+      void getCurrentLocation();
+      await Promise.all([refetchAssignments(), refetchUnread()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleToggleAvailability = async () => {
@@ -377,7 +391,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         // Auto-assigned → direct rejection, sends message to admin
         await apiPost(`/assignments/${denialAssignment.id}/reject`, { reason: denialReason.trim() }, accessToken);
         Alert.alert('Task Rejected', 'Your rejection message has been sent to the admin.');
-        void fetchAssignments();
+        void refetchAssignments();
       } else {
         // Manually assigned → send denial request to admin
         await apiPost(`/assignments/${denialAssignment.id}/denial-request`, { reason: denialReason.trim() }, accessToken);
@@ -650,7 +664,7 @@ export default function WorkerHomeScreen({ onNavigateToNotifications }: { onNavi
         )}
       </View>
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color="#0F766E" style={{ marginTop: 24 }} />
       ) : (activeTab === 'active' ? active.length : completed.length) === 0 ? (
         <View style={styles.emptyState}>

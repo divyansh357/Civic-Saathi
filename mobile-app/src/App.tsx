@@ -15,6 +15,24 @@ import { civicTheme } from '@theme/index';
 import { useAuthStore, useComplaintStore } from '@store/index';
 import { Complaint } from '@/types';
 import { notificationService } from '@services/notifications';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+    },
+  },
+});
+
+const asyncStoragePersister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+});
 
 // Auth screens
 import LoginScreen from '@screens/auth/LoginScreen';
@@ -320,9 +338,11 @@ const adminStyles = StyleSheet.create({
 
 export default function App() {
   return (
-    <PaperProvider theme={civicTheme}>
-      <AppContent />
-    </PaperProvider>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: asyncStoragePersister }}>
+      <PaperProvider theme={civicTheme}>
+        <AppContent />
+      </PaperProvider>
+    </PersistQueryClientProvider>
   );
 }
 
