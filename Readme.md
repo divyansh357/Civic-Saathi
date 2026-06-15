@@ -437,7 +437,7 @@ Make sure you have the following installed on your machine:
 6. **Start the Mobile App (Expo)**
    ```bash
    cd mobile-app
-   npm install
+   npm install 
    npm run start
    ```
    *Press `a` for Android Emulator, `i` for iOS simulator, or scan the QR code using the Expo Go app on your physical device.*
