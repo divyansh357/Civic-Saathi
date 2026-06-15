@@ -2,7 +2,8 @@
 java = {}
 
 [phases.setup]
-nixPkgs = ["jdk17", "maven", "fontconfig", "dejavu_fonts"]
+aptPkgs = ["fontconfig", "fonts-dejavu", "libfreetype6"]
+nixPkgs = ["jdk17", "maven"]
 
 [phases.build]
 cmds = ["./mvnw clean package -DskipTests"]
